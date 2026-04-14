@@ -7,7 +7,8 @@ import {
 import { useRouter } from "expo-router";
 import { getToken } from "../src/auth/storage";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+
+// ─── helpers tracking/progress ──────────────────────────────────────────────────────────────────
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
 const maxW = (sets) => sets.length ? Math.max(...sets.map((s) => s.weight)) : 0;
 
@@ -683,6 +684,7 @@ export default function TrackingPage() {
 
   return (
     <View style={t.root}>
+    
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
