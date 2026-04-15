@@ -56,52 +56,52 @@ export default function Login() {
   });
 
   const handleLogin = async () => {
-  if (!email || !password) return;
-  setLoading(true);
+    if (!email || !password) return;
+    setLoading(true);
 
-  try {
-    const res = await fetch("http://localhost:3000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("https://yourpocketgym.com/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.error || "Login failed");
-      return;
-    }
-
-    // 1. save token
-    await saveToken(data.token);
-
-    // 2. check user intro
-    const introRes = await fetch(
-      "http://localhost:3000/api/user-intro",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${data.token}`,
-        },
+      if (!res.ok) {
+        alert(data.error || "Login failed");
+        return;
       }
-    );
 
-    const introData = await introRes.json();
+      // 1. save token
+      await saveToken(data.token);
 
-    // 3. redirect based on existence
-    if (!introRes.ok || !introData?.exists) {
-      router.replace("/startersIntro");
-    } else {
-      router.replace("/tracking");
+      // 2. check user intro
+      const introRes = await fetch(
+        "https://yourpocketgym.com/api/user-intro",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data.token}`,
+          },
+        },
+      );
+
+      const introData = await introRes.json();
+
+      // 3. redirect based on existence
+      if (!introRes.ok || !introData?.exists) {
+        router.replace("/startersIntro");
+      } else {
+        router.replace("/tracking");
+      }
+    } catch (err) {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    alert("Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const isValid = email && password;
 

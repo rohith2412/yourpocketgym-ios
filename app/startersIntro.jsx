@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
-import {
-  View, Text, StyleSheet, Pressable, ScrollView,
-  Platform, StatusBar, Animated,
-} from "react-native";
 import { useRouter } from "expo-router";
-import { getToken, removeToken } from "../src/auth/storage";
+import { useState } from "react";
+import {
+    Platform,
+    Pressable,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { getToken } from "../src/auth/storage";
 
 const TOTAL_STEPS = 7;
 const stepProgress = [14, 28, 42, 57, 71, 85, 100];
@@ -42,7 +47,7 @@ export default function IntroPage() {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch("http://localhost:3000/api/user-intro", {
+      const res = await fetch("https://yourpocketgym.com/api/user-intro", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,12 +72,24 @@ export default function IntroPage() {
   const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 
   const summaryChips = [
-    form.gender === "male" ? "♂ Male" : form.gender === "female" ? "♀ Female" : "◎ Other",
+    form.gender === "male"
+      ? "♂ Male"
+      : form.gender === "female"
+        ? "♀ Female"
+        : "◎ Other",
     `${form.age} yrs`,
     `${form.height} cm`,
     `${form.weight} kg`,
-    form.fitnessGoal === "lose fat" ? "🔥 Lose fat" : form.fitnessGoal === "gain muscle" ? "💪 Gain muscle" : "🏋️ Strength",
-    form.experienceLevel === "beginner" ? "🌱 Beginner" : form.experienceLevel === "intermediate" ? "⚡ Intermediate" : "🎯 Advanced",
+    form.fitnessGoal === "lose fat"
+      ? "🔥 Lose fat"
+      : form.fitnessGoal === "gain muscle"
+        ? "💪 Gain muscle"
+        : "🏋️ Strength",
+    form.experienceLevel === "beginner"
+      ? "🌱 Beginner"
+      : form.experienceLevel === "intermediate"
+        ? "⚡ Intermediate"
+        : "🎯 Advanced",
     `${form.workoutDaysPerWeek}×/week`,
   ];
 
@@ -88,7 +105,6 @@ export default function IntroPage() {
         showsVerticalScrollIndicator={false}
       >
         <View style={s.card}>
-
           {/* Progress bar */}
           <View style={s.progressTrack}>
             <View style={[s.progressFill, { width: progressWidth }]} />
@@ -110,10 +126,8 @@ export default function IntroPage() {
                 ))}
               </View>
             </View>
-
           ) : (
             <>
-
               {/* ── STEP 1: Gender ── */}
               {step === 1 && (
                 <View style={s.stepWrap}>
@@ -128,10 +142,18 @@ export default function IntroPage() {
                       <Pressable
                         key={o.val}
                         onPress={() => set("gender", o.val)}
-                        style={[s.optionBtn, form.gender === o.val && s.optionSelected]}
+                        style={[
+                          s.optionBtn,
+                          form.gender === o.val && s.optionSelected,
+                        ]}
                       >
                         <Text style={s.optionIcon}>{o.icon}</Text>
-                        <Text style={[s.optionLabel, form.gender === o.val && s.optionLabelSelected]}>
+                        <Text
+                          style={[
+                            s.optionLabel,
+                            form.gender === o.val && s.optionLabelSelected,
+                          ]}
+                        >
                           {o.label}
                         </Text>
                       </Pressable>
@@ -181,9 +203,17 @@ export default function IntroPage() {
                       <Pressable
                         key={a}
                         onPress={() => set("age", a)}
-                        style={[s.presetBtn, form.age === a && s.presetBtnActive]}
+                        style={[
+                          s.presetBtn,
+                          form.age === a && s.presetBtnActive,
+                        ]}
                       >
-                        <Text style={[s.presetBtnText, form.age === a && s.presetBtnTextActive]}>
+                        <Text
+                          style={[
+                            s.presetBtnText,
+                            form.age === a && s.presetBtnTextActive,
+                          ]}
+                        >
                           {a}
                         </Text>
                       </Pressable>
@@ -212,13 +242,17 @@ export default function IntroPage() {
                     </View>
                     <View style={s.stepperCol}>
                       <Pressable
-                        onPress={() => set("height", Math.min(250, form.height + 1))}
+                        onPress={() =>
+                          set("height", Math.min(250, form.height + 1))
+                        }
                         style={s.stepperBtn}
                       >
                         <Text style={s.stepperBtnText}>+</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => set("height", Math.max(100, form.height - 1))}
+                        onPress={() =>
+                          set("height", Math.max(100, form.height - 1))
+                        }
                         style={s.stepperBtn}
                       >
                         <Text style={s.stepperBtnText}>−</Text>
@@ -230,9 +264,17 @@ export default function IntroPage() {
                       <Pressable
                         key={h}
                         onPress={() => set("height", h)}
-                        style={[s.presetBtn, form.height === h && s.presetBtnActive]}
+                        style={[
+                          s.presetBtn,
+                          form.height === h && s.presetBtnActive,
+                        ]}
                       >
-                        <Text style={[s.presetBtnText, form.height === h && s.presetBtnTextActive]}>
+                        <Text
+                          style={[
+                            s.presetBtnText,
+                            form.height === h && s.presetBtnTextActive,
+                          ]}
+                        >
                           {h}
                         </Text>
                       </Pressable>
@@ -261,13 +303,17 @@ export default function IntroPage() {
                     </View>
                     <View style={s.stepperCol}>
                       <Pressable
-                        onPress={() => set("weight", Math.min(200, form.weight + 1))}
+                        onPress={() =>
+                          set("weight", Math.min(200, form.weight + 1))
+                        }
                         style={s.stepperBtn}
                       >
                         <Text style={s.stepperBtnText}>+</Text>
                       </Pressable>
                       <Pressable
-                        onPress={() => set("weight", Math.max(30, form.weight - 1))}
+                        onPress={() =>
+                          set("weight", Math.max(30, form.weight - 1))
+                        }
                         style={s.stepperBtn}
                       >
                         <Text style={s.stepperBtnText}>−</Text>
@@ -279,9 +325,17 @@ export default function IntroPage() {
                       <Pressable
                         key={w}
                         onPress={() => set("weight", w)}
-                        style={[s.presetBtn, form.weight === w && s.presetBtnActive]}
+                        style={[
+                          s.presetBtn,
+                          form.weight === w && s.presetBtnActive,
+                        ]}
                       >
-                        <Text style={[s.presetBtnText, form.weight === w && s.presetBtnTextActive]}>
+                        <Text
+                          style={[
+                            s.presetBtnText,
+                            form.weight === w && s.presetBtnTextActive,
+                          ]}
+                        >
                           {w}
                         </Text>
                       </Pressable>
@@ -305,17 +359,40 @@ export default function IntroPage() {
                   <Text style={s.question}>What's your main goal?</Text>
                   <View style={s.optionGrid}>
                     {[
-                      { val: "lose fat", icon: "🔥", label: "Lose fat", sub: "Burn calories, slim down" },
-                      { val: "gain muscle", icon: "💪", label: "Gain muscle", sub: "Build mass and size" },
-                      { val: "strength", icon: "🏋️", label: "Strength", sub: "Lift heavier, get stronger" },
+                      {
+                        val: "lose fat",
+                        icon: "🔥",
+                        label: "Lose fat",
+                        sub: "Burn calories, slim down",
+                      },
+                      {
+                        val: "gain muscle",
+                        icon: "💪",
+                        label: "Gain muscle",
+                        sub: "Build mass and size",
+                      },
+                      {
+                        val: "strength",
+                        icon: "🏋️",
+                        label: "Strength",
+                        sub: "Lift heavier, get stronger",
+                      },
                     ].map((o) => (
                       <Pressable
                         key={o.val}
                         onPress={() => set("fitnessGoal", o.val)}
-                        style={[s.optionBtn, form.fitnessGoal === o.val && s.optionSelected]}
+                        style={[
+                          s.optionBtn,
+                          form.fitnessGoal === o.val && s.optionSelected,
+                        ]}
                       >
                         <Text style={s.optionIcon}>{o.icon}</Text>
-                        <Text style={[s.optionLabel, form.fitnessGoal === o.val && s.optionLabelSelected]}>
+                        <Text
+                          style={[
+                            s.optionLabel,
+                            form.fitnessGoal === o.val && s.optionLabelSelected,
+                          ]}
+                        >
                           {o.label}
                         </Text>
                         <Text style={s.optionSub}>{o.sub}</Text>
@@ -344,17 +421,41 @@ export default function IntroPage() {
                   <Text style={s.question}>What's your experience level?</Text>
                   <View style={s.optionGrid}>
                     {[
-                      { val: "beginner", icon: "🌱", label: "Beginner", sub: "Under 1 year" },
-                      { val: "intermediate", icon: "⚡", label: "Intermediate", sub: "1–3 years" },
-                      { val: "advanced", icon: "🎯", label: "Advanced", sub: "3+ years" },
+                      {
+                        val: "beginner",
+                        icon: "🌱",
+                        label: "Beginner",
+                        sub: "Under 1 year",
+                      },
+                      {
+                        val: "intermediate",
+                        icon: "⚡",
+                        label: "Intermediate",
+                        sub: "1–3 years",
+                      },
+                      {
+                        val: "advanced",
+                        icon: "🎯",
+                        label: "Advanced",
+                        sub: "3+ years",
+                      },
                     ].map((o) => (
                       <Pressable
                         key={o.val}
                         onPress={() => set("experienceLevel", o.val)}
-                        style={[s.optionBtn, form.experienceLevel === o.val && s.optionSelected]}
+                        style={[
+                          s.optionBtn,
+                          form.experienceLevel === o.val && s.optionSelected,
+                        ]}
                       >
                         <Text style={s.optionIcon}>{o.icon}</Text>
-                        <Text style={[s.optionLabel, form.experienceLevel === o.val && s.optionLabelSelected]}>
+                        <Text
+                          style={[
+                            s.optionLabel,
+                            form.experienceLevel === o.val &&
+                              s.optionLabelSelected,
+                          ]}
+                        >
                           {o.label}
                         </Text>
                         <Text style={s.optionSub}>{o.sub}</Text>
@@ -368,7 +469,10 @@ export default function IntroPage() {
                     <Pressable
                       onPress={next}
                       disabled={!form.experienceLevel}
-                      style={[s.btnNext, !form.experienceLevel && s.btnDisabled]}
+                      style={[
+                        s.btnNext,
+                        !form.experienceLevel && s.btnDisabled,
+                      ]}
                     >
                       <Text style={s.btnNextText}>Continue</Text>
                     </Pressable>
@@ -380,15 +484,25 @@ export default function IntroPage() {
               {step === 7 && (
                 <View style={s.stepWrap}>
                   <Text style={s.stepLabel}>Step 7 of {TOTAL_STEPS}</Text>
-                  <Text style={s.question}>How many days per week can you train?</Text>
+                  <Text style={s.question}>
+                    How many days per week can you train?
+                  </Text>
                   <View style={s.daysGrid}>
                     {dayLabels.map((d, i) => (
                       <Pressable
                         key={i}
                         onPress={() => toggleDay(i)}
-                        style={[s.dayBtn, selectedDays.includes(i) && s.daySelected]}
+                        style={[
+                          s.dayBtn,
+                          selectedDays.includes(i) && s.daySelected,
+                        ]}
                       >
-                        <Text style={[s.dayBtnText, selectedDays.includes(i) && s.dayBtnTextSelected]}>
+                        <Text
+                          style={[
+                            s.dayBtnText,
+                            selectedDays.includes(i) && s.dayBtnTextSelected,
+                          ]}
+                        >
                           {d}
                         </Text>
                       </Pressable>
@@ -406,14 +520,18 @@ export default function IntroPage() {
                     <Pressable
                       onPress={submit}
                       disabled={selectedDays.length === 0 || loading}
-                      style={[s.btnNext, (selectedDays.length === 0 || loading) && s.btnDisabled]}
+                      style={[
+                        s.btnNext,
+                        (selectedDays.length === 0 || loading) && s.btnDisabled,
+                      ]}
                     >
-                      <Text style={s.btnNextText}>{loading ? "Saving…" : "Let's go →"}</Text>
+                      <Text style={s.btnNextText}>
+                        {loading ? "Saving…" : "Let's go →"}
+                      </Text>
                     </Pressable>
                   </View>
                 </View>
               )}
-
             </>
           )}
         </View>
@@ -424,65 +542,218 @@ export default function IntroPage() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#f5f4f0" },
-  scroll: { flexGrow: 1, justifyContent: "center", padding: 20, paddingTop: Platform.OS === "ios" ? 60 : 20 },
-  card: { backgroundColor: "#fff", borderRadius: 24, padding: 28, minHeight: 520, shadowColor: "#000", shadowOpacity: 0.07, shadowRadius: 24, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+    paddingTop: Platform.OS === "ios" ? 60 : 20,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 28,
+    minHeight: 520,
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
 
   // Progress
-  progressTrack: { height: 2, backgroundColor: "#e8e6e0", borderRadius: 99, marginBottom: 32 },
+  progressTrack: {
+    height: 2,
+    backgroundColor: "#e8e6e0",
+    borderRadius: 99,
+    marginBottom: 32,
+  },
   progressFill: { height: 2, backgroundColor: "#1a1a1a", borderRadius: 99 },
 
   // Step
   stepWrap: { flex: 1, gap: 4 },
-  stepLabel: { fontSize: 11, fontWeight: "500", letterSpacing: 1, textTransform: "uppercase", color: "#999", marginBottom: 8 },
-  question: { fontSize: 26, fontWeight: "700", color: "#1a1a1a", lineHeight: 32, letterSpacing: -0.5, marginBottom: 24 },
+  stepLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#999",
+    marginBottom: 8,
+  },
+  question: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    lineHeight: 32,
+    letterSpacing: -0.5,
+    marginBottom: 24,
+  },
 
   // Options
-  optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
-  optionBtn: { flex: 1, minWidth: "28%", backgroundColor: "#f7f6f2", borderWidth: 1.5, borderColor: "#e8e6e0", borderRadius: 14, padding: 14, gap: 5 },
-  optionSelected: { borderColor: "#1a1a1a", backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  optionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 24,
+  },
+  optionBtn: {
+    flex: 1,
+    minWidth: "28%",
+    backgroundColor: "#f7f6f2",
+    borderWidth: 1.5,
+    borderColor: "#e8e6e0",
+    borderRadius: 14,
+    padding: 14,
+    gap: 5,
+  },
+  optionSelected: {
+    borderColor: "#1a1a1a",
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
   optionIcon: { fontSize: 20 },
   optionLabel: { fontSize: 13, fontWeight: "500", color: "#1a1a1a" },
   optionLabelSelected: { fontWeight: "700" },
   optionSub: { fontSize: 11, color: "#999" },
 
   // Number stepper
-  numRow: { flexDirection: "row", alignItems: "center", gap: 20, marginBottom: 20 },
-  bigNumber: { fontSize: 64, fontWeight: "800", color: "#1a1a1a", letterSpacing: -2, lineHeight: 72 },
+  numRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    marginBottom: 20,
+  },
+  bigNumber: {
+    fontSize: 64,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -2,
+    lineHeight: 72,
+  },
   numUnit: { fontSize: 14, color: "#999", marginTop: 4 },
   stepperCol: { gap: 8 },
-  stepperBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2", alignItems: "center", justifyContent: "center" },
-  stepperBtnText: { fontSize: 20, color: "#1a1a1a", fontWeight: "300", lineHeight: 24 },
+  stepperBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#e8e6e0",
+    backgroundColor: "#f7f6f2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperBtnText: {
+    fontSize: 20,
+    color: "#1a1a1a",
+    fontWeight: "300",
+    lineHeight: 24,
+  },
 
   // Presets
-  presetsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
-  presetBtn: { borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2" },
+  presetsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 24,
+  },
+  presetBtn: {
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: "#e8e6e0",
+    backgroundColor: "#f7f6f2",
+  },
   presetBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
   presetBtnText: { fontSize: 13, color: "#999", fontWeight: "500" },
   presetBtnTextActive: { color: "#fff" },
 
   // Days
   daysGrid: { flexDirection: "row", gap: 6, marginBottom: 12 },
-  dayBtn: { flex: 1, borderWidth: 1.5, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2", borderRadius: 10, paddingVertical: 12, alignItems: "center" },
+  dayBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: "#e8e6e0",
+    backgroundColor: "#f7f6f2",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
   daySelected: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
   dayBtnText: { fontSize: 13, fontWeight: "500", color: "#999" },
   dayBtnTextSelected: { color: "#fff" },
   daysHint: { fontSize: 13, color: "#aaa", marginBottom: 8 },
 
   // Nav
-  navRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, gap: 10 },
-  btnBack: { borderWidth: 1.5, borderColor: "#e8e6e0", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18 },
+  navRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 24,
+    gap: 10,
+  },
+  btnBack: {
+    borderWidth: 1.5,
+    borderColor: "#e8e6e0",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
   btnBackText: { fontSize: 14, color: "#999" },
-  btnNext: { flex: 1, maxWidth: 200, backgroundColor: "#1a1a1a", borderRadius: 10, paddingVertical: 13, alignItems: "center" },
+  btnNext: {
+    flex: 1,
+    maxWidth: 200,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
   btnDisabled: { opacity: 0.3 },
   btnNextText: { fontSize: 14, fontWeight: "600", color: "#fff" },
 
   // Done
-  doneWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingVertical: 40 },
-  doneIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#f7f6f2", borderWidth: 1.5, borderColor: "#e8e6e0", alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  doneWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingVertical: 40,
+  },
+  doneIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#f7f6f2",
+    borderWidth: 1.5,
+    borderColor: "#e8e6e0",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
   doneIconText: { fontSize: 26 },
-  doneTitle: { fontSize: 28, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.5 },
+  doneTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+  },
   doneSub: { fontSize: 14, color: "#aaa" },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 },
-  chip: { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: "#f7f6f2", borderWidth: 1, borderColor: "#e8e6e0" },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  chip: {
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: "#f7f6f2",
+    borderWidth: 1,
+    borderColor: "#e8e6e0",
+  },
   chipText: { fontSize: 12, color: "#666" },
 });

@@ -3,18 +3,18 @@ import { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-    Animated,
-    Easing,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Animated,
+  Easing,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { saveToken } from "../src/auth/storage";
 
@@ -58,45 +58,48 @@ export default function Register() {
     outputRange: ["0deg", "360deg"],
   });
 
- const handleRegister = async () => {
-  if (!name || !email || !password) return;
-  setLoading(true);
-  try {
-    const res = await fetch("http://localhost:3000/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || "Registration failed");
-      return;
+  const handleRegister = async () => {
+    if (!name || !email || !password) return;
+    setLoading(true);
+    try {
+      const res = await fetch("https://yourpocketgym.com/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Registration failed");
+        return;
+      }
+
+      await saveToken(data.token);
+
+      // Check if user intro exists (same as login)
+      const introRes = await fetch(
+        "https://yourpocketgym.com/api/user-intro",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data.token}`,
+          },
+        },
+      );
+
+      const introData = await introRes.json();
+
+      if (!introRes.ok || !introData?.exists) {
+        router.replace("/startersIntro");
+      } else {
+        router.replace("/tracking");
+      }
+    } catch (err) {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    await saveToken(data.token);
-
-    // Check if user intro exists (same as login)
-    const introRes = await fetch("http://localhost:3000/api/user-intro", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${data.token}`,
-      },
-    });
-
-    const introData = await introRes.json();
-
-    if (!introRes.ok || !introData?.exists) {
-      router.replace("/startersIntro");
-    } else {
-      router.replace("/tracking");
-    }
-  } catch (err) {
-    alert("Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const isValid = name && email && password.length >= 6;
 
