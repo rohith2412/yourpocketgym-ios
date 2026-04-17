@@ -84,7 +84,7 @@ const handleLogin = async () => {
     if (!data.user.hasIntro) {
       router.replace("/startersIntro");
     } else {
-      router.replace("/ai-trainer");
+      router.replace("/tracking");
     }
   } catch (err) {
     alert("Something went wrong. Check your connection.");
