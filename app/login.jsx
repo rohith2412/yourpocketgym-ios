@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Animated,
     Easing,
@@ -15,7 +16,7 @@ import {
     View,
 } from "react-native";
 import { saveToken } from "../src/auth/storage";
-
+//handleLogin
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -55,53 +56,42 @@ export default function Login() {
     outputRange: ["0deg", "360deg"],
   });
 
-  const handleLogin = async () => {
-    if (!email || !password) return;
-    setLoading(true);
+// Replace the entire handleLogin function:
+const handleLogin = async () => {
+  if (!email || !password) return;
+  setLoading(true);
 
-    try {
-      const res = await fetch("https://yourpocketgym.com/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  try {
+    const res = await fetch("https://yourpocketgym.com/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok) {
-        alert(data.error || "Login failed");
-        return;
-      }
-
-      // 1. save token
-      await saveToken(data.token);
-
-      // 2. check user intro
-      const introRes = await fetch(
-        "https://yourpocketgym.com/api/user-intro",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-        },
-      );
-
-      const introData = await introRes.json();
-
-      // 3. redirect based on existence
-      if (!introRes.ok || !introData?.exists) {
-        router.replace("/startersIntro");
-      } else {
-        router.replace("/tracking");
-      }
-    } catch (err) {
-      alert("Something went wrong");
-    } finally {
-      setLoading(false);
+    if (!res.ok || !data.success) {
+      alert(data.error || "Login failed");
+      return;
     }
-  };
+        await saveToken(data.token);
+
+    // Save both token AND user object — useAuth needs both
+    await AsyncStorage.setItem("token", data.token);
+    await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+    // Redirect based on hasIntro from login response (no extra fetch needed)
+    if (!data.user.hasIntro) {
+      router.replace("/startersIntro");
+    } else {
+      router.replace("/ai-trainer");
+    }
+  } catch (err) {
+    alert("Something went wrong. Check your connection.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isValid = email && password;
 
