@@ -1,5 +1,6 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PageBackground from "@/components/PageBackground";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,16 +15,16 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-//register useA. const token = useAuth(); <Text style={s.headerTitle}>Recipes</Text>
+//register useA. const token = useAuth(); <Text style={s.headerTitle}>Recipes</Text> good a
 const BASE_URL = "https://yourpocketgym.com";
-
+//https://github.com/rohith2412/recipes_seed/blob/main/recipes_seed.json
 const GOALS = [
   {
     key: "muscle gain",
     emoji: "",
     label: "Muscle Gain",
-    color: "#ff6b35",
-    bg: "rgba(255,107,53,0.1)",
+    color: "#7c3aed",
+    bg: "rgba(124,58,237,0.1)",
   },
   {
     key: "fat loss",
@@ -275,18 +276,15 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
           disabled={isGenerating}
           style={[s.actionBtn, { opacity: isGenerating ? 0.5 : 1 }]}
         >
-          <Text style={[s.actionBtnText, { color: "#ff6b35" }]}>
-            {isGenerating ? "…" : "🔄 Try another"}
+          <Text style={[s.actionBtnText, { color: "#111112" }]}>
+            {isGenerating ? "Finding…" : "Try another"}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={s.card}>
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 14 }}>
-          <View style={s.recipeEmojiBadge}>
-            <Text style={{ fontSize: 28 }}>{recipe.emoji || "🍽️"}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
+        <View style={{ marginBottom: 14 }}>
+          <View>
             <View
               style={{
                 flexDirection: "row",
@@ -319,13 +317,12 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
 
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
           {[
-            { emoji: "⏱️", label: "Prep", val: `${recipe.prepTime}m` },
-            { emoji: "🔥", label: "Cook", val: `${recipe.cookTime}m` },
-            { emoji: "⏰", label: "Total", val: `${totalTime(recipe)}m` },
-            { emoji: "🍽️", label: "Servings", val: recipe.servings },
+            { label: "Prep", val: `${recipe.prepTime}m` },
+            { label: "Cook", val: `${recipe.cookTime}m` },
+            { label: "Total", val: `${totalTime(recipe)}m` },
+            { label: "Servings", val: recipe.servings },
           ].map((item) => (
             <View key={item.label} style={s.timeStat}>
-              <Text style={{ fontSize: 14 }}>{item.emoji}</Text>
               <Text style={s.timeStatVal}>{item.val}</Text>
               <Text style={s.timeStatLabel}>{item.label}</Text>
             </View>
@@ -353,7 +350,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
                 {
                   label: "Protein",
                   val: recipe.macros?.protein,
-                  color: "#ff6b35",
+                  color: "#7c3aed",
                 },
                 { label: "Carbs", val: recipe.macros?.carbs, color: "#fff" },
                 {
@@ -411,7 +408,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
           >
             {recipe.proteinSources.map((src, i) => (
               <View key={i} style={s.proteinTag}>
-                <Text style={s.proteinTagText}>💪 {src}</Text>
+                <Text style={s.proteinTagText}>{src}</Text>
               </View>
             ))}
           </View>
@@ -470,7 +467,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
 
       {recipe.tip && (
         <View style={s.tipCard}>
-          <Text style={s.tipTitle}>💡 Pro tip</Text>
+          <Text style={s.tipTitle}>Pro tip</Text>
           <Text style={s.tipText}>{recipe.tip}</Text>
         </View>
       )}
@@ -484,27 +481,13 @@ function LibraryCard({ recipe, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[
-        s.card,
-        { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
-      ]}
+      style={s.libCard}
       activeOpacity={0.8}
     >
-      <View style={s.libEmoji}>
-        <Text style={{ fontSize: 22 }}>{recipe.emoji || "🍽️"}</Text>
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={s.libName} numberOfLines={1}>
-          {recipe.name}
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 5,
-            marginTop: 3,
-          }}
-        >
+      <View style={[s.libAccent, { backgroundColor: meta.color }]} />
+      <View style={{ flex: 1, minWidth: 0, paddingLeft: 12 }}>
+        <Text style={s.libName} numberOfLines={1}>{recipe.name}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 }}>
           <Text style={[s.libMeta, { color: meta.color, fontWeight: "700" }]}>
             {fmt(recipe.macros?.protein)}g protein
           </Text>
@@ -514,7 +497,11 @@ function LibraryCard({ recipe, onPress }) {
           <Text style={s.libMeta}>{totalTime(recipe)}m</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 16, color: "#ccc" }}>›</Text>
+      <View style={[s.libGoalBadge, { backgroundColor: meta.bg }]}>
+        <Text style={[s.libGoalText, { color: meta.color }]} numberOfLines={1}>
+          {recipe.mealType || recipe.goal || ""}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -676,24 +663,30 @@ export default function useA() {
     async (page = 1) => {
       setLibLoading(true);
       try {
-        const params = new URLSearchParams({ page: String(page), limit: "12" });
-        if (libGoal) params.set("goal", libGoal);
-        if (libMeal) params.set("mealType", libMeal);
-        const res = await fetch(`${BASE_URL}/api/recipes?${params}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        const res = await fetch(
+          "https://raw.githubusercontent.com/rohith2412/recipes_seed/main/recipes_seed.json"
+        );
+        console.log("[recipes] GitHub fetch status:", res.status);
+        const all = await res.json();
+        console.log("[recipes] loaded", all.length, "recipes from GitHub");
+        const filtered = all.filter((r) => {
+          if (libGoal && r.goal !== libGoal) return false;
+          if (libMeal && r.mealType !== libMeal) return false;
+          return true;
         });
-        const json = await res.json();
-        if (json.success) {
-          setLibRecipes(json.data);
-          setLibTotal(json.total);
-          setLibPages(json.pages);
-          setLibPage(page);
-        }
+        const limit = 12;
+        const total = filtered.length;
+        const pages = Math.ceil(total / limit);
+        const start = (page - 1) * limit;
+        setLibRecipes(filtered.slice(start, start + limit));
+        setLibTotal(total);
+        setLibPages(pages);
+        setLibPage(page);
       } finally {
         setLibLoading(false);
       }
     },
-    [libGoal, libMeal, token],
+    [libGoal, libMeal],
   );
 
   useEffect(() => {
@@ -709,14 +702,15 @@ export default function useA() {
 
   return (
     <SafeAreaView style={s.screen} edges={["top"]}>
-      {/* Header map(([key, label])  */}
+      <PageBackground variant="recipes" />
+      {/* Header */}
       <View style={s.header}>
         <View
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 12,
+            marginBottom: 18,
           }}
         >
           <View>
@@ -727,30 +721,7 @@ export default function useA() {
             <Text style={s.headerTitle}>Recipes</Text>
           </View>
 
-          <View style={s.headerButtons}>
-            <AvatarButton />
-          </View>
-
-          {mainTab === "library" && !isShowingDetail && (
-            <TouchableOpacity
-              onPress={() => setShowFilter(true)}
-              style={s.filterIconBtn}
-            >
-              <Text style={{ fontSize: 16 }}>⚙️</Text>
-              {(libGoal || libMeal) && <View style={s.filterDot} />}
-            </TouchableOpacity>
-          )}
-          {isShowingDetail && (
-            <TouchableOpacity
-              onPress={() => {
-                setRecipe(null);
-                setSelected2(null);
-              }}
-              style={s.backBtn}
-            >
-              <Text style={s.backBtnText}>← Back</Text>
-            </TouchableOpacity>
-          )}
+          <AvatarButton />
         </View>
 
         {!isShowingDetail && (
@@ -842,7 +813,6 @@ export default function useA() {
 
               {selected.length === 0 ? (
                 <View style={s.emptyBasket}>
-                  <Text style={{ fontSize: 24, marginBottom: 6 }}>🧺</Text>
                   <Text style={s.emptyBasketText}>
                     Pick ingredients below or type your own
                   </Text>
@@ -959,13 +929,7 @@ export default function useA() {
                     onPress={() => setGoal(goal === g.key ? null : g.key)}
                     style={[s.goalBtn, goal === g.key && s.goalBtnActive]}
                   >
-                    <Text style={{ fontSize: 15 }}>{g.emoji}</Text>
-                    <Text
-                      style={[
-                        s.goalBtnText,
-                        goal === g.key && { color: "#fff" },
-                      ]}
-                    >
+                    <Text style={[s.goalBtnText, goal === g.key && { color: "#fff" }]}>
                       {g.label}
                     </Text>
                   </TouchableOpacity>
@@ -984,18 +948,10 @@ export default function useA() {
                 {MEAL_TYPES.map((m) => (
                   <TouchableOpacity
                     key={m.key}
-                    onPress={() =>
-                      setMealType(mealType === m.key ? null : m.key)
-                    }
+                    onPress={() => setMealType(mealType === m.key ? null : m.key)}
                     style={[s.mealBtn, mealType === m.key && s.mealBtnActive]}
                   >
-                    <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
-                    <Text
-                      style={[
-                        s.mealBtnText,
-                        mealType === m.key && { color: "#fff" },
-                      ]}
-                    >
+                    <Text style={[s.mealBtnText, mealType === m.key && { color: "#fff" }]}>
                       {m.label}
                     </Text>
                   </TouchableOpacity>
@@ -1003,7 +959,7 @@ export default function useA() {
               </ScrollView>
             </View>
 
-            {error && <Text style={s.errorText}>⚠️ {error}</Text>}
+            {error && <Text style={s.errorText}>{error}</Text>}
 
             {/* Generate button //find recipe with */}
             <TouchableOpacity
@@ -1042,12 +998,6 @@ export default function useA() {
               gap: 10,
             }}
           >
-            {!libLoading && (
-              <Text style={s.libTotal}>
-                {libTotal} recipe{libTotal !== 1 ? "s" : ""} in library
-              </Text>
-            )}
-
             {libLoading ? (
               <View style={{ gap: 8 }}>
                 {[72, 72, 72, 72, 72].map((h, i) => (
@@ -1056,7 +1006,6 @@ export default function useA() {
               </View>
             ) : libRecipes.length === 0 ? (
               <View style={[s.card, { alignItems: "center", padding: 40 }]}>
-                <Text style={{ fontSize: 28, marginBottom: 10 }}>📭</Text>
                 <Text style={s.emptyTitle}>No recipes yet</Text>
                 <Text style={s.emptyDesc}>
                   Generate recipes from the Find tab to build your library.
@@ -1125,13 +1074,13 @@ const s = StyleSheet.create({
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 0,
-    backgroundColor: "rgba(250,250,248,0.95)",
+    backgroundColor: "transparent",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.5)",
   },
-  greeting: { fontSize: 12, color: "#aaa", fontWeight: "400" },
+  greeting: { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
   headerTitle: {
     fontSize: 26,
     fontWeight: "800",
@@ -1157,7 +1106,7 @@ const s = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "transparent",
   },
-  mainTabLineActive: { backgroundColor: "#ff6b35" },
+  mainTabLineActive: { backgroundColor: "#000000" },
   filterIconBtn: {
     width: 40,
     height: 40,
@@ -1175,15 +1124,15 @@ const s = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#ff6b35",
+    backgroundColor: "#7c3aed",
   },
   backBtn: {
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(124,58,237,0.08)",
     borderRadius: 99,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  backBtnText: { fontSize: 12, fontWeight: "700", color: "#ff6b35" },
+  backBtnText: { fontSize: 12, fontWeight: "700", color: "#7c3aed" },
   card: {
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -1227,17 +1176,6 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   actionBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  recipeEmojiBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: "#f4f2ed",
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
   recipeTitle: {
     fontSize: 17,
     fontWeight: "800",
@@ -1331,12 +1269,12 @@ const s = StyleSheet.create({
   },
   macroFill: { height: "100%", borderRadius: 99 },
   proteinTag: {
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(124,58,237,0.08)",
     borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  proteinTagText: { fontSize: 11, fontWeight: "700", color: "#ff6b35" },
+  proteinTagText: { fontSize: 11, fontWeight: "700", color: "#7c3aed" },
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#f4f2ed",
@@ -1387,34 +1325,46 @@ const s = StyleSheet.create({
     paddingTop: 3,
   },
   tipCard: {
-    backgroundColor: "rgba(255,107,53,0.05)",
+    backgroundColor: "rgba(124,58,237,0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255,107,53,0.15)",
+    borderColor: "rgba(124,58,237,0.15)",
     borderRadius: 16,
     padding: 14,
   },
   tipTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#ff6b35",
+    color: "#7c3aed",
     marginBottom: 4,
   },
   tipText: { fontSize: 13, color: "#888", lineHeight: 20 },
-  libEmoji: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: "#f4f2ed",
+  libCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#e8e5de",
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingRight: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  libAccent: { width: 4, alignSelf: "stretch", borderRadius: 99, marginLeft: 0 },
+  libGoalBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     flexShrink: 0,
   },
+  libGoalText: { fontSize: 10, fontWeight: "700", textTransform: "capitalize" },
   libName: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
   libMeta: { fontSize: 10, color: "#aaa" },
   libDot: { fontSize: 10, color: "#ccc" },
-  libTotal: { fontSize: 12, color: "#aaa", fontWeight: "600" },
   clearBtn: {
     backgroundColor: "rgba(244,63,94,0.08)",
     borderRadius: 99,
@@ -1480,12 +1430,12 @@ const s = StyleSheet.create({
   },
   catLabel: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
   catCount: {
-    backgroundColor: "rgba(255,107,53,0.1)",
+    backgroundColor: "rgba(124,58,237,0.1)",
     borderRadius: 99,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  catCountText: { fontSize: 10, fontWeight: "800", color: "#ff6b35" },
+  catCountText: { fontSize: 10, fontWeight: "800", color: "#7c3aed" },
   catItems: {
     flexDirection: "row",
     flexWrap: "wrap",

@@ -6,11 +6,16 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rohith.com.yourpocketgym"
+      "bundleIdentifier": "com.rohith.com.yourpocketgym",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to analyze your food for calorie tracking.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photos to analyze food for calorie tracking.",
+        "NSPhotoLibraryAddUsageDescription": "This app saves photos to your library."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,6 +47,7 @@
         }
       ],
       "@react-native-google-signin/google-signin",
+      "expo-image-picker",
       "expo-secure-store",
       "expo-web-browser"
     ],

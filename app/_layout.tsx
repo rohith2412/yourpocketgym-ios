@@ -1,19 +1,22 @@
 import { Stack, usePathname } from "expo-router";
 import Dock from "../components/Dock";
 import { View, StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 
 const HIDE_DOCK = ["/login", "/register", "/startersIntro", "/"];
 
-export default function RootLayout() {
+function AppShell() {
   const pathname = usePathname();
   const showDock = !HIDE_DOCK.includes(pathname);
 
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "none", // ❌ removes iOS slide animation completely
+          animation: "fade", 
         }}
       >
         <Stack.Screen name="index" />
@@ -25,10 +28,23 @@ export default function RootLayout() {
         <Stack.Screen name="startersIntro" />
         <Stack.Screen name="tracking" />
         <Stack.Screen name="MacroScanner" />
+        <Stack.Screen name="legal/privacy" />
+        <Stack.Screen name="legal/terms" />
+        <Stack.Screen name="legal/delete-account" />
       </Stack>
 
       {showDock && <Dock />}
     </View>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      
+        <AppShell />
+  
+    </GestureHandlerRootView>
   );
 }
 

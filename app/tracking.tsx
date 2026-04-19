@@ -1,3 +1,5 @@
+import AvatarButton from "@/components/AvatarButton";
+import PageBackground from "@/components/PageBackground";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -14,12 +16,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getToken } from "../src/auth/storage";
-import AvatarButton from "@/components/AvatarButton";
-
-// ─── helpers tracker headerButtons ────────────────────────────────────────────────────────────────── log work
+//good
+// ─── helpers tracker headerButtons History  done back to ────────────────────────────────────────────────────────────────── log work
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
 const maxW = (sets) =>
   sets.length ? Math.max(...sets.map((s) => s.weight)) : 0;
@@ -96,7 +98,7 @@ function cellColor(vol, maxVol, hasLog) {
   const i = vol / maxVol;
   if (i < 0.25) return "#ffd4c2";
   if (i < 0.5) return "#ff9f7a";
-  if (i < 0.75) return "#ff6b35";
+  if (i < 0.75) return "#7c3aed";
   return "#c8410d";
 }
 
@@ -375,7 +377,7 @@ function YearChart({ logs }) {
       )}
       <View style={yc.legend}>
         <Text style={yc.legendLabel}>Less</Text>
-        {["#f0ede6", "#ffd4c2", "#ff9f7a", "#ff6b35", "#c8410d"].map((c) => (
+        {["#f0ede6", "#ffd4c2", "#ff9f7a", "#7c3aed", "#c8410d"].map((c) => (
           <View key={c} style={[yc.legendCell, { backgroundColor: c }]} />
         ))}
         <Text style={yc.legendLabel}>More</Text>
@@ -431,7 +433,7 @@ const yc = StyleSheet.create({
     color: "rgba(255,255,255,0.55)",
     marginBottom: 2,
   },
-  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#ff6b35" },
+  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#7c3aed" },
   legend: {
     flexDirection: "row",
     alignItems: "center",
@@ -647,7 +649,7 @@ function ExercisePicker({ muscleGroup, alreadyAdded, onConfirm, onClose }) {
                   ) : isSel ? (
                     <Text
                       style={{
-                        color: "#ff6b35",
+                        color: "#7c3aed",
                         fontWeight: "800",
                         fontSize: 18,
                       }}
@@ -755,11 +757,26 @@ const ep = StyleSheet.create({
 // New approach: Step-based flow. No nested ScrollView + KAV conflicts.
 // Step 1: Pick muscle group → Step 2: Pick exercise → Step 3: Log sets
 // Sets are entered in a fixed bottom panel - keyboard cannot break anything.
-function LogSheet({ onClose, onSaved }) {
-  const [step, setStep] = useState("muscles");
-  const [activeMg, setActiveMg] = useState(null);
-  const [exercises, setExercises] = useState([]);
-  const [activeEx, setActiveEx] = useState(null);
+const MG_META: Record<string, { color: string }> = {
+  Chest: { color: "#7c3aed" },
+  Back: { color: "#6366f1" },
+  Shoulders: { color: "#f59e0b" },
+  Arms: { color: "#22c55e" },
+  Legs: { color: "#3b82f6" },
+  Core: { color: "#ef4444" },
+};
+
+function LogSheet({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [step, setStep] = useState<"muscles" | "exercises" | "sets">("muscles");
+  const [activeMg, setActiveMg] = useState<string | null>(null);
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [activeEx, setActiveEx] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -771,7 +788,7 @@ function LogSheet({ onClose, onSaved }) {
     Animated.parallel([
       Animated.timing(backdropAnim, {
         toValue: 1,
-        duration: 280,
+        duration: 260,
         useNativeDriver: true,
       }),
       Animated.spring(slideAnim, {
@@ -792,7 +809,7 @@ function LogSheet({ onClose, onSaved }) {
       }),
       Animated.timing(slideAnim, {
         toValue: 700,
-        duration: 240,
+        duration: 220,
         easing: Easing.in(Easing.ease),
         useNativeDriver: true,
       }),
@@ -802,12 +819,12 @@ function LogSheet({ onClose, onSaved }) {
   const currentEx = activeEx !== null ? exercises[activeEx] : null;
   const alreadyAdded = exercises.map((e) => e.name);
 
-  const pickMuscle = (mg) => {
+  const pickMuscle = (mg: string) => {
     setActiveMg(mg);
     setStep("exercises");
   };
 
-  const pickExercise = (name) => {
+  const pickExercise = (name: string) => {
     const existing = exercises.findIndex((e) => e.name === name);
     if (existing >= 0) {
       setActiveEx(existing);
@@ -821,14 +838,14 @@ function LogSheet({ onClose, onSaved }) {
     setStep("sets");
   };
 
-  const updateSet = (si, field, val) =>
+  const updateSet = (si: number, field: string, val: string) =>
     setExercises((prev) =>
       prev.map((ex, i) =>
         i !== activeEx
           ? ex
           : {
               ...ex,
-              sets: ex.sets.map((s, j) =>
+              sets: ex.sets.map((s: any, j: number) =>
                 j === si ? { ...s, [field]: val } : s,
               ),
             },
@@ -844,16 +861,16 @@ function LogSheet({ onClose, onSaved }) {
       ),
     );
 
-  const removeSet = (si) =>
+  const removeSet = (si: number) =>
     setExercises((prev) =>
       prev.map((ex, i) =>
         i !== activeEx
           ? ex
-          : { ...ex, sets: ex.sets.filter((_, j) => j !== si) },
+          : { ...ex, sets: ex.sets.filter((_: any, j: number) => j !== si) },
       ),
     );
 
-  const removeExercise = (ei) =>
+  const removeExercise = (ei: number) =>
     setExercises((prev) => prev.filter((_, i) => i !== ei));
 
   const doneWithSets = () => {
@@ -869,7 +886,7 @@ function LogSheet({ onClose, onSaved }) {
     const cleaned = exercises.map((ex) => ({
       name: ex.name,
       muscleGroup: ex.mg,
-      sets: ex.sets.map((s, i) => ({
+      sets: ex.sets.map((s: any, i: number) => ({
         setNumber: i + 1,
         reps: Number(s.reps) || 0,
         weight: Number(s.weight) || 0,
@@ -908,6 +925,8 @@ function LogSheet({ onClose, onSaved }) {
       setSaving(false);
     }
   };
+  //good
+  const stepIndex = step === "muscles" ? 0 : step === "exercises" ? 1 : 2;
 
   return (
     <Modal visible animationType="none" transparent onRequestClose={dismiss}>
@@ -923,23 +942,27 @@ function LogSheet({ onClose, onSaved }) {
         {/* ── SAVED ── */}
         {saved && (
           <View style={lg.savedWrap}>
-            <View style={lg.savedCheck}>
+            <LinearGradient
+              colors={["#22c55e", "#16a34a"]}
+              style={lg.savedCircle}
+            >
               <Text style={lg.savedCheckText}>✓</Text>
-            </View>
-            <Text style={lg.savedTitle}>Saved</Text>
-            <Text style={lg.savedSub}>Workout logged successfully</Text>
+            </LinearGradient>
+            <Text style={lg.savedTitle}>Workout Saved!</Text>
+            <Text style={lg.savedSub}>Keep grinding</Text>
           </View>
         )}
 
-        {/* ── STEP 1: MUSCLES ── weight*/}
+        {/* ── STEP 1: MUSCLES ── */}
         {!saved && step === "muscles" && (
           <View style={lg.flex}>
+            {/* Header */}
             <View style={lg.header}>
               <View style={lg.flex}>
-                <Text style={lg.title}>Log workout</Text>
-                <Text style={lg.sub}>
+                <Text style={lg.eyebrow}>NEW WORKOUT</Text>
+                <Text style={lg.title}>
                   {exercises.length === 0
-                    ? "Select a muscle group"
+                    ? "Pick a muscle group"
                     : `${exercises.length} exercise${exercises.length !== 1 ? "s" : ""} added`}
                 </Text>
               </View>
@@ -948,36 +971,67 @@ function LogSheet({ onClose, onSaved }) {
               </Pressable>
             </View>
 
+            {/* Step pills */}
+            <View style={lg.stepRow}>
+              {["Muscle", "Exercise", "Sets"].map((label, i) => (
+                <View key={label} style={lg.stepPill}>
+                  <View
+                    style={[lg.stepDot, i <= stepIndex && lg.stepDotActive]}
+                  >
+                    <Text
+                      style={[
+                        lg.stepDotText,
+                        i <= stepIndex && { color: "#fff" },
+                      ]}
+                    >
+                      {i + 1}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[lg.stepLabel, i <= stepIndex && lg.stepLabelActive]}
+                  >
+                    {label}
+                  </Text>
+                  {i < 2 && (
+                    <View
+                      style={[lg.stepLine, i < stepIndex && lg.stepLineActive]}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+
             <ScrollView
               style={lg.flex}
               contentContainerStyle={lg.muscleScroll}
               showsVerticalScrollIndicator={false}
             >
-              {/* Muscle group buttons */}
+              {/* 2-col muscle grid */}
               <View style={lg.muscleGrid}>
                 {MUSCLE_GROUPS.map((mg) => {
                   const count = exercises.filter((e) => e.mg === mg).length;
+                  const meta = MG_META[mg] || { color: "#7c3aed" };
                   return (
                     <Pressable
                       key={mg}
                       onPress={() => pickMuscle(mg)}
                       style={({ pressed }) => [
-                        lg.muscleBtn,
-                        count > 0 && lg.muscleBtnActive,
-                        pressed && { opacity: 0.7 },
+                        lg.muscleCard,
+                        count > 0 && lg.muscleCardActive,
+                        pressed && { opacity: 0.75 },
                       ]}
                     >
+                      <View
+                        style={[lg.muscleDot, { backgroundColor: meta.color }]}
+                      />
                       <Text
-                        style={[
-                          lg.muscleBtnText,
-                          count > 0 && lg.muscleBtnTextActive,
-                        ]}
+                        style={[lg.muscleName, count > 0 && { color: "#fff" }]}
                       >
                         {mg}
                       </Text>
                       {count > 0 && (
-                        <View style={lg.muscleBtnBadge}>
-                          <Text style={lg.muscleBtnBadgeText}>{count}</Text>
+                        <View style={lg.muscleBadge}>
+                          <Text style={lg.muscleBadgeText}>{count}</Text>
                         </View>
                       )}
                     </Pressable>
@@ -988,16 +1042,22 @@ function LogSheet({ onClose, onSaved }) {
               {/* Added exercises */}
               {exercises.length > 0 && (
                 <View style={lg.addedSection}>
-                  <Text style={lg.sectionLabel}>Added</Text>
+                  <Text style={lg.sectionLabel}>Added exercises</Text>
                   {exercises.map((ex, ei) => (
                     <View key={ei} style={lg.addedRow}>
+                      <View
+                        style={[
+                          lg.addedAccent,
+                          {
+                            backgroundColor: MG_META[ex.mg]?.color || "#7c3aed",
+                          },
+                        ]}
+                      />
                       <View style={lg.addedLeft}>
                         <Text style={lg.addedMg}>{ex.mg}</Text>
                         <Text style={lg.addedName}>{ex.name}</Text>
                       </View>
-                      <Text style={lg.addedSets}>
-                        {ex.sets.length} set{ex.sets.length !== 1 ? "s" : ""}
-                      </Text>
+                      <Text style={lg.addedSets}>{ex.sets.length}×</Text>
                       <Pressable
                         onPress={() => {
                           setActiveMg(ex.mg);
@@ -1021,10 +1081,10 @@ function LogSheet({ onClose, onSaved }) {
 
               {/* Notes */}
               <View style={lg.notesSection}>
-                <Text style={lg.sectionLabel}>Notes</Text>
+                <Text style={lg.sectionLabel}>Session notes</Text>
                 <TextInput
                   style={lg.notesInput}
-                  placeholder="Optional session notes…"
+                  placeholder="How did it feel? Any PRs?"
                   placeholderTextColor="#ccc"
                   multiline
                   value={notes}
@@ -1033,8 +1093,7 @@ function LogSheet({ onClose, onSaved }) {
                   returnKeyType="done"
                 />
               </View>
-
-              <View style={{ height: 120 }} />
+              <View style={{ height: 100 }} />
             </ScrollView>
 
             <View style={lg.bottomBar}>
@@ -1050,7 +1109,7 @@ function LogSheet({ onClose, onSaved }) {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <Text style={lg.saveBtnText}>
-                    Save
+                    Save Workout
                     {exercises.length > 0
                       ? ` · ${exercises.length} exercise${exercises.length !== 1 ? "s" : ""}`
                       : ""}
@@ -1069,20 +1128,57 @@ function LogSheet({ onClose, onSaved }) {
                 <Text style={lg.backBtnText}>←</Text>
               </Pressable>
               <View style={[lg.flex, { marginLeft: 14 }]}>
-                <Text style={lg.title}>{activeMg}</Text>
-                <Text style={lg.sub}>Tap to select</Text>
+                <Text style={lg.eyebrow}>{activeMg?.toUpperCase()}</Text>
+                <Text style={lg.title}>Select exercise</Text>
               </View>
               <Pressable onPress={dismiss} style={lg.closeBtn}>
                 <Text style={lg.closeBtnText}>✕</Text>
               </Pressable>
             </View>
 
+            {/* Step pills */}
+            <View style={lg.stepRow}>
+              {["Muscle", "Exercise", "Sets"].map((label, i) => (
+                <View key={label} style={lg.stepPill}>
+                  <View
+                    style={[lg.stepDot, i <= stepIndex && lg.stepDotActive]}
+                  >
+                    <Text
+                      style={[
+                        lg.stepDotText,
+                        i <= stepIndex && { color: "#fff" },
+                      ]}
+                    >
+                      {i + 1}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[lg.stepLabel, i <= stepIndex && lg.stepLabelActive]}
+                  >
+                    {label}
+                  </Text>
+                  {i < 2 && (
+                    <View
+                      style={[lg.stepLine, i < stepIndex && lg.stepLineActive]}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+
             <ScrollView
               style={lg.flex}
-              contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                paddingTop: 12,
+                paddingBottom: 40,
+              }}
               showsVerticalScrollIndicator={false}
             >
-              {(EXERCISE_LIBRARY[activeMg] || []).map((name) => {
+              {(
+                EXERCISE_LIBRARY[activeMg as keyof typeof EXERCISE_LIBRARY] ||
+                []
+              ).map((name: string) => {
                 const isAdded = alreadyAdded.includes(name);
                 return (
                   <Pressable
@@ -1094,16 +1190,38 @@ function LogSheet({ onClose, onSaved }) {
                       pressed && { opacity: 0.65 },
                     ]}
                   >
+                    {isAdded && (
+                      <View
+                        style={[
+                          lg.exAccent,
+                          {
+                            backgroundColor:
+                              MG_META[activeMg!]?.color || "#7c3aed",
+                          },
+                        ]}
+                      />
+                    )}
                     <Text
-                      style={[lg.exItemName, isAdded && { color: "#ff6b35" }]}
+                      style={[
+                        lg.exItemName,
+                        isAdded && {
+                          color: "#7c3aed",
+                          fontWeight: "700" as const,
+                        },
+                      ]}
                     >
                       {name}
                     </Text>
-                    <Text
-                      style={[lg.exItemArrow, isAdded && { color: "#ff6b35" }]}
-                    >
-                      {isAdded ? "Edit" : "+"}
-                    </Text>
+                    <View style={[lg.exBadge, isAdded && lg.exBadgeAdded]}>
+                      <Text
+                        style={[
+                          lg.exBadgeText,
+                          isAdded && { color: "#7c3aed" },
+                        ]}
+                      >
+                        {isAdded ? "Edit" : "+"}
+                      </Text>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -1114,14 +1232,13 @@ function LogSheet({ onClose, onSaved }) {
         {/* ── STEP 3: SETS ── */}
         {!saved && step === "sets" && currentEx && (
           <View style={lg.flex}>
-            {/* Header */}
             <View style={lg.header}>
               <Pressable onPress={doneWithSets} style={lg.backBtn}>
                 <Text style={lg.backBtnText}>←</Text>
               </Pressable>
               <View style={[lg.flex, { marginLeft: 14 }]}>
-                <Text style={lg.mgTag}>{currentEx.mg}</Text>
-                <Text style={lg.setTitle} numberOfLines={1}>
+                <Text style={lg.eyebrow}>{currentEx.mg?.toUpperCase()}</Text>
+                <Text style={lg.title} numberOfLines={1}>
                   {currentEx.name}
                 </Text>
               </View>
@@ -1130,28 +1247,61 @@ function LogSheet({ onClose, onSaved }) {
               </Pressable>
             </View>
 
-            {/* Column headers */}
-            <View style={lg.colHeaders}>
-              <View style={{ width: 44 }} />
-              <Text style={[lg.colLabel, { flex: 1, textAlign: "center" }]}>
-                REPS
-              </Text>
-              <Text style={[lg.colLabel, { flex: 1, textAlign: "center" }]}>
-                WEIGHT
-              </Text>
-              <View style={{ width: 44 }} />
+            {/* Step pills */}
+            <View style={lg.stepRow}>
+              {["Muscle", "Exercise", "Sets"].map((label, i) => (
+                <View key={label} style={lg.stepPill}>
+                  <View
+                    style={[lg.stepDot, i <= stepIndex && lg.stepDotActive]}
+                  >
+                    <Text
+                      style={[
+                        lg.stepDotText,
+                        i <= stepIndex && { color: "#fff" },
+                      ]}
+                    >
+                      {i + 1}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[lg.stepLabel, i <= stepIndex && lg.stepLabelActive]}
+                  >
+                    {label}
+                  </Text>
+                  {i < 2 && (
+                    <View
+                      style={[lg.stepLine, i < stepIndex && lg.stepLineActive]}
+                    />
+                  )}
+                </View>
+              ))}
             </View>
 
-            {/* Set rows - ScrollView with native keyboard insets, no KAV */}
+            {/* Header row */}
+            <View style={lg.setHeaderRow}>
+              <Text style={[lg.setHeaderLabel, { width: 40 }]}>#</Text>
+              <Text
+                style={[lg.setHeaderLabel, { flex: 1, textAlign: "center" }]}
+              >
+                Reps
+              </Text>
+              <Text
+                style={[lg.setHeaderLabel, { flex: 1, textAlign: "center" }]}
+              >
+                lbs
+              </Text>
+              <View style={{ width: 36 }} />
+            </View>
+
             <ScrollView
               style={lg.flex}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
               automaticallyAdjustKeyboardInsets
-              contentContainerStyle={{ paddingVertical: 8, paddingBottom: 20 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
             >
-              {currentEx.sets.map((set, si) => (
+              {currentEx.sets.map((set: any, si: number) => (
                 <View key={si} style={lg.setRow}>
                   <View style={lg.setNum}>
                     <Text style={lg.setNumText}>{si + 1}</Text>
@@ -1159,9 +1309,9 @@ function LogSheet({ onClose, onSaved }) {
 
                   <TextInput
                     style={lg.setInput}
-                    value={String(set.reps)}
+                    value={set.reps}
                     placeholder="0"
-                    placeholderTextColor="#ddd"
+                    placeholderTextColor="#ccc"
                     keyboardType="number-pad"
                     returnKeyType="next"
                     selectTextOnFocus
@@ -1172,9 +1322,9 @@ function LogSheet({ onClose, onSaved }) {
 
                   <TextInput
                     style={lg.setInput}
-                    value={String(set.weight)}
+                    value={set.weight}
                     placeholder="0"
-                    placeholderTextColor="#ddd"
+                    placeholderTextColor="#ccc"
                     keyboardType="decimal-pad"
                     returnKeyType="done"
                     selectTextOnFocus
@@ -1203,10 +1353,9 @@ function LogSheet({ onClose, onSaved }) {
               )}
             </ScrollView>
 
-            {/* Bottom bar - always pinned, keyboard cannot touch it */}
             <View style={lg.bottomBar}>
               <Pressable onPress={doneWithSets} style={lg.doneBtn}>
-                <Text style={lg.doneBtnText}>Done</Text>
+                <Text style={lg.doneBtnText}>Done - back to exercises</Text>
               </Pressable>
             </View>
           </View>
@@ -1217,12 +1366,11 @@ function LogSheet({ onClose, onSaved }) {
 }
 
 const lg = StyleSheet.create({
-  screen:  { flex:1, backgroundColor:"#fafaf8" },
-  
+  flex: { flex: 1 },
 
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
 
   sheet: {
@@ -1230,67 +1378,104 @@ const lg = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: "91%",
+    height: "92%",
     backgroundColor: "#fafaf8",
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 18,
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 28,
+    elevation: 20,
   },
 
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     backgroundColor: "#e0ddd6",
     borderRadius: 99,
     alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 14,
+    marginBottom: 2,
   },
 
-header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingTop: Platform.OS === "ios" ? 62 : 22,
-  paddingBottom: 14,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgba(232,229,222,0.5)",
-  backgroundColor: "#fafaf8",
-},
-titleRow: {
-  flex: 1,
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 18,
-},
-subtitle: { fontSize: 12, color: "#bbb", fontWeight: "400", marginBottom: 2 },
-title:    { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1 },
-headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(232,229,222,0.6)",
+  },
+
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#7c3aed",
+    letterSpacing: 1.2,
+    marginBottom: 3,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+  },
+
   closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#f0ede8",
     alignItems: "center",
     justifyContent: "center",
   },
-  closeBtnText: { fontSize: 13, color: "#999", fontWeight: "700" },
+  closeBtnText: { fontSize: 12, color: "#999", fontWeight: "700" },
+
   backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 11,
     backgroundColor: "#f0ede8",
     alignItems: "center",
     justifyContent: "center",
   },
-  backBtnText: { fontSize: 17, color: "#555", fontWeight: "500" },
+  backBtnText: { fontSize: 18, color: "#555", fontWeight: "500" },
+
+  // Step indicator
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(232,229,222,0.5)",
+  },
+  stepPill: { flexDirection: "row", alignItems: "center", flex: 1 },
+  stepDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#f0ede8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 6,
+  },
+  stepDotActive: { backgroundColor: "#7c3aed" },
+  stepDotText: { fontSize: 10, fontWeight: "800", color: "#bbb" },
+  stepLabel: { fontSize: 11, fontWeight: "600", color: "#bbb" },
+  stepLabelActive: { color: "#1a1a1a" },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: "#f0ede8",
+    marginHorizontal: 6,
+    borderRadius: 99,
+  },
+  stepLineActive: { backgroundColor: "#7c3aed" },
 
   sectionLabel: {
     fontSize: 11,
@@ -1310,22 +1495,28 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     gap: 10,
     marginBottom: 28,
   },
-  muscleBtn: {
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-    borderRadius: 14,
+  muscleCard: {
+    width: "47%",
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderRadius: 18,
     backgroundColor: "#fff",
     borderWidth: 1.5,
     borderColor: "#e8e5de",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  muscleBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  muscleBtnText: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
-  muscleBtnTextActive: { color: "#fff" },
-  muscleBtnBadge: {
-    backgroundColor: "#ff6b35",
+  muscleCardActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  muscleDot: { width: 10, height: 10, borderRadius: 5 },
+  muscleName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a", flex: 1 },
+  muscleBadge: {
+    backgroundColor: "#7c3aed",
     borderRadius: 99,
     minWidth: 20,
     height: 20,
@@ -1333,7 +1524,7 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  muscleBtnBadgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
+  muscleBadgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
 
   // Added exercises
   addedSection: { marginBottom: 24 },
@@ -1346,20 +1537,27 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     borderWidth: 1,
     borderColor: "#e8e5de",
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 0,
     marginBottom: 8,
+    overflow: "hidden",
   },
-  addedLeft: { flex: 1 },
+  addedAccent: { width: 4, alignSelf: "stretch", borderRadius: 99 },
+  addedLeft: { flex: 1, paddingLeft: 4 },
   addedMg: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#ff6b35",
+    color: "#7c3aed",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 2,
   },
   addedName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  addedSets: { fontSize: 12, color: "#bbb", fontWeight: "600" },
+  addedSets: {
+    fontSize: 13,
+    color: "#aaa",
+    fontWeight: "700",
+    paddingRight: 4,
+  },
   addedEditBtn: {
     backgroundColor: "#f4f2ed",
     borderRadius: 8,
@@ -1368,12 +1566,13 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
   },
   addedEditText: { fontSize: 12, fontWeight: "700", color: "#555" },
   addedDelBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#fef2f2",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 10,
   },
   addedDelText: { fontSize: 11, fontWeight: "700", color: "#f43f5e" },
 
@@ -1391,7 +1590,7 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     textAlignVertical: "top",
   },
 
-  // Bottom bar - fixed, keyboard proof
+  // Bottom bar
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -1402,7 +1601,7 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
   },
   saveBtn: {
     backgroundColor: "#1a1a1a",
-    borderRadius: 14,
+    borderRadius: 16,
     paddingVertical: 17,
     alignItems: "center",
   },
@@ -1418,37 +1617,32 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e8e5de",
     paddingVertical: 15,
     paddingHorizontal: 16,
     marginBottom: 8,
+    overflow: "hidden",
+    gap: 10,
   },
   exItemAdded: {
-    borderColor: "rgba(255,107,53,0.3)",
-    backgroundColor: "rgba(255,107,53,0.03)",
+    borderColor: "rgba(124,58,237,0.25)",
+    backgroundColor: "rgba(124,58,237,0.03)",
   },
+  exAccent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 3 },
   exItemName: { flex: 1, fontSize: 15, fontWeight: "600", color: "#1a1a1a" },
-  exItemArrow: { fontSize: 16, color: "#ccc", fontWeight: "600" },
+  exBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: "#f4f2ed",
+  },
+  exBadgeAdded: { backgroundColor: "rgba(124,58,237,0.1)" },
+  exBadgeText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
 
   // ── Step 3: Sets ──
-  mgTag: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#ff6b35",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  setTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    letterSpacing: -0.4,
-  },
-
-  colHeaders: {
+  setHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
@@ -1456,114 +1650,101 @@ headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
     borderBottomWidth: 1,
     borderBottomColor: "#f0ede8",
   },
-  colLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: "#ccc",
-  },
+  setHeaderLabel: { fontSize: 12, fontWeight: "700", color: "#bbb" },
 
   setRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f8f6f3",
+    borderBottomColor: "#f4f2ed",
   },
   setNum: {
-    width: 44,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: "#f4f2ed",
+    width: 40,
     alignItems: "center",
-    justifyContent: "center",
   },
-  setNumText: { fontSize: 10, fontWeight: "800", color: "#bbb" },
+  setNumText: { fontSize: 15, fontWeight: "700", color: "#bbb" },
 
   setInput: {
     flex: 1,
-    height: 50,
+    height: 48,
     backgroundColor: "#fff",
     borderWidth: 1.5,
     borderColor: "#e8e5de",
     borderRadius: 12,
-    fontSize: 26,
-    fontWeight: "500",
+    fontSize: 22,
+    fontWeight: "700",
     textAlign: "center",
     color: "#1a1a1a",
   },
 
   delSetBtn: {
-    width: 44,
-    height: 52,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fecdd3",
     alignItems: "center",
     justifyContent: "center",
   },
   delSetText: {
-    fontSize: 24,
+    fontSize: 20,
     color: "#f43f5e",
-    fontWeight: "300",
-    lineHeight: 28,
+    fontWeight: "400",
+    lineHeight: 24,
   },
 
   addSetRow: {
     marginHorizontal: 20,
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
+    marginTop: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: "dashed",
     borderColor: "#e0ddd6",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
-  addSetText: { fontSize: 14, fontWeight: "700", color: "#ff6b35" },
+  addSetText: { fontSize: 14, fontWeight: "700", color: "#000000" },
 
   doneBtn: {
-    backgroundColor: "#ff6b35",
-    borderRadius: 14,
+    backgroundColor: "#010101",
+    borderRadius: 16,
     paddingVertical: 17,
     alignItems: "center",
   },
   doneBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: "#fff",
     letterSpacing: -0.2,
   },
 
-  // ── Saved ──
+  // ── Saved ── add set
   savedWrap: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 14,
+    gap: 16,
   },
-  savedCheck: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#f0fdf4",
-    borderWidth: 1.5,
-    borderColor: "#bbf7d0",
+  savedCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
   },
-  savedCheckText: { fontSize: 32, color: "#22c55e" },
+  savedCheckText: { fontSize: 36, color: "#fff" },
   savedTitle: {
     fontSize: 24,
     fontWeight: "800",
     color: "#1a1a1a",
     letterSpacing: -0.5,
   },
-  savedSub: { fontSize: 14, color: "#bbb" },
+  savedSub: { fontSize: 15, color: "#aaa" },
 });
+
 // ─── ProgressScreen ───────────────────────────────────────────────────────────
 function ProgressScreen({ logs }) {
   const muscleStats = buildMuscleStats(logs);
@@ -1627,7 +1808,7 @@ const ps = StyleSheet.create({
 function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
   if (loading)
     return (
-      <ActivityIndicator style={{ padding: 60 }} color="#ff6b35" size="large" />
+      <ActivityIndicator style={{ padding: 60 }} color="#7c3aed" size="large" />
     );
   if (!logs.length) {
     return (
@@ -1692,6 +1873,7 @@ function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
     </ScrollView>
   );
 }
+
 const hs = StyleSheet.create({
   scroll: { padding: 18 },
   empty: { alignItems: "center", padding: 80, gap: 14 },
@@ -1825,7 +2007,8 @@ export default function TrackingPage() {
     .filter((l) => new Date(l.date) >= weekStart)
     .reduce((s, l) => s + totalVolLog(l), 0);
   return (
-    <View style={t.root}>
+    <SafeAreaView style={t.root} edges={["top"]}>
+      <PageBackground variant="tracking" />
       <StatusBar barStyle="dark-content" />
 
       <View style={t.header}>
@@ -1837,12 +2020,7 @@ export default function TrackingPage() {
             </Text>
             <Text style={t.title}>Tracker</Text>
           </View>
-          {/* //touch:  StyleSheet.create   { alignSelf: "auto" }, FIX: + is now on the LEFT, profile on the RIGHT touch: { alignSelf: "center" }, */}
-<View style={t.headerButtons}>
-  <AvatarButton />
-</View>
-
-
+          <AvatarButton />
         </View>
 
         {!loadingLogs && (
@@ -1951,7 +2129,7 @@ export default function TrackingPage() {
               end={{ x: 1, y: 1 }}
               style={t.fabBtnGrad}
             >
-              <Text style={t.fabBtnText}>＋ Log workout</Text>
+              <Text style={t.fabBtnText}>Log workout</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -1959,7 +2137,7 @@ export default function TrackingPage() {
       {showLog && (
         <LogSheet onClose={() => setShowLog(false)} onSaved={fetchLogs} />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1967,11 +2145,11 @@ export default function TrackingPage() {
 const t = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#fafaf8" },
   header: {
-    backgroundColor: "#fafaf8",
-    paddingHorizontal: 25,
-    paddingTop: Platform.OS === "ios" ? 62 : 22,
+    backgroundColor: "transparent",
+    paddingHorizontal: 20,
+    paddingTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(232,229,222,0.5)",
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   titleRow: {
     flexDirection: "row",
@@ -1979,15 +2157,15 @@ const t = StyleSheet.create({
     alignItems: "center",
     marginBottom: 18,
   },
-  subtitle: { fontSize: 13, color: "#aaa", marginBottom: 3, fontWeight: "500" },
+  subtitle: { fontSize: 12, color: "#323131", marginBottom: 2, fontWeight: "400" },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
     color: "#1a1a1a",
-    letterSpacing: -0.8,
+    letterSpacing: -1,
   },
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
- //touch
+  //touch
   addBtn: {
     width: 44,
     height: 44,
@@ -2031,37 +2209,39 @@ const t = StyleSheet.create({
     borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: "#f4f2ed",
+    backgroundColor: "rgba(0,0,0,0.06)",
   },
-  badgeActive: { backgroundColor: "rgba(255,107,53,0.09)" },
+  badgeActive: { backgroundColor: "rgba(124,58,237,0.09)" },
   badgeText: {
     fontSize: 12,
     fontWeight: "700",
     color: "#bbb",
     letterSpacing: 0.3,
   },
-  badgeTextActive: { color: "#ff6b35" },
+  badgeTextActive: { color: "#7c3aed" },
   weekDots: { flexDirection: "row", gap: 6, marginBottom: 12 },
   dayCol: { flex: 1, alignItems: "center", gap: 6 },
   dot: {
     width: "100%",
     aspectRatio: 1,
     borderRadius: 10,
-    backgroundColor: "#f4f2ed",
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
     alignItems: "center",
     justifyContent: "center",
   },
-  dotActive: { backgroundColor: "#1a1a1a" },
-  dotToday: { borderWidth: 2, borderColor: "#ff6b35" },
+  dotActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  dotToday: { borderWidth: 2, borderColor: "#000000" },
   dotCheck: { color: "#fff", fontWeight: "800", fontSize: 13 },
-  dotCheckToday: { color: "#ff6b35" },
+  dotCheckToday: { color: "#111111" },
   dayLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#ccc",
+    color: "#aaa",
     letterSpacing: 0.3,
   },
-  dayLabelToday: { color: "#ff6b35" },
+  dayLabelToday: { color: "#000000" },
   tabs: { flexDirection: "row", gap: 4 },
   tab: {
     flex: 1,
@@ -2070,7 +2250,7 @@ const t = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: { borderBottomColor: "#ff6b35" },
+  tabActive: { borderBottomColor: "#000000" },
   tabText: { fontSize: 15, fontWeight: "700", color: "#aaa" },
   tabTextActive: { color: "#1a1a1a" },
   chartToggle: {
@@ -2104,7 +2284,7 @@ const t = StyleSheet.create({
   fabBtn: {
     borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#ff6b35",
+    shadowColor: "#7c3aed",
     shadowOpacity: 0.35,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },

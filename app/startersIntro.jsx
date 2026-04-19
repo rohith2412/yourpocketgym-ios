@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -109,6 +110,18 @@ export default function IntroPage() {
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" />
+      <LinearGradient
+        colors={[
+          "rgba(109, 40, 217, 0.5)",
+          "rgba(55, 48, 163, 0.22)",
+          "rgba(109, 40, 217, 0.07)",
+          "transparent",
+        ]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.3, y: 0.5 }}
+        style={s.glow}
+        pointerEvents="none"
+      />
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -552,7 +565,15 @@ export default function IntroPage() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#f5f4f0" },
+  root: { flex: 1, backgroundColor: "#fafaf8" },
+  glow: {
+    position: "absolute",
+    top: -120,
+    right: -120,
+    width: 600,
+    height: 600,
+    borderRadius: 300,
+  },
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
@@ -578,7 +599,7 @@ const s = StyleSheet.create({
     borderRadius: 99,
     marginBottom: 32,
   },
-  progressFill: { height: 2, backgroundColor: "#1a1a1a", borderRadius: 99 },
+  progressFill: { height: 2, backgroundColor: "#7c3aed", borderRadius: 99 },
 
   // Step
   stepWrap: { flex: 1, gap: 4 },
@@ -617,10 +638,10 @@ const s = StyleSheet.create({
     gap: 5,
   },
   optionSelected: {
-    borderColor: "#1a1a1a",
+    borderColor: "#7c3aed",
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
+    shadowColor: "#7c3aed",
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
   },
@@ -677,7 +698,7 @@ const s = StyleSheet.create({
     borderColor: "#e8e6e0",
     backgroundColor: "#f7f6f2",
   },
-  presetBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  presetBtnActive: { backgroundColor: "#7c3aed", borderColor: "#7c3aed" },
   presetBtnText: { fontSize: 13, color: "#999", fontWeight: "500" },
   presetBtnTextActive: { color: "#fff" },
 
@@ -692,7 +713,7 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
-  daySelected: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  daySelected: { backgroundColor: "#7c3aed", borderColor: "#7c3aed" },
   dayBtnText: { fontSize: 13, fontWeight: "500", color: "#999" },
   dayBtnTextSelected: { color: "#fff" },
   daysHint: { fontSize: 13, color: "#aaa", marginBottom: 8 },
@@ -716,7 +737,7 @@ const s = StyleSheet.create({
   btnNext: {
     flex: 1,
     maxWidth: 200,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#7c3aed",
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: "center",
@@ -736,9 +757,9 @@ const s = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#f7f6f2",
+    backgroundColor: "rgba(124,58,237,0.1)",
     borderWidth: 1.5,
-    borderColor: "#e8e6e0",
+    borderColor: "rgba(124,58,237,0.3)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,

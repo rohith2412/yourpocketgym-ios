@@ -109,9 +109,9 @@ export default function Register() {
 
       <LinearGradient
         colors={[
-          "rgba(255, 107, 53, 0.55)",
-          "rgba(250, 76, 13, 0.25)",
-          "rgba(227, 64, 5, 0.08)",
+          "rgba(109, 40, 217, 0.5)",
+          "rgba(55, 48, 163, 0.22)",
+          "rgba(109, 40, 217, 0.07)",
           "transparent",
         ]}
         start={{ x: 1, y: 0 }}
@@ -263,7 +263,7 @@ const s = StyleSheet.create({
     letterSpacing: -2,
     lineHeight: 52,
   },
-  titleOrange: { color: "#ff6b35" },
+  titleOrange: { color: "#7c3aed" },
   subtitle: { fontSize: 15, color: "#aaa", marginTop: 4 },
   form: { gap: 16 },
   inputWrapper: { gap: 6 },
@@ -300,7 +300,7 @@ const s = StyleSheet.create({
   },
   footer: { gap: 14, alignItems: "center" },
   footerText: { fontSize: 13, color: "#aaa" },
-  footerLink: { color: "#ff6b35", fontWeight: "700" },
+  footerLink: { color: "#7c3aed", fontWeight: "700" },
   terms: { fontSize: 11, color: "#bbb", lineHeight: 18, textAlign: "center" },
   termsLink: { color: "#888", textDecorationLine: "underline" },
 });

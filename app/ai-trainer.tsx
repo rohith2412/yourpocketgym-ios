@@ -1,5 +1,6 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PageBackground from "@/components/PageBackground";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -16,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+//plan saved regenerate save plan good
 const BASE_URL = "https://yourpocketgym.com";
 
 const EQUIPMENT_OPTIONS = [
@@ -86,7 +87,7 @@ function getGreeting() {
 
 function muscleColor(mg = "") {
   const map = {
-    chest: "#ff6b35",
+    chest: "#7c3aed",
     back: "#6366f1",
     shoulders: "#f59e0b",
     arms: "#ec4899",
@@ -317,7 +318,7 @@ function PlanView({
             disabled={isLoading}
             style={[s.actionBtn, { opacity: isLoading ? 0.4 : 1 }]}
           >
-            <Text style={[s.actionBtnText, { color: "#ff6b35" }]}>
+            <Text style={[s.actionBtnText, { color: "#000000" }]}>
               {isLoading ? "Generating…" : "Regenerate"}
             </Text>
           </Pressable>
@@ -942,6 +943,7 @@ export default function AITrainerScreen() {
 
   return (
     <SafeAreaView style={s.screen} edges={["top"]}>
+      <PageBackground variant="trainer" />
       {/* ── Header ── */}
       <View style={s.header}>
         <View style={s.headerRow}>
@@ -952,9 +954,7 @@ export default function AITrainerScreen() {
             <Text style={s.headerTitle}>AI Trainer</Text>
           </View>
 
-          <View style={s.avatarBtn}>
-            <AvatarButton />
-          </View>
+          <AvatarButton />
         </View>
 
         {showTabs && (
@@ -1178,7 +1178,7 @@ const s = StyleSheet.create({
     paddingBottom: 0,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.6)",
-    backgroundColor: "#fafaf8",
+    backgroundColor: "transparent",
   },
   headerRow: {
     flexDirection: "row",
@@ -1186,7 +1186,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 18,
   },
-  greeting: { fontSize: 12, color: "#bbb", fontWeight: "400", marginBottom: 2 },
+  greeting: { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
   headerTitle: {
     fontSize: 26,
     fontWeight: "800",
@@ -1224,7 +1224,7 @@ const s = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "transparent",
   },
-  tabLineActive: { backgroundColor: "#ff6b35" },
+  tabLineActive: { backgroundColor: "#000000" },
   tabBadge: {
     position: "absolute",
     top: 8,
@@ -1232,7 +1232,7 @@ const s = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#ff6b35",
+    backgroundColor: "#7c3aed",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -1398,7 +1398,7 @@ const s = StyleSheet.create({
   actionBtnPrimary: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#ff6b35",
+    backgroundColor: "#0b0a0a",
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -1518,12 +1518,12 @@ const s = StyleSheet.create({
   },
   dayMeta: { fontSize: 12, color: "#aaa", marginTop: 2 },
   focusBadge: {
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(124,58,237,0.08)",
     borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#ff6b35" },
+  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#7c3aed" },
   chevron: { fontSize: 20, color: "#ccc" },
   dayBody: { borderTopWidth: 1, borderTopColor: "#f0ede8", padding: 14 },
 
@@ -1540,7 +1540,7 @@ const s = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
-    color: "#ff6b35",
+    color: "#7c3aed",
     marginBottom: 4,
   },
   warmupText: { fontSize: 13, color: "#666", lineHeight: 19 },
@@ -1632,12 +1632,12 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
   },
   tempoBadge: {
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(124,58,237,0.08)",
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#ff6b35" },
+  tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#7c3aed" },
   exNotes: { fontSize: 13, color: "#666", lineHeight: 20 },
 
   // Tips
@@ -1657,12 +1657,12 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 6,
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(124,58,237,0.08)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  tipNumText: { fontSize: 11, fontWeight: "800", color: "#ff6b35" },
+  tipNumText: { fontSize: 11, fontWeight: "800", color: "#7c3aed" },
   tipText: { fontSize: 14, color: "#555", lineHeight: 21, flex: 1 },
 
   // Saved plan card
