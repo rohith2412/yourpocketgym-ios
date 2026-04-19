@@ -1,80 +1,217 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import AvatarButton from "@/components/AvatarButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  Modal,
-  Platform,
-  KeyboardAvoidingView,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-//register
+//register useA. const token = useAuth(); <Text style={s.headerTitle}>Recipes</Text>
 const BASE_URL = "https://yourpocketgym.com";
 
 const GOALS = [
-  { key: "muscle gain",  emoji: "💪", label: "Muscle Gain",  color: "#ff6b35", bg: "rgba(255,107,53,0.1)"  },
-  { key: "fat loss",     emoji: "🔥", label: "Fat Loss",     color: "#22c55e", bg: "rgba(34,197,94,0.1)"   },
-  { key: "maintenance",  emoji: "⚖️", label: "Maintenance",  color: "#888",    bg: "#f4f2ed"               },
-  { key: "weight gain",  emoji: "📈", label: "Weight Gain",  color: "#6366f1", bg: "rgba(99,102,241,0.1)"  },
+  {
+    key: "muscle gain",
+    emoji: "",
+    label: "Muscle Gain",
+    color: "#ff6b35",
+    bg: "rgba(255,107,53,0.1)",
+  },
+  {
+    key: "fat loss",
+    emoji: "",
+    label: "Fat Loss",
+    color: "#22c55e",
+    bg: "rgba(34,197,94,0.1)",
+  },
+  {
+    key: "maintenance",
+    emoji: "",
+    label: "Maintenance",
+    color: "#888",
+    bg: "#f4f2ed",
+  },
+  {
+    key: "weight gain",
+    emoji: "",
+    label: "Weight Gain",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,0.1)",
+  },
 ];
 
 const MEAL_TYPES = [
-  { key: "breakfast", emoji: "🥞", label: "Breakfast" },
-  { key: "lunch",     emoji: "🥗", label: "Lunch"     },
-  { key: "dinner",    emoji: "🍜", label: "Dinner"    },
-  { key: "snack",     emoji: "🫐", label: "Snack"     },
-  { key: "smoothie",  emoji: "🥤", label: "Smoothie"  },
+  { key: "breakfast", emoji: "", label: "Breakfast" },
+  { key: "lunch", emoji: "", label: "Lunch" },
+  { key: "dinner", emoji: "", label: "Dinner" },
+  { key: "snack", emoji: "", label: "Snack" },
+  { key: "smoothie", emoji: "", label: "Smoothie" },
 ];
 
 const INGREDIENT_CATEGORIES = [
   {
-    label: "🥩 Protein",
-    items: ["Chicken breast","Chicken thighs","Ground beef","Ground turkey","Steak","Pork","Bacon","Salmon","Tuna","Shrimp","Eggs","Egg whites","Tofu","Tempeh","Sardines","Mackerel","Cod","Tilapia"],
+    label: " Protein",
+    items: [
+      "Chicken breast",
+      "Chicken thighs",
+      "Ground beef",
+      "Ground turkey",
+      "Steak",
+      "Pork",
+      "Bacon",
+      "Salmon",
+      "Tuna",
+      "Shrimp",
+      "Eggs",
+      "Egg whites",
+      "Tofu",
+      "Tempeh",
+      "Sardines",
+      "Mackerel",
+      "Cod",
+      "Tilapia",
+    ],
   },
   {
-    label: "🥛 Dairy & Alternatives",
-    items: ["Greek yogurt","Cottage cheese","Milk","Cheddar","Feta","Mozzarella","Ricotta","Cream cheese","Butter","Parmesan","Almond milk","Coconut milk","Oat milk"],
+    label: " Dairy & Alternatives",
+    items: [
+      "Greek yogurt",
+      "Cottage cheese",
+      "Milk",
+      "Cheddar",
+      "Feta",
+      "Mozzarella",
+      "Ricotta",
+      "Cream cheese",
+      "Butter",
+      "Parmesan",
+      "Almond milk",
+      "Coconut milk",
+      "Oat milk",
+    ],
   },
   {
-    label: "🫘 Legumes & Grains",
-    items: ["Black beans","Chickpeas","Lentils","Edamame","Oats","Brown rice","White rice","Whole wheat pasta","Penne","Bread","Tortilla","Quinoa"],
+    label: " Legumes & Grains",
+    items: [
+      "Black beans",
+      "Chickpeas",
+      "Lentils",
+      "Edamame",
+      "Oats",
+      "Brown rice",
+      "White rice",
+      "Whole wheat pasta",
+      "Penne",
+      "Bread",
+      "Tortilla",
+      "Quinoa",
+    ],
   },
   {
-    label: "🥦 Vegetables",
-    items: ["Spinach","Broccoli","Kale","Avocado","Sweet potato","Bell peppers","Zucchini","Cauliflower","Asparagus","Mushrooms","Cherry tomatoes","Cucumber","Onion","Garlic","Carrot","Celery","Cabbage","Bok choy"],
+    label: " Vegetables",
+    items: [
+      "Spinach",
+      "Broccoli",
+      "Kale",
+      "Avocado",
+      "Sweet potato",
+      "Bell peppers",
+      "Zucchini",
+      "Cauliflower",
+      "Asparagus",
+      "Mushrooms",
+      "Cherry tomatoes",
+      "Cucumber",
+      "Onion",
+      "Garlic",
+      "Carrot",
+      "Celery",
+      "Cabbage",
+      "Bok choy",
+    ],
   },
   {
-    label: "🍌 Fruit",
-    items: ["Banana","Strawberries","Blueberries","Mango","Apple","Lemon","Lime","Orange","Raspberries","Pineapple"],
+    label: " Fruit",
+    items: [
+      "Banana",
+      "Strawberries",
+      "Blueberries",
+      "Mango",
+      "Apple",
+      "Lemon",
+      "Lime",
+      "Orange",
+      "Raspberries",
+      "Pineapple",
+    ],
   },
   {
-    label: "🥜 Nuts, Seeds & Oils",
-    items: ["Peanut butter","Almond butter","Almonds","Walnuts","Chia seeds","Flaxseeds","Sesame seeds","Olive oil","Coconut oil","Hemp seeds"],
+    label: " Nuts, Seeds & Oils",
+    items: [
+      "Peanut butter",
+      "Almond butter",
+      "Almonds",
+      "Walnuts",
+      "Chia seeds",
+      "Flaxseeds",
+      "Sesame seeds",
+      "Olive oil",
+      "Coconut oil",
+      "Hemp seeds",
+    ],
   },
   {
-    label: "🧂 Pantry",
-    items: ["Soy sauce","Hot sauce","Honey","Protein powder","Whey protein","Canned tomatoes","Chicken stock","Miso paste","Tahini","Salsa"],
+    label: " Pantry",
+    items: [
+      "Soy sauce",
+      "Hot sauce",
+      "Honey",
+      "Protein powder",
+      "Whey protein",
+      "Canned tomatoes",
+      "Chicken stock",
+      "Miso paste",
+      "Tahini",
+      "Salsa",
+    ],
   },
 ];
 
 // ─── Auth Hook ────────────────────────────────────────────────────────────────
 function useAuth() {
   const [token, setToken] = useState(null);
+  const [userName, setUserName] = useState("");
   useEffect(() => {
-    AsyncStorage.getItem("token").then(t => setToken(t));
+    AsyncStorage.multiGet(["token", "user"]).then(([[, t], [, raw]]) => {
+      if (t) setToken(t);
+      if (raw) {
+        try {
+          setUserName(JSON.parse(raw).name?.split(" ")[0] ?? "");
+        } catch {}
+      }
+    });
   }, []);
-  return token;
+  return { token, userName };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function fmt(n) { return Math.round(n ?? 0); }
-function totalTime(r) { return (r.prepTime || 0) + (r.cookTime || 0); }
-function goalMeta(key) { return GOALS.find(g => g.key === key) || { color: "#aaa", bg: "#f4f2ed" }; }
+function fmt(n) {
+  return Math.round(n ?? 0);
+}
+function totalTime(r) {
+  return (r.prepTime || 0) + (r.cookTime || 0);
+}
+function goalMeta(key) {
+  return GOALS.find((g) => g.key === key) || { color: "#aaa", bg: "#f4f2ed" };
+}
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 function Label({ children, style }) {
@@ -83,7 +220,10 @@ function Label({ children, style }) {
 
 function Chip({ label, selected, onPress }) {
   return (
-    <TouchableOpacity onPress={onPress} style={[s.chip, selected && s.chipActive]}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={[s.chip, selected && s.chipActive]}
+    >
       <Text style={[s.chipText, selected && s.chipTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -94,12 +234,23 @@ function MacroBar({ label, value, max, color, unit = "g" }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
     <View style={{ marginBottom: 8 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 3 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 3,
+        }}
+      >
         <Text style={s.macroLabel}>{label}</Text>
-        <Text style={s.macroValue}>{fmt(value)}{unit}</Text>
+        <Text style={s.macroValue}>
+          {fmt(value)}
+          {unit}
+        </Text>
       </View>
       <View style={s.macroTrack}>
-        <View style={[s.macroFill, { width: `${pct}%`, backgroundColor: color }]} />
+        <View
+          style={[s.macroFill, { width: `${pct}%`, backgroundColor: color }]}
+        />
       </View>
     </View>
   );
@@ -111,7 +262,10 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
   const meta = goalMeta(recipe.goal);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 32 }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ gap: 10, paddingBottom: 32 }}
+    >
       <View style={s.actionRow}>
         <TouchableOpacity onPress={onBack} style={s.actionBtn}>
           <Text style={s.actionBtnText}>← Back</Text>
@@ -133,10 +287,19 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
             <Text style={{ fontSize: 28 }}>{recipe.emoji || "🍽️"}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 5,
+                marginBottom: 6,
+              }}
+            >
               {recipe.goal && (
                 <View style={[s.tagBadge, { backgroundColor: meta.bg }]}>
-                  <Text style={[s.tagBadgeText, { color: meta.color }]}>{recipe.goal}</Text>
+                  <Text style={[s.tagBadgeText, { color: meta.color }]}>
+                    {recipe.goal}
+                  </Text>
                 </View>
               )}
               {recipe.mealType && (
@@ -156,11 +319,11 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
 
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
           {[
-            { emoji: "⏱️", label: "Prep",     val: `${recipe.prepTime}m`   },
-            { emoji: "🔥", label: "Cook",     val: `${recipe.cookTime}m`   },
-            { emoji: "⏰", label: "Total",    val: `${totalTime(recipe)}m` },
-            { emoji: "🍽️", label: "Servings", val: recipe.servings         },
-          ].map(item => (
+            { emoji: "⏱️", label: "Prep", val: `${recipe.prepTime}m` },
+            { emoji: "🔥", label: "Cook", val: `${recipe.cookTime}m` },
+            { emoji: "⏰", label: "Total", val: `${totalTime(recipe)}m` },
+            { emoji: "🍽️", label: "Servings", val: recipe.servings },
+          ].map((item) => (
             <View key={item.label} style={s.timeStat}>
               <Text style={{ fontSize: 14 }}>{item.emoji}</Text>
               <Text style={s.timeStatVal}>{item.val}</Text>
@@ -170,7 +333,14 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
         </View>
 
         <View style={s.calorieHero}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
             <View>
               <Text style={s.calorieEyebrow}>Calories</Text>
               <Text style={s.calorieNum}>
@@ -180,27 +350,65 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
             </View>
             <View style={{ flexDirection: "row", gap: 14 }}>
               {[
-                { label: "Protein", val: recipe.macros?.protein, color: "#ff6b35" },
-                { label: "Carbs",   val: recipe.macros?.carbs,   color: "#fff"    },
-                { label: "Fat",     val: recipe.macros?.fat,     color: "rgba(255,255,255,0.5)" },
-              ].map(m => (
+                {
+                  label: "Protein",
+                  val: recipe.macros?.protein,
+                  color: "#ff6b35",
+                },
+                { label: "Carbs", val: recipe.macros?.carbs, color: "#fff" },
+                {
+                  label: "Fat",
+                  val: recipe.macros?.fat,
+                  color: "rgba(255,255,255,0.5)",
+                },
+              ].map((m) => (
                 <View key={m.label} style={{ alignItems: "center" }}>
                   <Text style={[s.macroHeroVal, { color: m.color }]}>
-                    {fmt(m.val)}<Text style={s.macroHeroUnit}>g</Text>
+                    {fmt(m.val)}
+                    <Text style={s.macroHeroUnit}>g</Text>
                   </Text>
                   <Text style={s.macroHeroLabel}>{m.label}</Text>
                 </View>
               ))}
             </View>
           </View>
-          <MacroBar label="Fiber"       value={recipe.macros?.fiber}       max={40}   color="#4ade80" />
-          <MacroBar label="Sugar"       value={recipe.macros?.sugar}       max={50}   color="#fb923c" />
-          <MacroBar label="Sodium"      value={recipe.macros?.sodium}      max={2300} color="#60a5fa" unit="mg" />
-          <MacroBar label="Cholesterol" value={recipe.macros?.cholesterol} max={300}  color="#e879f9" unit="mg" />
+          <MacroBar
+            label="Fiber"
+            value={recipe.macros?.fiber}
+            max={40}
+            color="#4ade80"
+          />
+          <MacroBar
+            label="Sugar"
+            value={recipe.macros?.sugar}
+            max={50}
+            color="#fb923c"
+          />
+          <MacroBar
+            label="Sodium"
+            value={recipe.macros?.sodium}
+            max={2300}
+            color="#60a5fa"
+            unit="mg"
+          />
+          <MacroBar
+            label="Cholesterol"
+            value={recipe.macros?.cholesterol}
+            max={300}
+            color="#e879f9"
+            unit="mg"
+          />
         </View>
 
         {recipe.proteinSources?.length > 0 && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 6,
+              marginTop: 4,
+            }}
+          >
             {recipe.proteinSources.map((src, i) => (
               <View key={i} style={s.proteinTag}>
                 <Text style={s.proteinTagText}>💪 {src}</Text>
@@ -211,7 +419,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
       </View>
 
       <View style={s.tabBar}>
-        {["ingredients", "steps"].map(t => (
+        {["ingredients", "steps"].map((t) => (
           <TouchableOpacity
             key={t}
             onPress={() => setTab(t)}
@@ -229,7 +437,10 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
           {recipe.ingredients?.map((ing, i) => (
             <View
               key={i}
-              style={[s.ingRow, i < recipe.ingredients.length - 1 && s.ingRowBorder]}
+              style={[
+                s.ingRow,
+                i < recipe.ingredients.length - 1 && s.ingRowBorder,
+              ]}
             >
               <Text style={s.ingName}>{ing.item}</Text>
               <Text style={s.ingAmount}>{ing.amount}</Text>
@@ -241,7 +452,13 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
       {tab === "steps" && (
         <View style={{ gap: 8 }}>
           {recipe.steps?.map((step, i) => (
-            <View key={i} style={[s.card, { flexDirection: "row", gap: 12, alignItems: "flex-start" }]}>
+            <View
+              key={i}
+              style={[
+                s.card,
+                { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+              ]}
+            >
               <View style={s.stepNum}>
                 <Text style={s.stepNumText}>{i + 1}</Text>
               </View>
@@ -267,16 +484,30 @@ function LibraryCard({ recipe, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[s.card, { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 }]}
+      style={[
+        s.card,
+        { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
+      ]}
       activeOpacity={0.8}
     >
       <View style={s.libEmoji}>
         <Text style={{ fontSize: 22 }}>{recipe.emoji || "🍽️"}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={s.libName} numberOfLines={1}>{recipe.name}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 }}>
-          <Text style={[s.libMeta, { color: meta.color, fontWeight: "700" }]}>{fmt(recipe.macros?.protein)}g protein</Text>
+        <Text style={s.libName} numberOfLines={1}>
+          {recipe.name}
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 5,
+            marginTop: 3,
+          }}
+        >
+          <Text style={[s.libMeta, { color: meta.color, fontWeight: "700" }]}>
+            {fmt(recipe.macros?.protein)}g protein
+          </Text>
           <Text style={s.libDot}>·</Text>
           <Text style={s.libMeta}>{fmt(recipe.macros?.calories)} kcal</Text>
           <Text style={s.libDot}>·</Text>
@@ -289,10 +520,26 @@ function LibraryCard({ recipe, onPress }) {
 }
 
 // ─── Filter Modal ─────────────────────────────────────────────────────────────
-function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, onClose }) {
+function FilterModal({
+  visible,
+  libGoal,
+  libMeal,
+  onGoalChange,
+  onMealChange,
+  onClose,
+}) {
   return (
-    <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
-      <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
+    <Modal
+      transparent
+      animationType="slide"
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={s.modalOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      />
       <View style={s.bottomSheet}>
         <View style={s.sheetHandle} />
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -300,14 +547,19 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
 
           <Label>Goal</Label>
           <View style={s.filterGrid}>
-            {[{ key: "", emoji: "🔀", label: "All" }, ...GOALS].map(g => (
+            {[{ key: "", emoji: "🔀", label: "All" }, ...GOALS].map((g) => (
               <TouchableOpacity
                 key={g.key}
                 onPress={() => onGoalChange(g.key)}
                 style={[s.filterBtn, libGoal === g.key && s.filterBtnActive]}
               >
                 <Text style={{ fontSize: 15 }}>{g.emoji}</Text>
-                <Text style={[s.filterBtnText, libGoal === g.key && { color: "#fff" }]}>
+                <Text
+                  style={[
+                    s.filterBtnText,
+                    libGoal === g.key && { color: "#fff" },
+                  ]}
+                >
                   {g.label}
                 </Text>
               </TouchableOpacity>
@@ -315,18 +567,29 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
           </View>
 
           <Label style={{ marginTop: 16 }}>Meal Type</Label>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-            {[{ key: "", emoji: "🔀", label: "All" }, ...MEAL_TYPES].map(m => (
-              <TouchableOpacity
-                key={m.key}
-                onPress={() => onMealChange(m.key)}
-                style={[s.chip, libMeal === m.key && s.chipActive]}
-              >
-                <Text style={[s.chipText, libMeal === m.key && s.chipTextActive]}>
-                  {m.emoji} {m.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 24,
+            }}
+          >
+            {[{ key: "", emoji: "🔀", label: "All" }, ...MEAL_TYPES].map(
+              (m) => (
+                <TouchableOpacity
+                  key={m.key}
+                  onPress={() => onMealChange(m.key)}
+                  style={[s.chip, libMeal === m.key && s.chipActive]}
+                >
+                  <Text
+                    style={[s.chipText, libMeal === m.key && s.chipTextActive]}
+                  >
+                    {m.emoji} {m.label}
+                  </Text>
+                </TouchableOpacity>
+              ),
+            )}
           </View>
 
           <TouchableOpacity onPress={onClose} style={s.saveBtn}>
@@ -339,58 +602,65 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
   );
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
-export default function RecipesScreen() {
-  const token = useAuth();
+// ─── Main Screen ────────────────────────────────────────────────────────────── View
+export default function useA() {
+  const { token, userName } = useAuth();
 
-  const [mainTab,      setMainTab]      = useState("find");
-  const [selected,     setSelected]     = useState([]);
-  const [customInput,  setCustomInput]  = useState("");
-  const [openCat,      setOpenCat]      = useState(null);
-  const [goal,         setGoal]         = useState(null);
-  const [mealType,     setMealType]     = useState(null);
+  const [mainTab, setMainTab] = useState("find");
+  const [selected, setSelected] = useState([]);
+  const [customInput, setCustomInput] = useState("");
+  const [openCat, setOpenCat] = useState(null);
+  const [goal, setGoal] = useState(null);
+  const [mealType, setMealType] = useState(null);
 
-  const [recipe,       setRecipe]       = useState(null);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState(null);
+  const [recipe, setRecipe] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [libRecipes,   setLibRecipes]   = useState([]);
-  const [libLoading,   setLibLoading]   = useState(false);
-  const [libGoal,      setLibGoal]      = useState("");
-  const [libMeal,      setLibMeal]      = useState("");
-  const [libPage,      setLibPage]      = useState(1);
-  const [libPages,     setLibPages]     = useState(1);
-  const [libTotal,     setLibTotal]     = useState(0);
-  const [selected2,    setSelected2]    = useState(null);
-  const [showFilter,   setShowFilter]   = useState(false);
+  const [libRecipes, setLibRecipes] = useState([]);
+  const [libLoading, setLibLoading] = useState(false);
+  const [libGoal, setLibGoal] = useState("");
+  const [libMeal, setLibMeal] = useState("");
+  const [libPage, setLibPage] = useState(1);
+  const [libPages, setLibPages] = useState(1);
+  const [libTotal, setLibTotal] = useState(0);
+  const [selected2, setSelected2] = useState(null);
+  const [showFilter, setShowFilter] = useState(false);
 
   const isShowingDetail = recipe || selected2;
 
   function toggleIngredient(item) {
-    setSelected(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+    setSelected((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
     );
   }
 
   function addCustom() {
     const val = customInput.trim();
     if (!val) return;
-    if (!selected.includes(val)) setSelected(prev => [...prev, val]);
+    if (!selected.includes(val)) setSelected((prev) => [...prev, val]);
     setCustomInput("");
   }
 
   async function findRecipe(forceNew = false) {
     if (selected.length === 0) return;
-    setLoading(true); setError(null); setRecipe(null);
+    setLoading(true);
+    setError(null);
+    setRecipe(null);
     try {
       const res = await fetch(`${BASE_URL}/api/recipes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // ✅ always send token — backend now requires auth on POST
+          // ✅ always send token - backend now requires auth on POST
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ ingredients: selected, goal, mealType, forceNew }),
+        body: JSON.stringify({
+          ingredients: selected,
+          goal,
+          mealType,
+          forceNew,
+        }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed");
@@ -402,50 +672,80 @@ export default function RecipesScreen() {
     }
   }
 
-  const fetchLibrary = useCallback(async (page = 1) => {
-    setLibLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: "12" });
-      if (libGoal) params.set("goal", libGoal);
-      if (libMeal) params.set("mealType", libMeal);
-      const res = await fetch(`${BASE_URL}/api/recipes?${params}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const json = await res.json();
-      if (json.success) {
-        setLibRecipes(json.data);
-        setLibTotal(json.total);
-        setLibPages(json.pages);
-        setLibPage(page);
+  const fetchLibrary = useCallback(
+    async (page = 1) => {
+      setLibLoading(true);
+      try {
+        const params = new URLSearchParams({ page: String(page), limit: "12" });
+        if (libGoal) params.set("goal", libGoal);
+        if (libMeal) params.set("mealType", libMeal);
+        const res = await fetch(`${BASE_URL}/api/recipes?${params}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const json = await res.json();
+        if (json.success) {
+          setLibRecipes(json.data);
+          setLibTotal(json.total);
+          setLibPages(json.pages);
+          setLibPage(page);
+        }
+      } finally {
+        setLibLoading(false);
       }
-    } finally {
-      setLibLoading(false);
-    }
-  }, [libGoal, libMeal, token]);
+    },
+    [libGoal, libMeal, token],
+  );
 
   useEffect(() => {
     if (mainTab === "library") fetchLibrary(1);
   }, [mainTab, libGoal, libMeal, fetchLibrary]);
 
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return "morning";
+    if (h < 17) return "afternoon";
+    return "evening";
+  }
+
   return (
     <SafeAreaView style={s.screen} edges={["top"]}>
-
-      {/* Header */}
+      {/* Header map(([key, label])  */}
       <View style={s.header}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
           <View>
-            <Text style={s.greeting}>AI-powered</Text>
-            <Text style={s.headerTitle}>Protein Recipes 💪</Text>
+            <Text style={s.greeting}>
+              Good {getGreeting()}
+              {userName ? `, ${userName}` : ""}
+            </Text>
+            <Text style={s.headerTitle}>Recipes</Text>
           </View>
+
+          <View style={s.headerButtons}>
+            <AvatarButton />
+          </View>
+
           {mainTab === "library" && !isShowingDetail && (
-            <TouchableOpacity onPress={() => setShowFilter(true)} style={s.filterIconBtn}>
+            <TouchableOpacity
+              onPress={() => setShowFilter(true)}
+              style={s.filterIconBtn}
+            >
               <Text style={{ fontSize: 16 }}>⚙️</Text>
               {(libGoal || libMeal) && <View style={s.filterDot} />}
             </TouchableOpacity>
           )}
           {isShowingDetail && (
             <TouchableOpacity
-              onPress={() => { setRecipe(null); setSelected2(null); }}
+              onPress={() => {
+                setRecipe(null);
+                setSelected2(null);
+              }}
               style={s.backBtn}
             >
               <Text style={s.backBtnText}>← Back</Text>
@@ -455,21 +755,36 @@ export default function RecipesScreen() {
 
         {!isShowingDetail && (
           <View style={s.tabsRow}>
-            {[["find", "🔍 Find"], ["library", "📚 Library"]].map(([key, label]) => (
+            {[
+              ["find", "Find"],
+              ["library", "Library"],
+            ].map(([key, label]) => (
               <TouchableOpacity
                 key={key}
                 onPress={() => setMainTab(key)}
                 style={s.mainTab}
               >
-                <Text style={[s.mainTabText, mainTab === key && s.mainTabTextActive]}>{label}</Text>
-                <View style={[s.mainTabLine, mainTab === key && s.mainTabLineActive]} />
+                <Text
+                  style={[
+                    s.mainTabText,
+                    mainTab === key && s.mainTabTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+                <View
+                  style={[
+                    s.mainTabLine,
+                    mainTab === key && s.mainTabLineActive,
+                  ]}
+                />
               </TouchableOpacity>
             ))}
           </View>
         )}
       </View>
 
-      {/* Body */}
+      {/* Body headerTitle */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -479,8 +794,11 @@ export default function RecipesScreen() {
           <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
             <RecipeDetail
               recipe={recipe || selected2}
-              onBack={() => { setRecipe(null); setSelected2(null); }}
-              onRegenerate={() => recipe ? findRecipe(true) : null}
+              onBack={() => {
+                setRecipe(null);
+                setSelected2(null);
+              }}
+              onRegenerate={() => (recipe ? findRecipe(true) : null)}
               isGenerating={loading}
             />
           </View>
@@ -490,17 +808,33 @@ export default function RecipesScreen() {
         {!isShowingDetail && mainTab === "find" && (
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120, gap: 18 }}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 120,
+              gap: 18,
+            }}
             keyboardShouldPersistTaps="handled"
           >
             {/* Selected ingredients */}
             <View>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                }}
+              >
                 <Label style={{ marginBottom: 0 }}>
-                  Your ingredients{selected.length > 0 ? ` (${selected.length})` : ""}
+                  Your ingredients
+                  {selected.length > 0 ? ` (${selected.length})` : ""}
                 </Label>
                 {selected.length > 0 && (
-                  <TouchableOpacity onPress={() => setSelected([])} style={s.clearBtn}>
+                  <TouchableOpacity
+                    onPress={() => setSelected([])}
+                    style={s.clearBtn}
+                  >
                     <Text style={s.clearBtnText}>Clear all</Text>
                   </TouchableOpacity>
                 )}
@@ -509,17 +843,22 @@ export default function RecipesScreen() {
               {selected.length === 0 ? (
                 <View style={s.emptyBasket}>
                   <Text style={{ fontSize: 24, marginBottom: 6 }}>🧺</Text>
-                  <Text style={s.emptyBasketText}>Pick ingredients below or type your own</Text>
+                  <Text style={s.emptyBasketText}>
+                    Pick ingredients below or type your own
+                  </Text>
                 </View>
               ) : (
                 <View style={s.selectedWrap}>
-                  {selected.map(item => (
+                  {selected.map((item) => (
                     <TouchableOpacity
                       key={item}
                       onPress={() => toggleIngredient(item)}
                       style={s.selectedChip}
                     >
-                      <Text style={s.selectedChipText}>{item} <Text style={{ opacity: 0.5, fontSize: 10 }}>✕</Text></Text>
+                      <Text style={s.selectedChipText}>
+                        {item}{" "}
+                        <Text style={{ opacity: 0.5, fontSize: 10 }}>✕</Text>
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -544,7 +883,14 @@ export default function RecipesScreen() {
                   disabled={!customInput.trim()}
                   style={[s.addBtn, customInput.trim() && s.addBtnActive]}
                 >
-                  <Text style={[s.addBtnText, customInput.trim() && { color: "#fff" }]}>Add</Text>
+                  <Text
+                    style={[
+                      s.addBtnText,
+                      customInput.trim() && { color: "#fff" },
+                    ]}
+                  >
+                    Add
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -559,22 +905,36 @@ export default function RecipesScreen() {
                       onPress={() => setOpenCat(openCat === ci ? null : ci)}
                       style={s.catHeader}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
                         <Text style={s.catLabel}>{cat.label}</Text>
-                        {cat.items.filter(i => selected.includes(i)).length > 0 && (
+                        {cat.items.filter((i) => selected.includes(i)).length >
+                          0 && (
                           <View style={s.catCount}>
                             <Text style={s.catCountText}>
-                              {cat.items.filter(i => selected.includes(i)).length}
+                              {
+                                cat.items.filter((i) => selected.includes(i))
+                                  .length
+                              }
                             </Text>
                           </View>
                         )}
                       </View>
-                      <Text style={[s.chevron, openCat === ci && s.chevronOpen]}>›</Text>
+                      <Text
+                        style={[s.chevron, openCat === ci && s.chevronOpen]}
+                      >
+                        ›
+                      </Text>
                     </TouchableOpacity>
 
                     {openCat === ci && (
                       <View style={s.catItems}>
-                        {cat.items.map(item => (
+                        {cat.items.map((item) => (
                           <Chip
                             key={item}
                             label={item}
@@ -593,14 +953,21 @@ export default function RecipesScreen() {
             <View>
               <Label>Goal (optional)</Label>
               <View style={s.goalGrid}>
-                {GOALS.map(g => (
+                {GOALS.map((g) => (
                   <TouchableOpacity
                     key={g.key}
                     onPress={() => setGoal(goal === g.key ? null : g.key)}
                     style={[s.goalBtn, goal === g.key && s.goalBtnActive]}
                   >
                     <Text style={{ fontSize: 15 }}>{g.emoji}</Text>
-                    <Text style={[s.goalBtnText, goal === g.key && { color: "#fff" }]}>{g.label}</Text>
+                    <Text
+                      style={[
+                        s.goalBtnText,
+                        goal === g.key && { color: "#fff" },
+                      ]}
+                    >
+                      {g.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -609,15 +976,28 @@ export default function RecipesScreen() {
             {/* Meal type filter */}
             <View>
               <Label>Meal type (optional)</Label>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                {MEAL_TYPES.map(m => (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6 }}
+              >
+                {MEAL_TYPES.map((m) => (
                   <TouchableOpacity
                     key={m.key}
-                    onPress={() => setMealType(mealType === m.key ? null : m.key)}
+                    onPress={() =>
+                      setMealType(mealType === m.key ? null : m.key)
+                    }
                     style={[s.mealBtn, mealType === m.key && s.mealBtnActive]}
                   >
                     <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
-                    <Text style={[s.mealBtnText, mealType === m.key && { color: "#fff" }]}>{m.label}</Text>
+                    <Text
+                      style={[
+                        s.mealBtnText,
+                        mealType === m.key && { color: "#fff" },
+                      ]}
+                    >
+                      {m.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -625,20 +1005,26 @@ export default function RecipesScreen() {
 
             {error && <Text style={s.errorText}>⚠️ {error}</Text>}
 
-            {/* Generate button */}
+            {/* Generate button //find recipe with */}
             <TouchableOpacity
               onPress={() => findRecipe(false)}
               disabled={selected.length === 0 || loading}
-              style={[s.generateBtn, (selected.length === 0 || loading) && { opacity: 0.4 }]}
+              style={[
+                s.generateBtn,
+                (selected.length === 0 || loading) && { opacity: 0.4 },
+              ]}
             >
               {loading ? (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
                   <ActivityIndicator size="small" color="#fff" />
                   <Text style={s.generateBtnText}>Finding best recipe…</Text>
                 </View>
               ) : (
                 <Text style={s.generateBtnText}>
-                  ✨ Find recipe with {selected.length || "my"} ingredient{selected.length !== 1 ? "s" : ""}
+                  Find recipe with {selected.length || "my"} ingredient
+                  {selected.length !== 1 ? "s" : ""}
                 </Text>
               )}
             </TouchableOpacity>
@@ -649,10 +1035,17 @@ export default function RecipesScreen() {
         {!isShowingDetail && mainTab === "library" && (
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120, gap: 10 }}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 120,
+              gap: 10,
+            }}
           >
             {!libLoading && (
-              <Text style={s.libTotal}>{libTotal} recipe{libTotal !== 1 ? "s" : ""} in library</Text>
+              <Text style={s.libTotal}>
+                {libTotal} recipe{libTotal !== 1 ? "s" : ""} in library
+              </Text>
             )}
 
             {libLoading ? (
@@ -665,16 +1058,29 @@ export default function RecipesScreen() {
               <View style={[s.card, { alignItems: "center", padding: 40 }]}>
                 <Text style={{ fontSize: 28, marginBottom: 10 }}>📭</Text>
                 <Text style={s.emptyTitle}>No recipes yet</Text>
-                <Text style={s.emptyDesc}>Generate recipes from the Find tab to build your library.</Text>
+                <Text style={s.emptyDesc}>
+                  Generate recipes from the Find tab to build your library.
+                </Text>
               </View>
             ) : (
-              libRecipes.map(r => (
-                <LibraryCard key={r._id} recipe={r} onPress={() => setSelected2(r)} />
+              libRecipes.map((r) => (
+                <LibraryCard
+                  key={r._id}
+                  recipe={r}
+                  onPress={() => setSelected2(r)}
+                />
               ))
             )}
 
             {libPages > 1 && (
-              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 8,
+                  justifyContent: "center",
+                  marginTop: 4,
+                }}
+              >
                 <TouchableOpacity
                   onPress={() => fetchLibrary(libPage - 1)}
                   disabled={libPage <= 1}
@@ -683,7 +1089,9 @@ export default function RecipesScreen() {
                   <Text style={s.pageBtnText}>← Prev</Text>
                 </TouchableOpacity>
                 <View style={s.pageIndicator}>
-                  <Text style={s.pageIndicatorText}>{libPage} / {libPages}</Text>
+                  <Text style={s.pageIndicatorText}>
+                    {libPage} / {libPages}
+                  </Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => fetchLibrary(libPage + 1)}
@@ -713,115 +1121,498 @@ export default function RecipesScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  screen:      { flex: 1, backgroundColor: "#fafaf8" },
-  header:      { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 0, backgroundColor: "rgba(250,250,248,0.95)", borderBottomWidth: 1, borderBottomColor: "rgba(232,229,222,0.5)" },
-  greeting:    { fontSize: 12, color: "#aaa", fontWeight: "400" },
-  headerTitle: { fontSize: 22, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1, lineHeight: 26 },
-  tabsRow:         { flexDirection: "row", gap: 4, marginTop: 4 },
-  mainTab:         { flex: 1, paddingVertical: 10, alignItems: "center", position: "relative" },
-  mainTabText:     { fontSize: 13, fontWeight: "700", color: "#aaa" },
-  mainTabTextActive:  { color: "#1a1a1a" },
-  mainTabLine:        { position: "absolute", bottom: 0, left: 8, right: 8, height: 2, borderRadius: 2, backgroundColor: "transparent" },
-  mainTabLineActive:  { backgroundColor: "#ff6b35" },
-  filterIconBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", alignItems: "center", justifyContent: "center" },
-  filterDot:     { position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: "#ff6b35" },
-  backBtn:       { backgroundColor: "rgba(255,107,53,0.08)", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7 },
-  backBtnText:   { fontSize: 12, fontWeight: "700", color: "#ff6b35" },
-  card: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 20, padding: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: "#aaa", marginBottom: 8 },
-  chip:         { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  chipActive:   { backgroundColor: "#1a1a1a", borderWidth: 0 },
-  chipText:     { fontSize: 12, fontWeight: "600", color: "#555" },
+  screen: { flex: 1, backgroundColor: "#fafaf8" },
+  headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 0,
+    backgroundColor: "rgba(250,250,248,0.95)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(232,229,222,0.5)",
+  },
+  greeting: { fontSize: 12, color: "#aaa", fontWeight: "400" },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -1,
+    lineHeight: 30,
+  },
+  tabsRow: { flexDirection: "row", gap: 4, marginTop: 4 },
+  mainTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    position: "relative",
+  },
+  mainTabText: { fontSize: 13, fontWeight: "700", color: "#aaa" },
+  mainTabTextActive: { color: "#1a1a1a" },
+  mainTabLine: {
+    position: "absolute",
+    bottom: 0,
+    left: 8,
+    right: 8,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: "transparent",
+  },
+  mainTabLineActive: { backgroundColor: "#ff6b35" },
+  filterIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ff6b35",
+  },
+  backBtn: {
+    backgroundColor: "rgba(255,107,53,0.08)",
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  backBtnText: { fontSize: 12, fontWeight: "700", color: "#ff6b35" },
+  card: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: "#aaa",
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    backgroundColor: "#fff",
+  },
+  chipActive: { backgroundColor: "#1a1a1a", borderWidth: 0 },
+  chipText: { fontSize: 12, fontWeight: "600", color: "#555" },
   chipTextActive: { color: "#fff" },
-  skeleton:     { backgroundColor: "#e8e5de", borderRadius: 20 },
-  actionRow:    { flexDirection: "row", gap: 8 },
-  actionBtn:    { flex: 1, padding: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 12, alignItems: "center" },
-  actionBtnText:{ fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  recipeEmojiBadge: { width: 60, height: 60, borderRadius: 18, backgroundColor: "#f4f2ed", borderWidth: 1, borderColor: "#e8e5de", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  recipeTitle:  { fontSize: 17, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5, lineHeight: 22 },
-  tagBadge:     { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  tagBadgeText: { fontSize: 9, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
-  tagBadgeGray: { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  tagBadgeGrayText: { fontSize: 9, fontWeight: "700", color: "#aaa", textTransform: "uppercase", letterSpacing: 0.8 },
-  timeStat:      { flex: 1, backgroundColor: "#f4f2ed", borderRadius: 12, padding: 8, alignItems: "center" },
-  timeStatVal:   { fontSize: 13, fontWeight: "800", color: "#1a1a1a" },
-  timeStatLabel: { fontSize: 9, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.6 },
-  calorieHero:    { backgroundColor: "#1a1a1a", borderRadius: 14, padding: 14, marginBottom: 12 },
-  calorieEyebrow: { fontSize: 9, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 2 },
-  calorieNum:     { fontSize: 28, fontWeight: "800", color: "#fff", letterSpacing: -1, lineHeight: 32 },
-  calorieUnit:    { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.4)" },
-  macroHeroVal:   { fontSize: 16, fontWeight: "800", letterSpacing: -0.5 },
-  macroHeroUnit:  { fontSize: 9, color: "rgba(255,255,255,0.3)" },
-  macroHeroLabel: { fontSize: 9, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.6 },
-  macroLabel:     { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 0.8 },
-  macroValue:     { fontSize: 11, fontWeight: "800", color: "#fff" },
-  macroTrack:     { height: 6, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 99, overflow: "hidden" },
-  macroFill:      { height: "100%", borderRadius: 99 },
-  proteinTag:     { backgroundColor: "rgba(255,107,53,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
+  skeleton: { backgroundColor: "#e8e5de", borderRadius: 20 },
+  actionRow: { flexDirection: "row", gap: 8 },
+  actionBtn: {
+    flex: 1,
+    padding: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  actionBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  recipeEmojiBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: "#f4f2ed",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  recipeTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+    lineHeight: 22,
+  },
+  tagBadge: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
+  tagBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  tagBadgeGray: {
+    backgroundColor: "#f4f2ed",
+    borderRadius: 99,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  tagBadgeGrayText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#aaa",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  timeStat: {
+    flex: 1,
+    backgroundColor: "#f4f2ed",
+    borderRadius: 12,
+    padding: 8,
+    alignItems: "center",
+  },
+  timeStatVal: { fontSize: 13, fontWeight: "800", color: "#1a1a1a" },
+  timeStatLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#bbb",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  calorieHero: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+  },
+  calorieEyebrow: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.4)",
+    marginBottom: 2,
+  },
+  calorieNum: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: -1,
+    lineHeight: 32,
+  },
+  calorieUnit: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.4)",
+  },
+  macroHeroVal: { fontSize: 16, fontWeight: "800", letterSpacing: -0.5 },
+  macroHeroUnit: { fontSize: 9, color: "rgba(255,255,255,0.3)" },
+  macroHeroLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.35)",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  macroLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  macroValue: { fontSize: 11, fontWeight: "800", color: "#fff" },
+  macroTrack: {
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 99,
+    overflow: "hidden",
+  },
+  macroFill: { height: "100%", borderRadius: 99 },
+  proteinTag: {
+    backgroundColor: "rgba(255,107,53,0.08)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
   proteinTagText: { fontSize: 11, fontWeight: "700", color: "#ff6b35" },
-  tabBar:         { flexDirection: "row", backgroundColor: "#f4f2ed", borderRadius: 14, padding: 4, gap: 4 },
-  tabBtn:         { flex: 1, padding: 10, borderRadius: 10, alignItems: "center" },
-  tabBtnActive:   { backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
-  tabBtnText:     { fontSize: 12, fontWeight: "700", color: "#aaa", textTransform: "capitalize" },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: "#f4f2ed",
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  tabBtn: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center" },
+  tabBtnActive: {
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  tabBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#aaa",
+    textTransform: "capitalize",
+  },
   tabBtnTextActive: { color: "#1a1a1a" },
-  ingRow:       { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
+  ingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
   ingRowBorder: { borderBottomWidth: 1, borderBottomColor: "#f0ede8" },
-  ingName:      { fontSize: 13, fontWeight: "600", color: "#1a1a1a" },
-  ingAmount:    { fontSize: 12, fontWeight: "700", color: "#aaa" },
-  stepNum:      { width: 28, height: 28, borderRadius: 9, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  stepNumText:  { fontSize: 12, fontWeight: "800", color: "#fff" },
-  stepText:     { fontSize: 13, fontWeight: "500", color: "#1a1a1a", lineHeight: 21, flex: 1, paddingTop: 3 },
-  tipCard:      { backgroundColor: "rgba(255,107,53,0.05)", borderWidth: 1, borderColor: "rgba(255,107,53,0.15)", borderRadius: 16, padding: 14 },
-  tipTitle:     { fontSize: 12, fontWeight: "700", color: "#ff6b35", marginBottom: 4 },
-  tipText:      { fontSize: 13, color: "#888", lineHeight: 20 },
-  libEmoji:     { width: 46, height: 46, borderRadius: 14, backgroundColor: "#f4f2ed", borderWidth: 1, borderColor: "#e8e5de", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  libName:      { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  libMeta:      { fontSize: 10, color: "#aaa" },
-  libDot:       { fontSize: 10, color: "#ccc" },
-  libTotal:     { fontSize: 12, color: "#aaa", fontWeight: "600" },
-  clearBtn:     { backgroundColor: "rgba(244,63,94,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
+  ingName: { fontSize: 13, fontWeight: "600", color: "#1a1a1a" },
+  ingAmount: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  stepNum: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  stepNumText: { fontSize: 12, fontWeight: "800", color: "#fff" },
+  stepText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#1a1a1a",
+    lineHeight: 21,
+    flex: 1,
+    paddingTop: 3,
+  },
+  tipCard: {
+    backgroundColor: "rgba(255,107,53,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.15)",
+    borderRadius: 16,
+    padding: 14,
+  },
+  tipTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#ff6b35",
+    marginBottom: 4,
+  },
+  tipText: { fontSize: 13, color: "#888", lineHeight: 20 },
+  libEmoji: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#f4f2ed",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  libName: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  libMeta: { fontSize: 10, color: "#aaa" },
+  libDot: { fontSize: 10, color: "#ccc" },
+  libTotal: { fontSize: 12, color: "#aaa", fontWeight: "600" },
+  clearBtn: {
+    backgroundColor: "rgba(244,63,94,0.08)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
   clearBtnText: { fontSize: 11, fontWeight: "700", color: "#f43f5e" },
-  emptyBasket:     { backgroundColor: "#f4f2ed", borderRadius: 16, padding: 20, alignItems: "center" },
+  emptyBasket: {
+    backgroundColor: "#f4f2ed",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+  },
   emptyBasketText: { fontSize: 13, color: "#bbb", fontWeight: "500" },
-  selectedWrap:    { flexDirection: "row", flexWrap: "wrap", gap: 6, backgroundColor: "#f4f2ed", borderRadius: 16, padding: 12 },
-  selectedChip:    { backgroundColor: "#1a1a1a", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
-  selectedChipText:{ fontSize: 12, fontWeight: "700", color: "#fff" },
-  customInput:  { flex: 1, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: "#e8e5de", borderRadius: 12, fontSize: 14, color: "#1a1a1a", backgroundColor: "#fff" },
-  addBtn:       { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
+  selectedWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    backgroundColor: "#f4f2ed",
+    borderRadius: 16,
+    padding: 12,
+  },
+  selectedChip: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 99,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  selectedChipText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+  customInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    borderRadius: 12,
+    fontSize: 14,
+    color: "#1a1a1a",
+    backgroundColor: "#fff",
+  },
+  addBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#f4f2ed",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   addBtnActive: { backgroundColor: "#1a1a1a" },
-  addBtnText:   { fontSize: 13, fontWeight: "700", color: "#bbb" },
-  catCard:      { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 16, overflow: "hidden" },
-  catHeader:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14 },
-  catLabel:     { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  catCount:     { backgroundColor: "rgba(255,107,53,0.1)", borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2 },
+  addBtnText: { fontSize: 13, fontWeight: "700", color: "#bbb" },
+  catCard: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  catHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 14,
+  },
+  catLabel: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
+  catCount: {
+    backgroundColor: "rgba(255,107,53,0.1)",
+    borderRadius: 99,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
   catCountText: { fontSize: 10, fontWeight: "800", color: "#ff6b35" },
-  catItems:     { flexDirection: "row", flexWrap: "wrap", gap: 6, padding: 12, borderTopWidth: 1, borderTopColor: "#f0ede8" },
-  chevron:      { fontSize: 18, color: "#ccc" },
-  chevronOpen:  { transform: [{ rotate: "90deg" }] },
-  goalGrid:     { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  goalBtn:      { width: "47%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  goalBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  goalBtnText:  { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
-  mealBtn:      { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  mealBtnText:  { fontSize: 12, fontWeight: "700", color: "#aaa" },
-  errorText:    { fontSize: 12, color: "#e53e3e", fontWeight: "600" },
-  generateBtn:     { padding: 16, backgroundColor: "#1a1a1a", borderRadius: 14, alignItems: "center" },
+  catItems: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f0ede8",
+  },
+  chevron: { fontSize: 18, color: "#ccc" },
+  chevronOpen: { transform: [{ rotate: "90deg" }] },
+  goalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  goalBtn: {
+    width: "47%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#e8e5de",
+    backgroundColor: "#fff",
+  },
+  goalBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  goalBtnText: { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
+  mealBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#e8e5de",
+    backgroundColor: "#fff",
+  },
+  mealBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  mealBtnText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  errorText: { fontSize: 12, color: "#e53e3e", fontWeight: "600" },
+  generateBtn: {
+    padding: 16,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 14,
+    alignItems: "center",
+  },
   generateBtnText: { fontSize: 15, fontWeight: "700", color: "#fafaf8" },
-  pageBtn:          { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 10 },
-  pageBtnText:      { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  pageIndicator:    { alignItems: "center", justifyContent: "center" },
-  pageIndicatorText:{ fontSize: 12, color: "#aaa", fontWeight: "600" },
-  emptyTitle:   { fontSize: 15, fontWeight: "700", color: "#1a1a1a", marginBottom: 6 },
-  emptyDesc:    { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
+  pageBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+    borderRadius: 10,
+  },
+  pageBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  pageIndicator: { alignItems: "center", justifyContent: "center" },
+  pageIndicatorText: { fontSize: 12, color: "#aaa", fontWeight: "600" },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginBottom: 6,
+  },
+  emptyDesc: {
+    fontSize: 13,
+    color: "#aaa",
+    lineHeight: 20,
+    textAlign: "center",
+  },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
-  bottomSheet:  { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#fafaf8", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 16, maxHeight: "80%", shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  sheetHandle:  { width: 36, height: 4, borderRadius: 2, backgroundColor: "#e0ddd6", alignSelf: "center", marginBottom: 16 },
-  sheetTitle:   { fontSize: 18, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5, marginBottom: 16 },
-  filterGrid:   { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  filterBtn:    { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
+  bottomSheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fafaf8",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 20,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#e0ddd6",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+    marginBottom: 16,
+  },
+  filterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  filterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#e8e5de",
+    backgroundColor: "#fff",
+  },
   filterBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  filterBtnText:{ fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
-  saveBtn:      { width: "100%", paddingVertical: 16, backgroundColor: "#1a1a1a", borderRadius: 14, alignItems: "center" },
-  saveBtnText:  { fontSize: 14, fontWeight: "700", color: "#fafaf8" },
+  filterBtnText: { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
+  saveBtn: {
+    width: "100%",
+    paddingVertical: 16,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  saveBtnText: { fontSize: 14, fontWeight: "700", color: "#fafaf8" },
 });

@@ -44,38 +44,41 @@ export default function IntroPage() {
   const back = () => setStep((s) => Math.max(s - 1, 1));
 
   const submit = async () => {
-  setLoading(true);
-  try {
-    const token = await getToken();
-    const res = await fetch("https://yourpocketgym.com/api/user-intro", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    if (data.success) {
-      // ✅ FIX: update the cached user object in AsyncStorage so hasIntro is
-      // now true — without this the AI trainer screen reads the stale false
-      // value and keeps redirecting back here on every app launch
-      const userRaw = await AsyncStorage.getItem("user");
-      if (userRaw) {
-        const user = JSON.parse(userRaw);
-        await AsyncStorage.setItem("user", JSON.stringify({ ...user, hasIntro: true }));
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const res = await fetch("https://yourpocketgym.com/api/user-intro", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // ✅ FIX: update the cached user object in AsyncStorage so hasIntro is
+        // now true - without this the AI trainer screen reads the stale false
+        // value and keeps redirecting back here on every app launch
+        const userRaw = await AsyncStorage.getItem("user");
+        if (userRaw) {
+          const user = JSON.parse(userRaw);
+          await AsyncStorage.setItem(
+            "user",
+            JSON.stringify({ ...user, hasIntro: true }),
+          );
+        }
+        setDone(true);
+        setTimeout(() => router.replace("/tracking"), 2000);
+      } else {
+        alert("Something went wrong: " + data.error);
       }
-      setDone(true);
-      setTimeout(() => router.replace("/tracking"), 2000);
-    } else {
-      alert("Something went wrong: " + data.error);
+    } catch (err) {
+      alert("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    alert("Network error. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 

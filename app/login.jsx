@@ -1,7 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
     Animated,
     Easing,
@@ -56,42 +56,42 @@ export default function Login() {
     outputRange: ["0deg", "360deg"],
   });
 
-// Replace the entire handleLogin function:
-const handleLogin = async () => {
-  if (!email || !password) return;
-  setLoading(true);
+  // Replace the entire handleLogin function:
+  const handleLogin = async () => {
+    if (!email || !password) return;
+    setLoading(true);
 
-  try {
-    const res = await fetch("https://yourpocketgym.com/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("https://yourpocketgym.com/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok || !data.success) {
-      alert(data.error || "Login failed");
-      return;
+      if (!res.ok || !data.success) {
+        alert(data.error || "Login failed");
+        return;
+      }
+      await saveToken(data.token);
+
+      // Save both token AND user object - useAuth needs both
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirect based on hasIntro from login response (no extra fetch needed)
+      if (!data.user.hasIntro) {
+        router.replace("/startersIntro");
+      } else {
+        router.replace("/tracking");
+      }
+    } catch (err) {
+      alert("Something went wrong. Check your connection.");
+    } finally {
+      setLoading(false);
     }
-        await saveToken(data.token);
-
-    // Save both token AND user object — useAuth needs both
-    await AsyncStorage.setItem("token", data.token);
-    await AsyncStorage.setItem("user", JSON.stringify(data.user));
-
-    // Redirect based on hasIntro from login response (no extra fetch needed)
-    if (!data.user.hasIntro) {
-      router.replace("/startersIntro");
-    } else {
-      router.replace("/tracking");
-    }
-  } catch (err) {
-    alert("Something went wrong. Check your connection.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const isValid = email && password;
 
