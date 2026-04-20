@@ -1,6 +1,12 @@
 import AvatarButton from "@/components/AvatarButton";
 import PageBackground from "@/components/PageBackground";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  deleteWorkoutLog,
+  getAllWorkoutLogs,
+  saveWorkoutLog,
+  saveWorkoutLogs,
+} from "@/src/db/gymDb";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -915,6 +921,8 @@ function LogSheet({
       });
       const json = await res.json();
       if (json.success) {
+        // Cache in SQLite so it shows instantly next open
+        try { saveWorkoutLog(json.data); } catch {}
         setSaved(true);
         onSaved();
         setTimeout(() => onClose(), 1600);
@@ -1950,19 +1958,27 @@ export default function TrackingPage() {
   }, []);
 
   const fetchLogs = useCallback(async () => {
-    setLoadingLogs(true);
+    // 1. Show SQLite data instantly (no spinner on subsequent opens)
+    const cached = getAllWorkoutLogs();
+    if (cached.length > 0) {
+      setLogs(cached);
+      setLoadingLogs(false);
+    }
+
+    // 2. Sync from server in background to pick up any missing entries
     try {
       const token = await getToken();
       const res = await fetch(
         "https://yourpocketgym.com/api/tracking?limit=400",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       const json = await res.json();
-      if (json.success) setLogs(json.data);
+      if (json.success && json.data?.length) {
+        saveWorkoutLogs(json.data);      // bulk-update SQLite cache
+        setLogs(json.data);
+      }
     } catch (e) {
-      console.error("fetchLogs error:", e);
+      console.error("fetchLogs sync error:", e);
     } finally {
       setLoadingLogs(false);
     }
@@ -1978,17 +1994,17 @@ export default function TrackingPage() {
       setTimeout(() => setConfirmDeleteId(null), 3000);
       return;
     }
-    try {
-      const token = await getToken();
-      await fetch(`https://yourpocketgym.com/api/tracking?id=${id}`, {
+    // Remove from SQLite + UI instantly
+    deleteWorkoutLog(id);
+    setLogs((prev) => prev.filter((l) => l._id !== id));
+    setConfirmDeleteId(null);
+    // Fire-and-forget server delete
+    getToken().then((token) =>
+      fetch(`https://yourpocketgym.com/api/tracking?id=${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (e) {
-      console.error("deleteLog error:", e);
-    }
-    setConfirmDeleteId(null);
-    fetchLogs();
+      }).catch(() => {})
+    );
   };
 
   function getGreeting() {

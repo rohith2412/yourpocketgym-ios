@@ -1,6 +1,14 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PageBackground from "@/components/PageBackground";
+import {
+  cacheGet,
+  cacheSet,
+  getAllSavedPlans,
+  removeAIPlan,
+  saveAIPlan,
+  saveBulkAIPlans,
+} from "@/src/db/gymDb";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -841,13 +849,20 @@ export default function AITrainerScreen() {
       router.replace("/login");
       return;
     }
-    // Fetch intro in background - UI shows immediately from cache
+    // Load user-intro from SQLite cache first (instant)
+    const cachedIntro = cacheGet("user_intro");
+    if (cachedIntro) { setIntro(cachedIntro); setIntroReady(true); }
+
+    // Refresh from server in background, cache for 24h
     fetch(`${BASE_URL}/api/user-intro`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
-        if (json.success && json.data) setIntro(json.data);
+        if (json.success && json.data) {
+          setIntro(json.data);
+          cacheSet("user_intro", json.data, 86400); // 24h TTL
+        }
       })
       .catch(() => {})
       .finally(() => setIntroReady(true));
@@ -855,13 +870,22 @@ export default function AITrainerScreen() {
 
   useEffect(() => {
     if (mainTab !== "saved") return;
-    setSavedLoading(true);
+
+    // Show SQLite cache instantly
+    const cached = getAllSavedPlans();
+    if (cached.length > 0) { setSavedPlans(cached); setSavedLoading(false); }
+    else setSavedLoading(true);
+
+    // Sync from server to pick up any changes
     fetch(`${BASE_URL}/api/ai-trainer/saved`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setSavedPlans(json.data);
+        if (json.success && json.data) {
+          saveBulkAIPlans(json.data);
+          setSavedPlans(json.data);
+        }
       })
       .catch(() => {})
       .finally(() => setSavedLoading(false));
@@ -909,7 +933,12 @@ export default function AITrainerScreen() {
         body: JSON.stringify({ plan }),
       });
       const json = await res.json();
-      if (json.success) setSavedId(json.data._id);
+      if (json.success) {
+        const id = json.data._id;
+        setSavedId(id);
+        // Cache locally so it appears instantly next time
+        saveAIPlan(id, plan, new Date().toISOString());
+      }
     } catch {
     } finally {
       setSaving(false);
@@ -917,22 +946,19 @@ export default function AITrainerScreen() {
   }
 
   async function removePlan(id) {
+    // Remove from SQLite + UI immediately
+    removeAIPlan(id);
+    setSavedPlans((p) => p.filter((sv) => sv._id !== id));
+    if (viewingSaved?._id === id) setViewingSaved(null);
+    if (savedId === id) setSavedId(null);
     setRemovingId(id);
-    try {
-      const res = await fetch(`${BASE_URL}/api/ai-trainer/saved/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
-      if (json.success) {
-        setSavedPlans((p) => p.filter((sv) => sv._id !== id));
-        if (viewingSaved?._id === id) setViewingSaved(null);
-        if (savedId === id) setSavedId(null);
-      }
-    } catch {
-    } finally {
-      setRemovingId(null);
-    }
+    // Fire-and-forget server delete
+    fetch(`${BASE_URL}/api/ai-trainer/saved/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .catch(() => {})
+      .finally(() => setRemovingId(null));
   }
 
   // ── No spinner - show screen immediately from cached session ─────────────

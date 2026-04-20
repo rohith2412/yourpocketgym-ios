@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { cacheDelete, cacheGet, cacheSet } from "@/src/db/gymDb";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -13,8 +14,9 @@ import {
   Text,
   View,
 } from "react-native";
+//profile $12
 import Svg, {
-  Circle, ClipPath, Defs, Ellipse, G, Line,
+  Circle, ClipPath, Defs, Ellipse, G,
   LinearGradient as SvgGradient, Path, Rect, Stop,
 } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -49,98 +51,157 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 };
 
-// ── Animated Cat ──────────────────────────────────────────────────────────────
+// ── Animated Face Avatar (same character as AvatarButton) ────────────────────
 const AnimatedCircle  = Animated.createAnimatedComponent(Circle);
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 const AnimatedPath    = Animated.createAnimatedComponent(Path);
 const AnimatedG       = Animated.createAnimatedComponent(G);
 
-function CatAvatar({ size = 96 }) {
+function FaceAvatar({ size = 96 }) {
   const blinkAnim  = useRef(new Animated.Value(1)).current;
   const wiggleAnim = useRef(new Animated.Value(0)).current;
   const floatAnim  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Gentle float
     Animated.loop(Animated.sequence([
-      Animated.timing(floatAnim, { toValue: -6, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
-      Animated.timing(floatAnim, { toValue:  0, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(floatAnim, { toValue: -5, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(floatAnim, { toValue:  0, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
     ])).start();
 
+    // Single blink every ~7 s
     const doBlink = () => {
       Animated.sequence([
-        Animated.delay(3000),
+        Animated.delay(7000),
         Animated.timing(blinkAnim, { toValue: 0, duration: 80,  useNativeDriver: false }),
-        Animated.timing(blinkAnim, { toValue: 1, duration: 80,  useNativeDriver: false }),
-        Animated.delay(120),
-        Animated.timing(blinkAnim, { toValue: 0, duration: 70,  useNativeDriver: false }),
-        Animated.timing(blinkAnim, { toValue: 1, duration: 80,  useNativeDriver: false }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 90,  useNativeDriver: false }),
       ]).start(() => doBlink());
     };
     doBlink();
 
+    // Subtle smile sway
     Animated.loop(Animated.sequence([
-      Animated.timing(wiggleAnim, { toValue: -2, duration: 1250, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
-      Animated.timing(wiggleAnim, { toValue:  2, duration: 1250, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(wiggleAnim, { toValue: -1.5, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(wiggleAnim, { toValue:  1.5, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
     ])).start();
   }, []);
 
-  const leftEyelidRy   = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [26, 0] });
-  const rightEyelidRy  = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [26, 0] });
-  const smileX         = wiggleAnim.interpolate({ inputRange: [-2,2], outputRange: [-3, 3] });
-  const faceTranslateY = floatAnim.interpolate({ inputRange: [-6,0], outputRange: [-6, 0] });
+  const leftLidRy  = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [25, 0] });
+  const rightLidRy = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [25, 0] });
+  const smileX     = wiggleAnim.interpolate({ inputRange: [-1.5,1.5], outputRange: [-2, 2] });
+  const floatY     = floatAnim.interpolate({ inputRange: [-5,0], outputRange: [-5, 0] });
 
   return (
-    <View style={[cat.wrap, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View style={[av.wrap, { width: size, height: size, borderRadius: size / 2 }]}>
       <Svg width={size} height={size} viewBox="0 0 288 288">
         <Defs>
-          <SvgGradient id="pbg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="rgba(255,255,255,0)" />
-            <Stop offset="100%" stopColor="rgba(255,255,255,0)" />
-          </SvgGradient>
-          <SvgGradient id="pblob" x1="20%" y1="10%" x2="80%" y2="90%">
-            <Stop offset="0%"   stopColor="#ff7a1a" />
-            <Stop offset="100%" stopColor="#e84400" />
-          </SvgGradient>
-          <ClipPath id="pcc">
+          {/* Clip to circle */}
+          <ClipPath id="avClip">
             <Circle cx="144" cy="144" r="144" />
           </ClipPath>
+
+          {/* Skin — warm peach */}
+          <SvgGradient id="avSkin" x1="25%" y1="5%" x2="75%" y2="95%">
+            <Stop offset="0%"   stopColor="#fcd5ae" />
+            <Stop offset="100%" stopColor="#e8a06a" />
+          </SvgGradient>
+
+          {/* Ear */}
+          <SvgGradient id="avEar" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%"   stopColor="#f4c090" />
+            <Stop offset="100%" stopColor="#d9885a" />
+          </SvgGradient>
+
+          {/* Hair — dark brown */}
+          <SvgGradient id="avHair" x1="20%" y1="0%" x2="80%" y2="100%">
+            <Stop offset="0%"   stopColor="#3a2510" />
+            <Stop offset="100%" stopColor="#160e04" />
+          </SvgGradient>
+
+          {/* Iris — violet */}
+          <SvgGradient id="avIris" x1="30%" y1="10%" x2="70%" y2="90%">
+            <Stop offset="0%"   stopColor="#8b5cf6" />
+            <Stop offset="100%" stopColor="#5b21b6" />
+          </SvgGradient>
+
+          {/* Eyelid cover */}
+          <SvgGradient id="avLid" x1="25%" y1="0%" x2="75%" y2="100%">
+            <Stop offset="0%"   stopColor="#fcd5ae" />
+            <Stop offset="100%" stopColor="#eeaa78" />
+          </SvgGradient>
         </Defs>
-        <G clipPath="url(#pcc)">
-          <Rect width="288" height="288" fill="transparent" />
-          <Path
-            d="M144,74 C162,64 186,70 200,88 C218,110 220,135 215,162 C210,188 224,208 216,228 C208,246 190,258 168,263 C148,268 126,266 108,258 C88,250 74,232 70,210 C66,190 76,168 74,148 C72,128 60,108 72,90 C84,72 126,84 144,74Z"
-            fill="url(#pblob)"
-          />
-          <Path
-            d="M144,74 C162,64 186,70 200,88 C210,102 216,118 218,135 Q180,68 144,74Z"
-            fill="#c43000" opacity="0.6"
-          />
-          <AnimatedG translateY={faceTranslateY}>
-            <Ellipse cx="118" cy="158" rx="22" ry="24" fill="#ffffff" />
-            <Circle  cx="124" cy="163" r="13"  fill="#1a1a1a" />
-            <Circle  cx="129" cy="156" r="5"   fill="#fff" />
-            <Circle  cx="119" cy="168" r="2.5" fill="#fff" opacity="0.5" />
-            <AnimatedEllipse cx="118" cy="158" rx="23" ry={leftEyelidRy} fill="url(#pbg)" />
-            <Ellipse cx="172" cy="156" rx="22" ry="24" fill="#ffffff" />
-            <Circle  cx="178" cy="161" r="13"  fill="#1a1a1a" />
-            <Circle  cx="183" cy="154" r="5"   fill="#fff" />
-            <Circle  cx="173" cy="166" r="2.5" fill="#fff" opacity="0.5" />
-            <AnimatedEllipse cx="172" cy="156" rx="23" ry={rightEyelidRy} fill="url(#pbg)" />
+
+        <G clipPath="url(#avClip)">
+          {/* Background */}
+          <Rect width="288" height="288" fill="#ede9fe" />
+
+          <AnimatedG translateY={floatY}>
+            {/* Ears */}
+            <Ellipse cx="44"  cy="168" rx="33" ry="35" fill="url(#avEar)" />
+            <Ellipse cx="44"  cy="172" rx="19" ry="21" fill="#d07848" fillOpacity="0.45" />
+            <Ellipse cx="244" cy="168" rx="33" ry="35" fill="url(#avEar)" />
+            <Ellipse cx="244" cy="172" rx="19" ry="21" fill="#d07848" fillOpacity="0.45" />
+
+            {/* Hair */}
+            <Ellipse cx="144" cy="82"  rx="98" ry="80" fill="url(#avHair)" />
+            <Ellipse cx="130" cy="44"  rx="22" ry="28" fill="#2a1a0a" />
+            <Ellipse cx="155" cy="38"  rx="16" ry="22" fill="#321e0c" />
+            <Ellipse cx="114" cy="58"  rx="26" ry="15" fill="#6a4828" fillOpacity="0.5" />
+
+            {/* Face */}
+            <Ellipse cx="144" cy="162" rx="98" ry="100" fill="url(#avSkin)" />
+            <Ellipse cx="144" cy="248" rx="72" ry="22"  fill="#c08050" fillOpacity="0.18" />
+
+            {/* Left eye */}
+            <Ellipse cx="110" cy="152" rx="26" ry="27" fill="#ffffff" />
+            <Circle  cx="114" cy="156" r="17"           fill="url(#avIris)" />
+            <Circle  cx="114" cy="156" r="10"           fill="#0d0820" />
+            <Circle  cx="122" cy="148" r="6.5"          fill="#ffffff" />
+            <Circle  cx="110" cy="164" r="2.5"          fill="#ffffff" fillOpacity="0.55" />
+            <AnimatedEllipse cx="110" cy="152" rx="27" ry={leftLidRy} fill="url(#avLid)" />
+
+            {/* Right eye */}
+            <Ellipse cx="178" cy="150" rx="26" ry="27" fill="#ffffff" />
+            <Circle  cx="182" cy="154" r="17"           fill="url(#avIris)" />
+            <Circle  cx="182" cy="154" r="10"           fill="#0d0820" />
+            <Circle  cx="190" cy="146" r="6.5"          fill="#ffffff" />
+            <Circle  cx="178" cy="162" r="2.5"          fill="#ffffff" fillOpacity="0.55" />
+            <AnimatedEllipse cx="178" cy="150" rx="27" ry={rightLidRy} fill="url(#avLid)" />
+
+            {/* Eyebrows */}
+            <Path d="M 90,128 Q 110,120 132,124" fill="none" stroke="#2a1a0a" strokeWidth="5.5" strokeLinecap="round" />
+            <Path d="M 156,122 Q 176,116 198,122" fill="none" stroke="#2a1a0a" strokeWidth="5.5" strokeLinecap="round" />
+
+            {/* Nose */}
+            <Ellipse cx="144" cy="178" rx="9"  ry="7"  fill="#c87848" fillOpacity="0.5" />
+            <Circle  cx="138" cy="180" r="4"           fill="#b86838" fillOpacity="0.45" />
+            <Circle  cx="150" cy="180" r="4"           fill="#b86838" fillOpacity="0.45" />
+
+            {/* Cheeks */}
+            <Ellipse cx="82"  cy="190" rx="26" ry="16" fill="#f07060" fillOpacity="0.2" />
+            <Ellipse cx="206" cy="188" rx="26" ry="16" fill="#f07060" fillOpacity="0.2" />
+
+            {/* Smile */}
             <AnimatedPath
-              d="M128,194 Q144,212 162,194"
-              fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round"
+              d="M 116,204 Q 144,226 172,204"
+              fill="none" stroke="#c06040"
+              strokeWidth="5" strokeLinecap="round"
               translateX={smileX}
             />
-            <Ellipse cx="98"  cy="188" rx="14" ry="8" fill="#c4a882" opacity="0.25" />
-            <Ellipse cx="192" cy="186" rx="14" ry="8" fill="#c4a882" opacity="0.25" />
+            <AnimatedPath
+              d="M 122,207 Q 144,212 166,207"
+              fill="none" stroke="#d07858"
+              strokeWidth="2.5" strokeLinecap="round"
+              translateX={smileX}
+            />
           </AnimatedG>
         </G>
       </Svg>
     </View>
   );
 }
-const cat = StyleSheet.create({
-  wrap: { overflow: "hidden", backgroundColor: "rgba(255,107,53,0.08)", borderWidth: 2, borderColor: "rgba(255,107,53,0.2)" },
+const av = StyleSheet.create({
+  wrap: { overflow: "hidden", backgroundColor: "#ede9fe" },
 });
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -315,10 +376,17 @@ export default function ProfileScreen() {
         const t = await getToken();
         if (!t) { router.replace("/login"); return; }
         setToken(t);
+
+        // Show cached profile instantly (1h TTL)
+        const cached = cacheGet("profile");
+        if (cached) { setProfile(cached); setLoading(false); }
+
+        // Refresh from server
         const res  = await fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${t}` } });
         const json = await res.json();
-        if (!json.success) { router.replace("/login"); return; }
+        if (!json.success) { if (!cached) router.replace("/login"); return; }
         setProfile(json.data);
+        cacheSet("profile", json.data, 3600); // 1h TTL
       } catch (_) {}
       setLoading(false);
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
@@ -329,6 +397,8 @@ export default function ProfileScreen() {
     setSigningOut(true);
     await removeToken();
     await AsyncStorage.multiRemove(["token", "user"]);
+    cacheDelete("profile");
+    cacheDelete("user_intro");
     router.replace("/login");
   };
 
@@ -344,7 +414,7 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return <View style={s.centered}><ActivityIndicator size="large" color="#ff6b35" /></View>;
+    return <View style={s.centered}><ActivityIndicator size="large" color="#7c3aed" /></View>;
   }
 
   const bmiVal      = profile ? calcBmi(profile.weight, profile.height) : null;
@@ -358,7 +428,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
       <PageBackground variant="profile" />
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={s.header}>
@@ -376,7 +446,7 @@ export default function ProfileScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <CatAvatar size={88} />
+          <FaceAvatar size={88} />
           <View style={s.heroTextWrap}>
             <View style={s.heroNameRow}>
               <Text style={s.heroName}>{profile?.name ?? "Athlete"}</Text>
@@ -610,45 +680,45 @@ const s = StyleSheet.create({
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 10,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
-    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1, borderColor: "rgba(0,0,0,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     alignItems: "center", justifyContent: "center",
   },
-  backBtnText: { fontSize: 18, color: "#ffffff" },
-  headerTitle: { fontSize: 16, fontWeight: "800", color: "#ffffff" },
+  backBtnText: { fontSize: 18, color: "#1a1a1a" },
+  headerTitle: { fontSize: 16, fontWeight: "800", color: "#1a1a1a" },
 
   // Hero
   hero: { alignItems: "center", paddingVertical: 24, gap: 12 },
   heroTextWrap: { alignItems: "center", gap: 3 },
   heroNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  heroName: { fontSize: 22, fontWeight: "800", color: "#ffffff", letterSpacing: -0.5 },
-  heroEmail: { fontSize: 13, color: "rgba(255,255,255,0.65)" },
-  memberSince: { fontSize: 11, color: "rgba(255,255,255,0.45)" },
+  heroName: { fontSize: 22, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5 },
+  heroEmail: { fontSize: 13, color: "#666" },
+  memberSince: { fontSize: 11, color: "#aaa" },
   pillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
-  pill: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.8)", borderWidth: 1, borderColor: "#e8e5de" },
-  pillText: { fontSize: 12, color: "#555", fontWeight: "500", textTransform: "capitalize" },
+  pill: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 99, backgroundColor: "rgba(0,0,0,0.06)", borderWidth: 1, borderColor: "rgba(0,0,0,0.08)" },
+  pillText: { fontSize: 12, color: "#444", fontWeight: "500", textTransform: "capitalize" },
 
-  proBadge: { backgroundColor: "rgba(255,107,53,0.1)", borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8 },
-  proBadgeText: { fontSize: 10, fontWeight: "700", color: "#ff6b35" },
+  proBadge: { backgroundColor: "rgba(124,58,237,0.1)", borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8, borderWidth: 1, borderColor: "rgba(124,58,237,0.2)" },
+  proBadgeText: { fontSize: 10, fontWeight: "700", color: "#7c3aed" },
 
   // Banners
   proBanner: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "rgba(255,107,53,0.07)", borderWidth: 1, borderColor: "rgba(255,107,53,0.2)",
+    backgroundColor: "rgba(124,58,237,0.07)", borderWidth: 1, borderColor: "rgba(124,58,237,0.2)",
     borderRadius: 16, padding: 14, marginBottom: 10,
   },
-  proBannerTitle: { fontSize: 13, fontWeight: "700", color: "#ff6b35" },
+  proBannerTitle: { fontSize: 13, fontWeight: "700", color: "#7c3aed" },
   proBannerSub: { fontSize: 11, color: "#aaa", marginTop: 2 },
-  detailsBtn: { backgroundColor: "rgba(255,107,53,0.1)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
-  detailsBtnText: { fontSize: 11, fontWeight: "700", color: "#ff6b35" },
+  detailsBtn: { backgroundColor: "rgba(124,58,237,0.1)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
+  detailsBtnText: { fontSize: 11, fontWeight: "700", color: "#7c3aed" },
   upgradeBanner: {
     flexDirection: "row", alignItems: "center", gap: 10,
     backgroundColor: "#1a1a1a", borderRadius: 16, padding: 14, marginBottom: 10,
   },
   upgradeTitle: { fontSize: 13, fontWeight: "700", color: "#fff" },
   upgradeSub: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 },
-  priceBadge: { backgroundColor: "rgba(255,107,53,0.15)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
-  priceBadgeText: { fontSize: 12, fontWeight: "700", color: "#ff6b35" },
+  priceBadge: { backgroundColor: "rgba(124,58,237,0.15)", borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10 },
+  priceBadgeText: { fontSize: 12, fontWeight: "700", color: "#ffffff" },
   cancelNotice: {
     backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)",
     borderRadius: 14, padding: 14, marginBottom: 10,
@@ -686,9 +756,9 @@ const s = StyleSheet.create({
   menuChevron: { fontSize: 18, color: "#ddd" },
   divider: { height: 1, backgroundColor: "#f0ede8", marginHorizontal: 16 },
   planBadge: { backgroundColor: "#f4f2ed", borderRadius: 99, paddingVertical: 3, paddingHorizontal: 8 },
-  planBadgePro: { backgroundColor: "rgba(255,107,53,0.1)" },
+  planBadgePro: { backgroundColor: "rgba(124,58,237,0.1)" },
   planBadgeText: { fontSize: 10, fontWeight: "700", color: "#aaa" },
-  planBadgeTextPro: { color: "#ff6b35" },
+  planBadgeTextPro: { color: "#7c3aed" },
   cancelWarning: { margin: 12, backgroundColor: "rgba(239,68,68,0.06)", borderWidth: 1, borderColor: "rgba(239,68,68,0.18)", borderRadius: 12, padding: 12 },
   cancelWarningTitle: { fontSize: 12, fontWeight: "700", color: "#ef4444", marginBottom: 4 },
   cancelWarningDate: { fontSize: 15, fontWeight: "800", color: "#1a1a1a" },

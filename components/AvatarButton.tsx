@@ -1,270 +1,207 @@
-import { useRouter } from "expo-router";
+/**
+ * AvatarButton — original cartoon character avatar, built entirely from SVG
+ * primitives. 100 % in-house art, safe for commercial use.
+ *
+ * Character: round chubby face, violet irises (matches app palette),
+ * dark hair with a small cowlick, rosy cheeks, animated blink + float + smile.
+ */
+
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, TouchableOpacity } from "react-native";
 import Svg, {
-    Circle,
-    ClipPath,
-    Defs,
-    Ellipse,
-    G,
-    Line,
-    LinearGradient,
-    Path,
-    Rect,
-    Stop,
+  Circle,
+  ClipPath,
+  Defs,
+  Ellipse,
+  G,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
 } from "react-native-svg";
+import { useRouter } from "expo-router";
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedG = Animated.createAnimatedComponent(G);
+const AnimatedPath    = Animated.createAnimatedComponent(Path);
+const AnimatedG       = Animated.createAnimatedComponent(G);
 
 export default function AvatarButton() {
   const router = useRouter();
 
-  const pressAnim = useRef(new Animated.Value(1)).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
+  const pressAnim  = useRef(new Animated.Value(1)).current;
+  const blinkAnim  = useRef(new Animated.Value(1)).current;
   const wiggleAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(0.4)).current;
-  // Float only moves the face group via SVG translateY
-  const floatAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Float - drives SVG G translateY fill="#3d3d3d"
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: -6,
-          duration: 1800,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 1800,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ]),
-    ).start();
+    // Gentle float
+    Animated.loop(Animated.sequence([
+      Animated.timing(floatAnim, { toValue: -5, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(floatAnim, { toValue:  0, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+    ])).start();
 
-    // Blink
+    // Double-blink every ~3.5 s
     const doBlink = () => {
       Animated.sequence([
-        Animated.delay(3000),
-        Animated.timing(blinkAnim, {
-          toValue: 0,
-          duration: 80,
-          useNativeDriver: false,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 80,
-          useNativeDriver: false,
-        }),
-        Animated.delay(120),
-        Animated.timing(blinkAnim, {
-          toValue: 0,
-          duration: 70,
-          useNativeDriver: false,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 80,
-          useNativeDriver: false,
-        }),
+        Animated.delay(3500),
+        Animated.timing(blinkAnim, { toValue: 0, duration: 75,  useNativeDriver: false }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 75,  useNativeDriver: false }),
+        Animated.delay(130),
+        Animated.timing(blinkAnim, { toValue: 0, duration: 65,  useNativeDriver: false }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 80,  useNativeDriver: false }),
       ]).start(() => doBlink());
     };
     doBlink();
 
-    // Wiggle
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(wiggleAnim, {
-          toValue: -2,
-          duration: 1250,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(wiggleAnim, {
-          toValue: 2,
-          duration: 1250,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ]),
-    ).start();
-
-    // Pulse bg
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.7,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0.4,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ]),
-    ).start();
+    // Subtle smile sway
+    Animated.loop(Animated.sequence([
+      Animated.timing(wiggleAnim, { toValue: -1.5, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(wiggleAnim, { toValue:  1.5, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+    ])).start();
   }, []);
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(pressAnim, {
-        toValue: 0.92,
-        duration: 100,
-        useNativeDriver: false,
-      }),
-      Animated.timing(pressAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
+      Animated.timing(pressAnim, { toValue: 0.90, duration: 90,  useNativeDriver: false }),
+      Animated.timing(pressAnim, { toValue: 1,    duration: 140, useNativeDriver: false }),
     ]).start(() => router.push("/profile"));
   };
 
-  const leftEyelidRy = blinkAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [26, 0],
-  });
-  const rightEyelidRy = blinkAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [26, 0],
-  });
-  const smileX = wiggleAnim.interpolate({
-    inputRange: [-2, 2],
-    outputRange: [-3, 3],
-  });
-  // Float as SVG translateY string Animated.delay(3000),
-  const faceTranslateY = floatAnim.interpolate({
-    inputRange: [-6, 0],
-    outputRange: [-6, 0],
-  });
+  // Derived animated values
+  const leftLidRy  = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [25, 0] });
+  const rightLidRy = blinkAnim.interpolate({ inputRange: [0,1], outputRange: [25, 0] });
+  const smileX     = wiggleAnim.interpolate({ inputRange: [-1.5,1.5], outputRange: [-2, 2] });
+  const floatY     = floatAnim.interpolate({ inputRange: [-5,0], outputRange: [-5, 0] });
 
-  const SIZE = 42;
+  const SIZE = 44;
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={1}
-      style={styles.touch}
-    >
-      <Animated.View
-        style={[styles.container, { transform: [{ scale: pressAnim }] }]}
-      >
+    <TouchableOpacity onPress={handlePress} activeOpacity={1} style={st.touch}>
+      <Animated.View style={[st.container, { transform: [{ scale: pressAnim }] }]}>
         <Svg width={SIZE} height={SIZE} viewBox="0 0 288 288">
           <Defs>
-            <LinearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="rgba(255,255,255,0)" />
-              <Stop offset="100%" stopColor="rgba(255,255,255,0)" />
-            </LinearGradient>
-            <LinearGradient id="blob" x1="20%" y1="10%" x2="80%" y2="90%">
-              <Stop offset="0%" stopColor="#ff7a1a" />
-              <Stop offset="100%" stopColor="#e84400" />
-            </LinearGradient>
-            <ClipPath id="cc">
+            {/* Clip to circle */}
+            <ClipPath id="clip">
               <Circle cx="144" cy="144" r="144" />
             </ClipPath>
+
+            {/* Skin — warm peach, lit from top-left */}
+            <LinearGradient id="skin" x1="25%" y1="5%" x2="75%" y2="95%">
+              <Stop offset="0%"   stopColor="#fcd5ae" />
+              <Stop offset="100%" stopColor="#e8a06a" />
+            </LinearGradient>
+
+            {/* Ear — slightly deeper than face */}
+            <LinearGradient id="earLg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%"   stopColor="#f4c090" />
+              <Stop offset="100%" stopColor="#d9885a" />
+            </LinearGradient>
+
+            {/* Hair — dark brown, subtle highlight */}
+            <LinearGradient id="hair" x1="20%" y1="0%" x2="80%" y2="100%">
+              <Stop offset="0%"   stopColor="#3a2510" />
+              <Stop offset="100%" stopColor="#160e04" />
+            </LinearGradient>
+
+            {/* Iris — violet to match app theme */}
+            <LinearGradient id="iris" x1="30%" y1="10%" x2="70%" y2="90%">
+              <Stop offset="0%"   stopColor="#8b5cf6" />
+              <Stop offset="100%" stopColor="#5b21b6" />
+            </LinearGradient>
+
+            {/* Face-coloured eyelid cover for blink */}
+            <LinearGradient id="lid" x1="25%" y1="0%" x2="75%" y2="100%">
+              <Stop offset="0%"   stopColor="#fcd5ae" />
+              <Stop offset="100%" stopColor="#eeaa78" />
+            </LinearGradient>
           </Defs>
 
-          <G clipPath="url(#cc)">
-            {/* Transparent background - inherits page gradient */}
-            <Rect width="288" height="288" fill="transparent" />
+          <G clipPath="url(#clip)">
+            {/* ── Page bg ── */}
+            <Rect width="288" height="288" fill="#ede9fe" />
 
-            {/* Static lines */}
-            <Line
-              x1="80"
-              y1="38"
-              x2="208"
-              y2="38"
-              stroke="#c8c3bc"
-              strokeWidth="5"
-              strokeLinecap="round"
-              opacity="0.35"
-            />
-            <Line
-              x1="80"
-              y1="50"
-              x2="160"
-              y2="50"
-              stroke="#c8c3bc"
-              strokeWidth="4"
-              strokeLinecap="round"
-              opacity="0.25"
-            />
+            {/* ── Everything floats together ── */}
+            <AnimatedG translateY={floatY}>
 
-            {/* Static blob body */}
-            <Path
-              d="M144,74 C162,64 186,70 200,88 C218,110 220,135 215,162 C210,188 224,208 216,228 C208,246 190,258 168,263 C148,268 126,266 108,258 C88,250 74,232 70,210 C66,190 76,168 74,148 C72,128 60,108 72,90 C84,72 126,84 144,74Z"
-              fill="url(#blob)"
-            />
-            <Path
-              d="M144,74 C162,64 186,70 200,88 C210,102 216,118 218,135 Q180,68 144,74Z"
-              fill="#c43000"
-              opacity="0.6"
-            />
+              {/* ── EARS (behind face) ── */}
+              <Ellipse cx="44"  cy="168" rx="33" ry="35" fill="url(#earLg)" />
+              <Ellipse cx="44"  cy="172" rx="19" ry="21" fill="#d07848" fillOpacity="0.45" />
 
-            {/* ── ANIMATED face group - floats up/down only ── */}
-            <AnimatedG translateY={faceTranslateY}>
-              {/* Left eye */}
-              <Ellipse cx="118" cy="158" rx="22" ry="24" fill="#ffffff" />
-              <Circle cx="124" cy="163" r="13" fill="#1a1a1a" />
-              <Circle cx="129" cy="156" r="5" fill="#fff" />
-              <Circle cx="119" cy="168" r="2.5" fill="#fff" opacity="0.5" />
-              <AnimatedEllipse
-                cx="118"
-                cy="158"
-                rx="23"
-                ry={leftEyelidRy}
-                fill="url(#bg)"
+              <Ellipse cx="244" cy="168" rx="33" ry="35" fill="url(#earLg)" />
+              <Ellipse cx="244" cy="172" rx="19" ry="21" fill="#d07848" fillOpacity="0.45" />
+
+              {/* ── HAIR (drawn before face so face overlaps its base) ── */}
+              {/* Main hair mass */}
+              <Ellipse cx="144" cy="82"  rx="98" ry="80"  fill="url(#hair)" />
+              {/* Cowlick tuft */}
+              <Ellipse cx="130" cy="44"  rx="22" ry="28"  fill="#2a1a0a" />
+              <Ellipse cx="155" cy="38"  rx="16" ry="22"  fill="#321e0c" />
+              {/* Hair highlight sheen */}
+              <Ellipse cx="114" cy="58"  rx="26" ry="15"  fill="#6a4828" fillOpacity="0.5" />
+
+              {/* ── FACE ── */}
+              <Ellipse cx="144" cy="162" rx="98" ry="100" fill="url(#skin)" />
+              {/* Subtle chin shadow */}
+              <Ellipse cx="144" cy="248" rx="72" ry="22"  fill="#c08050" fillOpacity="0.18" />
+
+              {/* ── LEFT EYE ── */}
+              {/* White (sclera) */}
+              <Ellipse cx="110" cy="152" rx="26" ry="27" fill="#ffffff" />
+              {/* Iris */}
+              <Circle  cx="114" cy="156" r="17"           fill="url(#iris)" />
+              {/* Pupil */}
+              <Circle  cx="114" cy="156" r="10"           fill="#0d0820" />
+              {/* Primary highlight */}
+              <Circle  cx="122" cy="148" r="6.5"          fill="#ffffff" />
+              {/* Secondary highlight */}
+              <Circle  cx="110" cy="164" r="2.5"          fill="#ffffff" fillOpacity="0.55" />
+              {/* Animated eyelid */}
+              <AnimatedEllipse cx="110" cy="152" rx="27" ry={leftLidRy} fill="url(#lid)" />
+
+              {/* ── RIGHT EYE ── */}
+              <Ellipse cx="178" cy="150" rx="26" ry="27" fill="#ffffff" />
+              <Circle  cx="182" cy="154" r="17"           fill="url(#iris)" />
+              <Circle  cx="182" cy="154" r="10"           fill="#0d0820" />
+              <Circle  cx="190" cy="146" r="6.5"          fill="#ffffff" />
+              <Circle  cx="178" cy="162" r="2.5"          fill="#ffffff" fillOpacity="0.55" />
+              <AnimatedEllipse cx="178" cy="150" rx="27" ry={rightLidRy} fill="url(#lid)" />
+
+              {/* ── EYEBROWS ── */}
+              <Path
+                d="M 90,128 Q 110,120 132,124"
+                fill="none" stroke="#2a1a0a"
+                strokeWidth="5.5" strokeLinecap="round"
+              />
+              <Path
+                d="M 156,122 Q 176,116 198,122"
+                fill="none" stroke="#2a1a0a"
+                strokeWidth="5.5" strokeLinecap="round"
               />
 
-              {/* Right eye */}
-              <Ellipse cx="172" cy="156" rx="22" ry="24" fill="#ffffff" />
-              <Circle cx="178" cy="161" r="13" fill="#1a1a1a" />
-              <Circle cx="183" cy="154" r="5" fill="#fff" />
-              <Circle cx="173" cy="166" r="2.5" fill="#fff" opacity="0.5" />
-              <AnimatedEllipse
-                cx="172"
-                cy="156"
-                rx="23"
-                ry={rightEyelidRy}
-                fill="url(#bg)"
-              />
+              {/* ── NOSE ── */}
+              <Ellipse cx="144" cy="178" rx="9"  ry="7"  fill="#c87848" fillOpacity="0.5" />
+              <Circle  cx="138" cy="180" r="4"           fill="#b86838" fillOpacity="0.45" />
+              <Circle  cx="150" cy="180" r="4"           fill="#b86838" fillOpacity="0.45" />
 
-              {/* Smile */}
+              {/* ── CHEEKS ── */}
+              <Ellipse cx="82"  cy="190" rx="26" ry="16" fill="#f07060" fillOpacity="0.2" />
+              <Ellipse cx="206" cy="188" rx="26" ry="16" fill="#f07060" fillOpacity="0.2" />
+
+              {/* ── SMILE ── */}
               <AnimatedPath
-                d="M128,194 Q144,212 162,194"
-                fill="none"
-                stroke="#fff"
-                strokeWidth="3.5"
-                strokeLinecap="round"
+                d="M 116,204 Q 144,226 172,204"
+                fill="none" stroke="#c06040"
+                strokeWidth="5" strokeLinecap="round"
+                translateX={smileX}
+              />
+              {/* Lower lip accent */}
+              <AnimatedPath
+                d="M 122,207 Q 144,212 166,207"
+                fill="none" stroke="#d07858"
+                strokeWidth="2.5" strokeLinecap="round"
                 translateX={smileX}
               />
 
-              {/* Cheeks */}
-              <Ellipse
-                cx="98"
-                cy="188"
-                rx="14"
-                ry="8"
-                fill="#c4a882"
-                opacity="0.25"
-              />
-              <Ellipse
-                cx="192"
-                cy="186"
-                rx="14"
-                ry="8"
-                fill="#c4a882"
-                opacity="0.25"
-              />
             </AnimatedG>
           </G>
         </Svg>
@@ -272,17 +209,16 @@ export default function AvatarButton() {
     </TouchableOpacity>
   );
 }
-const styles = StyleSheet.create({
+
+const st = StyleSheet.create({
   touch: { alignSelf: "auto" },
   container: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
-    borderColor: "rgba(255,107,53,0.25)",
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
-  avatar: { width: 42, height: 42, borderRadius: 21, overflow: "hidden" },
 });

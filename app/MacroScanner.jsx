@@ -2,13 +2,21 @@ import AvatarButton from "@/components/AvatarButton";
 import PageBackground from "@/components/PageBackground";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import {
+  deleteMealLog,
+  getMealLogsByDate,
+  saveMealLog,
+  updateMealLogTotals,
+} from "@/src/db/mealDb";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
     Animated,
+    Easing,
     Image,
+    KeyboardAvoidingView,
     Modal,
     Platform,
     Pressable,
@@ -19,11 +27,16 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Defs, G, LinearGradient, Stop } from "react-native-svg";
+//const ARC_TRANSFORM = `rotate(-90, ${CX}, ${CX}) translate(0, ${2 * CX}) scale(1, -1)`;
+//edit macr
+
+const AnimArc = Animated.createAnimatedComponent(Circle);
+const AnimatedG = Animated.createAnimatedComponent(G);
 
 const BASE_URL = "https://yourpocketgym.com";
 
-// ─── Helpers good ──────────────────────────────────────────────────────────────────
+// ─── Helpers good cal add what you scan y  ──────────────────────────────────────────────────────────────────
 function toLocalISO(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -189,151 +202,141 @@ const sh = StyleSheet.create({
   },
 });
 
-// ─── Calorie Arc (SVG) ────────────────────────────────────────────────────────
-// Fixed: proper strokeDashoffset to start from 12 o'clock,
-// simple and clean - no broken border-trick rings.
+// ─── Calorie Arc — silver metallic ring with spinning shine ───────────────────
 function CalorieArc({ consumed, goal }) {
-  const SIZE = 180;
-  const R = 76;
-  const SW = 10;
-  const C = SIZE / 2;
-  const CIRC = 2 * Math.PI * R;
+  const SIZE  = 196;
+  const CX    = SIZE / 2;
+  const R     = 80;
+  const SW    = 16;
+  const CIRC  = 2 * Math.PI * R;
 
-  const pct = goal > 0 ? Math.min(consumed / goal, 1) : 0;
-  const dash = CIRC * pct;
-  const color = pct >= 0.9 ? "#ef4444" : "#7c3aed";
-  const remaining = Math.max(0, goal - consumed);
+  const pct  = goal > 0 ? Math.min(consumed / goal, 1) : 0;
+  const over = pct >= 1;
+  const warn = pct >= 0.9;
 
+  const fillAnim  = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Gentle pulse on the tip glow
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 1.5, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+      Animated.timing(pulseAnim, { toValue: 1,   duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
+    ])).start();
+  }, []);
+
+  useEffect(() => {
+    fillAnim.setValue(0);
+    Animated.timing(fillAnim, {
+      toValue: pct, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: false,
+    }).start();
+  }, [pct]);
+
+  const dashOffset = fillAnim.interpolate({
+    inputRange: [0, 1], outputRange: [CIRC, 0],
+  });
+
+  // ── Sparkle dot: positive = CW in SVG (no coordinate flip needed) ───────────
+  const dotRotation = fillAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [0, 360],
+  });
+
+  // Pulsing outer halo radius: 12 → 18
+  const haloR = pulseAnim.interpolate({ inputRange: [1, 1.5], outputRange: [12, 18] });
+
+  const arcColor = over ? "#f87171" : warn ? "#fbbf24" : "#c8d0dc";
+
+  // SVG transform that makes strokeDashoffset fill CLOCKWISE from the top:
+  //   scale(1,-1)           — flip y-axis → reverses circle path CCW→CW
+  //   translate(0, 2*CX)    — bring circle back to original centre after flip
+  //   rotate(-90, CX, CX)   — rotate start point from 3-o'clock → 12-o'clock
+  // Transforms are applied right-to-left in SVG.
+  // prettier-ignore
+const ARC_TRANSFORM = `rotate(-90, ${CX}, ${CX})`;
   return (
-    <View
-      style={{
-        alignItems: "center",
-        justifyContent: "center",
-        width: SIZE,
-        height: SIZE,
-      }}
-    >
+    <View style={{ width: SIZE, height: SIZE, alignItems: "center", justifyContent: "center" }}>
       <Svg width={SIZE} height={SIZE} style={{ position: "absolute" }}>
-        {/* Track ring */}
-        <Circle
-          cx={C}
-          cy={C}
-          r={R}
-          stroke="#f0ede6"
-          strokeWidth={SW}
-          fill="none"
-        />
-        {/* Progress ring - starts at 12 o'clock via rotation */}
-        {pct > 0 && (
-          <Circle
-            cx={C}
-            cy={C}
-            r={R}
-            stroke={color}
-            strokeWidth={SW}
+
+        {/* Dark sunken track — full circle, no transform needed */}
+        <Circle cx={CX} cy={CX} r={R} fill="none" stroke="#1c1c1e" strokeWidth={SW} />
+
+        {/* Silver progress arc — ARC_TRANSFORM makes it fill CW from top */}
+        {consumed > 0 && (
+          <AnimArc
+            cx={CX} cy={CX} r={R}
             fill="none"
-            strokeDasharray={`${dash} ${CIRC}`}
-            strokeDashoffset={0}
+            stroke={arcColor}
+            strokeWidth={SW}
+            strokeDasharray={CIRC}
+            strokeDashoffset={dashOffset}
             strokeLinecap="round"
-            rotation={-90}
-            origin={`${C}, ${C}`}
+            transform={ARC_TRANSFORM}
           />
         )}
+
+        {/* Sparkle dot — positive dotRotation = CW, matches arc fill direction */}
+        {consumed > 0 && (
+          <AnimatedG rotation={dotRotation} origin={`${CX}, ${CX}`}>
+            <AnimArc cx={CX} cy={CX - R} r={haloR} fill="rgba(255,255,255,0.12)" />
+            <Circle  cx={CX} cy={CX - R} r={8}     fill="rgba(255,255,255,0.32)" />
+            <Circle  cx={CX} cy={CX - R} r={4}     fill="#ffffff" />
+          </AnimatedG>
+        )}
+
       </Svg>
 
-      {/* Center text - absolutely centred inside the arc */}
+      {/* Center — calories only */}
       <View style={{ alignItems: "center" }}>
         <Text style={arc.num}>{fmt(consumed)}</Text>
-        <Text style={arc.unit}>kcal</Text>
-        <View style={arc.line} />
-        <Text style={arc.sub} numberOfLines={1}>
-          {remaining > 0 ? `${fmt(remaining)} left` : "Goal hit"}
-        </Text>
+        <Text style={arc.unit}>KCAL</Text>
       </View>
     </View>
   );
 }
 
 const arc = StyleSheet.create({
-  num: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    letterSpacing: -1,
-    lineHeight: 30,
-  },
-  unit: { fontSize: 11, color: "#bbb", fontWeight: "500", marginTop: 1 },
-  line: { width: 20, height: 1, backgroundColor: "#e8e5de", marginVertical: 5 },
-  sub: { fontSize: 11, color: "#aaa", fontWeight: "600" },
+  num:  { fontSize: 32, fontWeight: "900", color: "#ffffff", letterSpacing: -1.5, lineHeight: 36 },
+  unit: { fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 3 },
 });
 
 // ─── Macro Bar ────────────────────────────────────────────────────────────────
-function MacroBar({ label, value, goal, color, delay = 0 }) {
-  const pct = goal > 0 ? Math.min(value / goal, 1) : 0;
-  const animW = useRef(new Animated.Value(0)).current;
+function MacroBar({ label, value, goal, delay = 0, dark = false }) {
+  const rawPct = goal > 0 ? value / goal : 0;
+  const pct    = Math.min(rawPct, 1);
+  const over   = rawPct >= 1;
 
+  const animW = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(animW, {
-      toValue: pct,
-      duration: 700,
-      delay,
-      useNativeDriver: false,
+      toValue: pct, duration: 700, delay, useNativeDriver: false,
     }).start();
   }, [pct]);
 
-  const widthPct = animW.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
+  const widthPct = animW.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
+
+  // Silver when normal, red when at/over limit
+  const barColor   = over ? "#f87171" : dark ? "#c8d0dc" : "#9ca3af";
+  const dotColor   = barColor;
+  const labelCol   = dark ? "rgba(255,255,255,0.45)" : "#555";
+  const valCol     = over ? "#f87171" : dark ? "#ffffff" : "#1a1a1a";
+  const goalCol    = dark ? "rgba(255,255,255,0.2)"  : "#aaa";
+  const trackCol   = dark ? "rgba(255,255,255,0.07)" : "#f0ede6";
 
   return (
     <View style={{ marginBottom: 12 }}>
-      {/* Label row */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 5,
-        }}
-      >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: color,
-            }}
-          />
-          <Text style={{ fontSize: 12, fontWeight: "600", color: "#555" }}>
-            {label}
-          </Text>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: dotColor }} />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: labelCol }}>{label}</Text>
         </View>
-        <Text style={{ fontSize: 11, color: "#aaa" }}>
-          <Text style={{ fontWeight: "800", color: "#1a1a1a" }}>
-            {round1(value)}
-          </Text>
+        <Text style={{ fontSize: 11, color: goalCol }}>
+          <Text style={{ fontWeight: "800", color: valCol }}>{round1(value)}</Text>
           <Text>/{goal}g</Text>
         </Text>
       </View>
-      {/* Bar */}
-      <View
-        style={{
-          height: 5,
-          backgroundColor: "#f0ede6",
-          borderRadius: 99,
-          overflow: "hidden",
-        }}
-      >
-        <Animated.View
-          style={{
-            height: "100%",
-            width: widthPct,
-            backgroundColor: color,
-            borderRadius: 99,
-          }}
-        />
+      <View style={{ height: 5, backgroundColor: trackCol, borderRadius: 99, overflow: "hidden" }}>
+        <Animated.View style={{ height: "100%", width: widthPct, backgroundColor: barColor, borderRadius: 99 }} />
       </View>
     </View>
   );
@@ -372,29 +375,43 @@ function Skeleton({ height = 80 }) {
 }
 
 // ─── Goals Sheet ──────────────────────────────────────────────────────────────
-function GoalsSheet({
-  visible,
-  goals,
-  calculated,
-  hasCustom,
-  token,
-  onClose,
-  onSaved,
-}) {
-  const [local, setLocal] = useState({ ...goals });
-  const [saving, setSaving] = useState(false);
+// Uses its own Modal + KeyboardAvoidingView so the sheet lifts above the
+// keyboard when a TextInput is focused (BottomSheet uses position:absolute
+// which doesn't respond to KAV).
+function GoalsSheet({ visible, goals, calculated, hasCustom, token, onClose, onSaved }) {
+  const [local, setLocal]       = useState({ ...goals });
+  const [saving, setSaving]     = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim    = useRef(new Animated.Value(500)).current;
 
   useEffect(() => {
     setLocal({ ...goals });
   }, [goals]);
 
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slideAnim,    { toValue: 0, tension: 65, friction: 12, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(slideAnim,    { toValue: 500, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
   const FIELDS = [
-    { key: "calories", label: "Calories", unit: "kcal", color: "#1a1a1a" },
-    { key: "protein", label: "Protein", unit: "g", color: "#7c3aed" },
-    { key: "carbs", label: "Carbs", unit: "g", color: "#6366f1" },
-    { key: "fat", label: "Fat", unit: "g", color: "#888" },
-    { key: "fiber", label: "Fiber", unit: "g", color: "#22c55e" },
+    { key: "calories", label: "Calories", unit: "cal" },
+    { key: "protein",  label: "Protein",  unit: "g"    },
+    { key: "carbs",    label: "Carbs",    unit: "g"    },
+    { key: "fat",      label: "Fat",      unit: "g"    },
+    { key: "fiber",    label: "Fiber",    unit: "g"    },
   ];
 
   async function save() {
@@ -402,190 +419,161 @@ function GoalsSheet({
     try {
       const res = await fetch(`${BASE_URL}/api/nutrition-goals`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(local),
       });
       const json = await res.json();
-      if (json.success) {
-        onSaved(local, true);
-        onClose();
-      } else Alert.alert("Error", json.error);
-    } catch {
-      Alert.alert("Error", "Network error");
-    } finally {
-      setSaving(false);
-    }
+      if (json.success) { onSaved(local, true); onClose(); }
+      else Alert.alert("Error", json.error);
+    } catch { Alert.alert("Error", "Network error"); }
+    finally { setSaving(false); }
   }
 
   async function reset() {
     setResetting(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/nutrition-goals`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const res  = await fetch(`${BASE_URL}/api/nutrition-goals`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
-      if (json.success && calculated) {
-        onSaved(calculated, false);
-        onClose();
-      }
-    } catch {
-    } finally {
-      setResetting(false);
-    }
+      if (json.success && calculated) { onSaved(calculated, false); onClose(); }
+    } catch {} finally { setResetting(false); }
   }
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
-      {/* Header */}
-      <View style={g.row}>
-        <View>
-          <Text style={g.eyebrow}>Nutrition</Text>
-          <Text style={g.title}>Daily goals</Text>
-        </View>
-        <Pressable onPress={onClose}>
-          <Text style={g.cancel}>Cancel</Text>
-        </Pressable>
-      </View>
+    <Modal visible transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.5)", opacity: backdropAnim }]}
+        pointerEvents="box-none"
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
 
-      {/* Calculated reference banner */}
-      {calculated && (
-        <View style={g.banner}>
-          <View style={{ flex: 1 }}>
-            <Text style={g.bannerLabel}>Calculated from profile</Text>
-            <Text style={g.bannerVal}>
-              {calculated.calories} kcal · {calculated.protein}g protein
-            </Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1, justifyContent: "flex-end" }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      >
+        <Animated.View style={[gs.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          <View style={gs.handle} />
+
+          {/* Header */}
+          <View style={g.row}>
+            <Text style={g.title}>Daily goals</Text>
+            <Pressable onPress={onClose}>
+              <Text style={g.cancel}>Cancel</Text>
+            </Pressable>
           </View>
-          {hasCustom && (
-            <Pressable
-              onPress={reset}
-              disabled={resetting}
-              style={[g.resetBtn, resetting && { opacity: 0.5 }]}
-            >
-              <Text style={g.resetText}>{resetting ? "…" : "Reset"}</Text>
+
+          {/* Calculated reference — minimal neutral strip */}
+          {calculated && hasCustom && (
+            <Pressable onPress={reset} disabled={resetting} style={[g.resetRow, resetting && { opacity: 0.5 }]}>
+              <Text style={g.resetText}>{resetting ? "Resetting…" : "Reset to calculated defaults"}</Text>
             </Pressable>
           )}
-        </View>
-      )}
 
-      {/* Input rows */}
-      <View style={{ gap: 8, marginBottom: 24 }}>
-        {FIELDS.map(({ key, label, unit, color }) => (
-          <View key={key} style={g.inputRow}>
-            <View style={[g.dot, { backgroundColor: color }]} />
-            <Text style={g.inputLabel}>{label}</Text>
-            <TextInput
-              value={String(local[key])}
-              onChangeText={(v) =>
-                setLocal((p) => ({
-                  ...p,
-                  [key]: Number(v.replace(/[^0-9]/g, "")) || 0,
-                }))
-              }
-              keyboardType="number-pad"
-              style={[g.inputField, { color }]}
-              selectTextOnFocus
-            />
-            <Text style={g.inputUnit}>{unit}</Text>
-          </View>
-        ))}
-      </View>
+          {/* Input rows — clean, no dots */}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 340 }}
+          >
+            <View style={{ marginBottom: 20 }}>
+              {FIELDS.map(({ key, label, unit }, i) => (
+                <View key={key} style={[g.inputRow, i < FIELDS.length - 1 && g.inputRowBorder]}>
+                  <Text style={g.inputLabel}>{label}</Text>
+                  <TextInput
+                    value={String(local[key])}
+                    onChangeText={(v) =>
+                      setLocal((p) => ({ ...p, [key]: Number(v.replace(/[^0-9]/g, "")) || 0 }))
+                    }
+                    keyboardType="number-pad"
+                    returnKeyType="done"
+                    style={g.inputField}
+                    selectTextOnFocus
+                  />
+                  <Text style={g.inputUnit}>{unit}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
 
-      <Pressable
-        onPress={save}
-        disabled={saving}
-        style={[g.saveBtn, saving && { opacity: 0.5 }]}
-      >
-        <Text style={g.saveBtnText}>{saving ? "Saving…" : "Save goals"}</Text>
-      </Pressable>
-      <View style={{ height: Platform.OS === "ios" ? 36 : 20 }} />
-    </BottomSheet>
+          <Pressable onPress={save} disabled={saving} style={[g.saveBtn, saving && { opacity: 0.5 }]}>
+            <Text style={g.saveBtnText}>{saving ? "Saving…" : "Save"}</Text>
+          </Pressable>
+          <View style={{ height: Platform.OS === "ios" ? 36 : 20 }} />
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
+
+const gs = StyleSheet.create({
+  sheet: {
+    backgroundColor: "#fafaf8",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  handle: {
+    width: 36, height: 4, backgroundColor: "#e0ddd6",
+    borderRadius: 99, alignSelf: "center", marginBottom: 20,
+  },
+});
 
 const g = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 18,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#bbb",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    letterSpacing: -0.5,
-  },
-  cancel: { fontSize: 14, color: "#bbb", fontWeight: "600", paddingTop: 4 },
-  banner: {
-    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(99,102,241,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(99,102,241,0.15)",
-    borderRadius: 14,
-    padding: 14,
+    marginBottom: 22,
+  },
+  title: { fontSize: 18, fontWeight: "700", color: "#1a1a1a" },
+  cancel: { fontSize: 14, color: "#bbb", fontWeight: "600" },
+  resetRow: {
     marginBottom: 16,
-    gap: 10,
-  },
-  bannerLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#6366f1",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  bannerVal: { fontSize: 13, fontWeight: "600", color: "#444" },
-  resetBtn: {
-    backgroundColor: "rgba(99,102,241,0.1)",
+    paddingVertical: 10,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    backgroundColor: "#f4f2ed",
+    alignItems: "center",
   },
-  resetText: { fontSize: 12, fontWeight: "700", color: "#6366f1" },
+  resetText: { fontSize: 13, fontWeight: "600", color: "#999" },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-    paddingVertical: 13,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     gap: 10,
   },
-  dot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  inputLabel: { flex: 1, fontSize: 14, fontWeight: "600", color: "#555" },
+  inputRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0ede6",
+  },
+  inputLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: "#333" },
   inputField: {
-    fontSize: 20,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1a1a1a",
     textAlign: "right",
     minWidth: 64,
   },
   inputUnit: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#bbb",
-    fontWeight: "500",
-    width: 34,
+    fontWeight: "400",
+    width: 32,
     textAlign: "right",
   },
   saveBtn: {
     backgroundColor: "#1a1a1a",
-    borderRadius: 16,
-    paddingVertical: 17,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: "center",
   },
   saveBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
@@ -595,32 +583,55 @@ const g = StyleSheet.create({
 function EditMacrosSheet({ visible, log, onClose, onSave, token }) {
   const [macros, setMacros] = useState({
     calories: log?.totals?.calories ?? 0,
-    protein: log?.totals?.protein ?? 0,
-    carbs: log?.totals?.carbs ?? 0,
-    fat: log?.totals?.fat ?? 0,
-    fiber: log?.totals?.fiber ?? 0,
+    protein:  log?.totals?.protein  ?? 0,
+    carbs:    log?.totals?.carbs    ?? 0,
+    fat:      log?.totals?.fat      ?? 0,
+    fiber:    log?.totals?.fiber    ?? 0,
   });
   const [saving, setSaving] = useState(false);
 
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim    = useRef(new Animated.Value(500)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slideAnim,    { toValue: 0, tension: 65, friction: 12, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(slideAnim,    { toValue: 500, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  // Sync macros when log changes
+  useEffect(() => {
+    setMacros({
+      calories: log?.totals?.calories ?? 0,
+      protein:  log?.totals?.protein  ?? 0,
+      carbs:    log?.totals?.carbs    ?? 0,
+      fat:      log?.totals?.fat      ?? 0,
+      fiber:    log?.totals?.fiber    ?? 0,
+    });
+  }, [log]);
+
+  if (!visible) return null;
+
   const FIELDS = [
-    { key: "calories", label: "Calories", unit: "kcal", color: "#1a1a1a" },
-    { key: "protein", label: "Protein", unit: "g", color: "#7c3aed" },
-    { key: "carbs", label: "Carbs", unit: "g", color: "#6366f1" },
-    { key: "fat", label: "Fat", unit: "g", color: "#888" },
-    { key: "fiber", label: "Fiber", unit: "g", color: "#22c55e" },
+    { key: "calories", label: "Calories", unit: "cal",  },
+    { key: "protein",  label: "Protein",  unit: "g",     },
+    { key: "carbs",    label: "Carbs",    unit: "g",     },
+    { key: "fat",      label: "Fat",      unit: "g",     },
+    { key: "fiber",    label: "Fiber",    unit: "g",     },
   ];
 
-  async function save() {
+  function save() {
     setSaving(true);
     try {
-      await fetch(`${BASE_URL}/api/meal-log?id=${log._id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ totals: macros }),
-      });
+      updateMealLogTotals(log._id, macros);
       onSave(macros);
       onClose();
     } catch (e) {
@@ -631,45 +642,67 @@ function EditMacrosSheet({ visible, log, onClose, onSave, token }) {
   }
 
   return (
-    <BottomSheet visible={visible} onClose={onClose}>
-      <View style={g.row}>
-        <View>
-          <Text style={g.eyebrow}>{mealLabel(log?.mealType)}</Text>
-          <Text style={g.title}>Edit macros</Text>
-        </View>
-        <Pressable onPress={onClose}>
-          <Text style={g.cancel}>Cancel</Text>
-        </Pressable>
-      </View>
-
-      <View style={{ gap: 8, marginBottom: 24 }}>
-        {FIELDS.map(({ key, label, unit, color }) => (
-          <View key={key} style={g.inputRow}>
-            <View style={[g.dot, { backgroundColor: color }]} />
-            <Text style={g.inputLabel}>{label}</Text>
-            <TextInput
-              value={String(macros[key])}
-              onChangeText={(v) =>
-                setMacros((p) => ({ ...p, [key]: parseFloat(v) || 0 }))
-              }
-              keyboardType="decimal-pad"
-              style={[g.inputField, { color }]}
-              selectTextOnFocus
-            />
-            <Text style={g.inputUnit}>{unit}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Pressable
-        onPress={save}
-        disabled={saving}
-        style={[g.saveBtn, saving && { opacity: 0.5 }]}
+    <Modal visible transparent animationType="none" onRequestClose={onClose}>
+      {/* Backdrop */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.5)", opacity: backdropAnim }]}
+        pointerEvents="box-none"
       >
-        <Text style={g.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
-      </Pressable>
-      <View style={{ height: 20 }} />
-    </BottomSheet>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+
+      {/* Sheet lifts above keyboard */}
+      <KeyboardAvoidingView
+        style={{ flex: 1, justifyContent: "flex-end" }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      >
+        <Animated.View style={[gs.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          <View style={gs.handle} />
+
+          <View style={g.row}>
+            <View>
+              <Text style={g.eyebrow}>{mealLabel(log?.mealType)}</Text>
+              <Text style={g.title}>Edit macros</Text>
+            </View>
+            <Pressable onPress={onClose}>
+              <Text style={g.cancel}>Cancel</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 340 }}
+          >
+            <View style={{ gap: 8, marginBottom: 20 }}>
+              {FIELDS.map(({ key, label, unit, color }) => (
+                <View key={key} style={g.inputRow}>
+                  <View style={[g.dot, { backgroundColor: color }]} />
+                  <Text style={g.inputLabel}>{label}</Text>
+                  <TextInput
+                    value={String(macros[key])}
+                    onChangeText={(v) =>
+                      setMacros((p) => ({ ...p, [key]: parseFloat(v) || 0 }))
+                    }
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    style={[g.inputField, { color }]}
+                    selectTextOnFocus
+                  />
+                  <Text style={g.inputUnit}>{unit}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+
+          <Pressable onPress={save} disabled={saving} style={[g.saveBtn, saving && { opacity: 0.5 }]}>
+            <Text style={g.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
+          </Pressable>
+          <View style={{ height: Platform.OS === "ios" ? 36 : 20 }} />
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -767,7 +800,7 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
     <BottomSheet visible={visible} onClose={onClose}>
       {/* Header */}
       <View style={g.row}>
-        <Text style={g.title}>Log a meal</Text>
+        <Text style={g.title}>What did you eat?</Text>
         <Pressable onPress={onClose}>
           <Text style={g.cancel}>Cancel</Text>
         </Pressable>
@@ -927,7 +960,7 @@ function ResultSheet({ visible, log, onClose }) {
             {fmt(log.totals?.calories ?? 0)}
             <Text style={{ fontSize: 14, fontWeight: "400", color: "#bbb" }}>
               {" "}
-              kcal
+              cal
             </Text>
           </Text>
         </View>
@@ -967,7 +1000,7 @@ function ResultSheet({ visible, log, onClose }) {
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={rf.foodCal}>{fmt(f.macros?.calories ?? 0)}</Text>
-              <Text style={rf.foodCalUnit}>kcal</Text>
+              <Text style={rf.foodCalUnit}>cal</Text>
             </View>
             {f.confidence < 0.7 && (
               <View style={rf.estBadge}>
@@ -1062,47 +1095,10 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
   return (
     <>
       <View style={mc.card}>
-        {/* Orange accent for latest */}
-        <View
-          style={[mc.accent, index === 0 && { backgroundColor: "#7c3aed" }]}
-        />
-
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            padding: 13,
-          }}
-        >
-          {/* Date badge */}
-          <View style={[mc.dateBadge, index === 0 && mc.dateBadgeActive]}>
-            <Text
-              style={[
-                mc.dateMonth,
-                index === 0 && { color: "rgba(255,255,255,0.5)" },
-              ]}
-            >
-              {date
-                .toLocaleDateString("en-US", { month: "short" })
-                .toUpperCase()}
-            </Text>
-            <Text style={[mc.dateDay, index === 0 && { color: "#fff" }]}>
-              {date.getDate()}
-            </Text>
-          </View>
-
-          {/* Info */}
+        {/* Top row: meal info + cal */}
+        <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 14, paddingBottom: 10 }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 2,
-              }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
               <Text style={mc.type}>{mealLabel(log.mealType)}</Text>
               {index === 0 && (
                 <View style={mc.latestBadge}>
@@ -1114,28 +1110,26 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
               {log.foods.map((f) => f.name).join(", ")}
             </Text>
           </View>
-
-          {/* Macros + actions */}
-          <View style={{ alignItems: "flex-end", gap: 5 }}>
+          <View style={{ alignItems: "flex-end" }}>
             <Text style={mc.cal}>
               {fmt(totals?.calories ?? 0)}
-              <Text style={mc.calUnit}> kcal</Text>
+              <Text style={mc.calUnit}> cal</Text>
             </Text>
             <Text style={mc.prot}>{fmt(totals?.protein ?? 0)}g protein</Text>
-            <View style={{ flexDirection: "row", gap: 5, marginTop: 2 }}>
-              <Pressable onPress={() => setEditOpen(true)} style={mc.btn}>
-                <Text style={mc.btnText}>Edit</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleDelete}
-                style={[mc.btn, confirm && mc.btnRed]}
-              >
-                <Text style={[mc.btnText, confirm && { color: "#f43f5e" }]}>
-                  {confirm ? "Sure?" : "Delete"}
-                </Text>
-              </Pressable>
-            </View>
           </View>
+        </View>
+
+        {/* Bottom row: Edit + Delete */}
+        <View style={mc.actionRow}>
+          <Pressable onPress={() => setEditOpen(true)} style={[mc.btn, { flex: 1 }]}>
+            <Text style={[mc.btnText, { textAlign: "center" }]}>Edit</Text>
+          </Pressable>
+          <View style={mc.actionDivider} />
+          <Pressable onPress={handleDelete} style={[mc.btn, { flex: 1 }, confirm && mc.btnRed]}>
+            <Text style={[mc.btnText, { textAlign: "center" }, confirm && { color: "#f43f5e" }]}>
+              {confirm ? "Sure?" : "Delete"}
+            </Text>
+          </Pressable>
         </View>
       </View>
 
@@ -1155,7 +1149,7 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
 
 const mc = StyleSheet.create({
   card: {
-    flexDirection: "row",
+    flexDirection: "column",
     backgroundColor: "#fff",
     borderRadius: 18,
     borderWidth: 1,
@@ -1168,56 +1162,30 @@ const mc = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  accent: { width: 3, backgroundColor: "#f0ede6" },
-  dateBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "#f4f2ed",
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  dateBadgeActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  dateMonth: {
-    fontSize: 7,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    color: "#ccc",
-  },
-  dateDay: {
-    fontSize: 16,
-    fontWeight: "800",
-    lineHeight: 18,
-    color: "#1a1a1a",
-  },
   type: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
   latestBadge: {
-    backgroundColor: "rgba(124,58,237,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     borderRadius: 99,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  latestText: { fontSize: 9, fontWeight: "700", color: "#7c3aed" },
+  latestText: { fontSize: 9, fontWeight: "700", color: "#666" },
   foods: { fontSize: 12, color: "#aaa" },
   cal: { fontSize: 15, fontWeight: "800", color: "#1a1a1a" },
   calUnit: { fontSize: 11, fontWeight: "400", color: "#bbb" },
-  prot: { fontSize: 12, color: "#7c3aed", fontWeight: "700" },
+  prot: { fontSize: 12, color: "#888", fontWeight: "700" },
+  actionRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#f0ede6",
+  },
+  actionDivider: { width: 1, backgroundColor: "#f0ede6" },
   btn: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    backgroundColor: "#f4f2ed",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e8e5de",
+    paddingVertical: 11,
+    alignItems: "center",
   },
-  btnRed: {
-    backgroundColor: "rgba(244,63,94,0.06)",
-    borderColor: "rgba(244,63,94,0.2)",
-  },
-  btnText: { fontSize: 11, fontWeight: "700", color: "#555" },
+  btnRed: { backgroundColor: "rgba(244,63,94,0.04)" },
+  btnText: { fontSize: 13, fontWeight: "600", color: "#555" },
 });
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
@@ -1257,16 +1225,29 @@ export default function NutritionScreen() {
 
   const fetchLogs = useCallback(
     async (date) => {
-      if (!token) return;
-      setLoading(true);
+      // 1. Show SQLite cache instantly (empty on first launch — that's fine)
+      const cached = getMealLogsByDate(date);
+      if (cached.length > 0) {
+        setLogs(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
+      // 2. Always sync from server so existing MongoDB data migrates into SQLite
+      if (!token) { setLoading(false); return; }
       try {
         const res = await fetch(`${BASE_URL}/api/meal-log?date=${date}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
-        if (json.success) setLogs(json.data ?? []);
+        if (json.success && json.data) {
+          // Save each log into SQLite so future loads are instant
+          json.data.forEach((log) => { try { saveMealLog(log); } catch {} });
+          setLogs(json.data);
+        }
       } catch (e) {
-        console.error(e);
+        console.error("fetchLogs sync:", e);
       } finally {
         setLoading(false);
       }
@@ -1275,10 +1256,12 @@ export default function NutritionScreen() {
   );
 
   useEffect(() => {
-    if (token) fetchLogs(selDate);
+    fetchLogs(selDate);
   }, [token, selDate, fetchLogs]);
 
   function handleSuccess(newLog) {
+    // Persist locally so it survives restarts — zero extra DB cost
+    try { saveMealLog(newLog); } catch (e) { console.warn("saveMealLog:", e); }
     setShowLog(false);
     setResult(newLog);
     setShowResult(true);
@@ -1286,15 +1269,13 @@ export default function NutritionScreen() {
       setLogs((prev) => [newLog, ...prev]);
   }
 
-  async function handleDelete(id) {
-    await fetch(`${BASE_URL}/api/meal-log?id=${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  function handleDelete(id) {
+    try { deleteMealLog(id); } catch (e) { console.warn("deleteMealLog:", e); }
     setLogs((prev) => prev.filter((l) => l._id !== id));
   }
 
   function handleEdit(id, newMacros) {
+    try { updateMealLogTotals(id, newMacros); } catch (e) { console.warn("updateMealLogTotals:", e); }
     setLogs((prev) =>
       prev.map((l) => (l._id === id ? { ...l, totals: newMacros } : l)),
     );
@@ -1327,10 +1308,10 @@ export default function NutritionScreen() {
     goals.calories > 0 ? Math.min(totals.calories / goals.calories, 1) : 0;
   const calStatus =
     calPct >= 0.9
-      ? { text: "Near limit", color: "#ef4444", bg: "rgba(239,68,68,0.08)" }
+      ? { text: "Near limit", color: "#f87171", bg: "rgba(248,113,113,0.12)" }
       : calPct >= 0.6
-        ? { text: "On track", color: "#7c3aed", bg: "rgba(124,58,237,0.08)" }
-        : { text: "Keep eating", color: "#bbb", bg: "#f4f2ed" };
+        ? { text: "On track",   color: "#a78bfa", bg: "rgba(167,139,250,0.12)" }
+        : { text: "Keep eating", color: "rgba(255,255,255,0.3)", bg: "rgba(255,255,255,0.06)" };
 
   return (
     <SafeAreaView style={n.screen} edges={["top"]}>
@@ -1417,44 +1398,14 @@ export default function NutritionScreen() {
 
                 {/* Right: macro bars - constrained width */}
                 <View style={{ flex: 1 }}>
-                  <MacroBar
-                    label="Protein"
-                    value={round1(totals.protein)}
-                    goal={goals.protein}
-                    color="#7c3aed"
-                    delay={100}
-                  />
-                  <MacroBar
-                    label="Carbs"
-                    value={round1(totals.carbs)}
-                    goal={goals.carbs}
-                    color="#6366f1"
-                    delay={200}
-                  />
-                  <MacroBar
-                    label="Fat"
-                    value={round1(totals.fat)}
-                    goal={goals.fat}
-                    color="#888"
-                    delay={300}
-                  />
-                  <MacroBar
-                    label="Fiber"
-                    value={round1(totals.fiber)}
-                    goal={goals.fiber}
-                    color="#22c55e"
-                    delay={400}
-                  />
+                  <MacroBar label="Protein" value={round1(totals.protein)} goal={goals.protein} delay={100} dark />
+                  <MacroBar label="Carbs"   value={round1(totals.carbs)}   goal={goals.carbs}   delay={200} dark />
+                  <MacroBar label="Fat"     value={round1(totals.fat)}     goal={goals.fat}     delay={300} dark />
+                  <MacroBar label="Fiber"   value={round1(totals.fiber)}   goal={goals.fiber}   delay={400} dark />
                 </View>
               </View>
             </View>
 
-            {/* Log CTA */}
-            {isToday && (
-              <Pressable onPress={() => setShowLog(true)} style={n.logBtn}>
-                <Text style={n.logBtnText}>Log a meal</Text>
-              </Pressable>
-            )}
 
             {/* Meals section */}
             {logs.length > 0 && (
@@ -1505,6 +1456,15 @@ export default function NutritionScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Sticky bottom CTA — sits above the tab bar */}
+      {isToday && (
+        <View style={n.stickyBar}>
+          <Pressable onPress={() => setShowLog(true)} style={n.logBtn}>
+            <Text style={n.logBtnText}>+ Scan your food</Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* All sheets use BottomSheet which fades backdrop correctly log another meal */}
       <LogSheet
@@ -1582,18 +1542,18 @@ const n = StyleSheet.create({
   dateBtnText: { fontSize: 20, color: "#1a1a1a" },
   dateLabel: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
 
-  // Hero card
+  // Hero card — dark
   heroCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#111111",
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: "#222222",
     padding: 18,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
   heroCardTop: {
     flexDirection: "row",
@@ -1606,7 +1566,7 @@ const n = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#aaa",
+    color: "rgba(255,255,255,0.3)",
     marginBottom: 6,
   },
   statusPill: {
@@ -1621,24 +1581,34 @@ const n = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 11, fontWeight: "700" },
   editGoalsBtn: {
-    backgroundColor: "#f4f2ed",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "#555" },
+  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.45)" },
   heroBody: { flexDirection: "row", alignItems: "center", gap: 14 },
+
+  // Sticky bottom bar
+  stickyBar: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 16,
+    backgroundColor: "#fafaf8",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
 
   // Buttons
   logBtn: {
     backgroundColor: "#1a1a1a",
-    borderRadius: 16,
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: "center",
   },
-  logBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  logBtnText: { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
   logBtnOutline: {
     borderRadius: 16,
     paddingVertical: 14,
