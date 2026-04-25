@@ -25,7 +25,7 @@ const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 const AnimatedPath    = Animated.createAnimatedComponent(Path);
 const AnimatedG       = Animated.createAnimatedComponent(G);
 
-export default function AvatarButton() {
+export default function AvatarButton({ size = 44, onPress: onPressProp }: { size?: number; onPress?: () => void }) {
   const router = useRouter();
 
   const pressAnim  = useRef(new Animated.Value(1)).current;
@@ -64,7 +64,10 @@ export default function AvatarButton() {
     Animated.sequence([
       Animated.timing(pressAnim, { toValue: 0.90, duration: 90,  useNativeDriver: false }),
       Animated.timing(pressAnim, { toValue: 1,    duration: 140, useNativeDriver: false }),
-    ]).start(() => router.push("/profile"));
+    ]).start(() => {
+      if (onPressProp) onPressProp();
+      else router.push("/profile");
+    });
   };
 
   // Derived animated values
@@ -73,11 +76,11 @@ export default function AvatarButton() {
   const smileX     = wiggleAnim.interpolate({ inputRange: [-1.5,1.5], outputRange: [-2, 2] });
   const floatY     = floatAnim.interpolate({ inputRange: [-5,0], outputRange: [-5, 0] });
 
-  const SIZE = 44;
+  const SIZE = size;
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={1} style={st.touch}>
-      <Animated.View style={[st.container, { transform: [{ scale: pressAnim }] }]}>
+      <Animated.View style={[st.container, { width: SIZE, height: SIZE, borderRadius: SIZE / 2, transform: [{ scale: pressAnim }] }]}>
         <Svg width={SIZE} height={SIZE} viewBox="0 0 288 288">
           <Defs>
             {/* Clip to circle */}
@@ -213,9 +216,6 @@ export default function AvatarButton() {
 const st = StyleSheet.create({
   touch: { alignSelf: "auto" },
   container: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",

@@ -1,12 +1,5 @@
 import AvatarButton from "@/components/AvatarButton";
-import PageBackground from "@/components/PageBackground";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  deleteWorkoutLog,
-  getAllWorkoutLogs,
-  saveWorkoutLog,
-  saveWorkoutLogs,
-} from "@/src/db/gymDb";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,8 +19,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getToken } from "../src/auth/storage";
-//good
-// ─── helpers tracker headerButtons History  done back to ────────────────────────────────────────────────────────────────── log work
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
 const maxW = (sets) =>
   sets.length ? Math.max(...sets.map((s) => s.weight)) : 0;
@@ -50,6 +43,7 @@ function getWeekActivity(logs) {
   }
   return days;
 }
+//log w
 
 function totalVolLog(log) {
   return log.exercises.reduce(
@@ -100,12 +94,12 @@ function buildYearGrid(logs) {
 }
 
 function cellColor(vol, maxVol, hasLog) {
-  if (!hasLog) return "#f0ede6";
+  if (!hasLog) return "rgba(255,255,255,0.07)";
   const i = vol / maxVol;
-  if (i < 0.25) return "#ffd4c2";
-  if (i < 0.5) return "#ff9f7a";
-  if (i < 0.75) return "#7c3aed";
-  return "#c8410d";
+  if (i < 0.25) return "rgba(200,208,220,0.35)";
+  if (i < 0.5) return "rgba(200,208,220,0.55)";
+  if (i < 0.75) return "rgba(200,208,220,0.78)";
+  return "#c8d0dc";
 }
 
 function buildMuscleStats(logs) {
@@ -383,7 +377,13 @@ function YearChart({ logs }) {
       )}
       <View style={yc.legend}>
         <Text style={yc.legendLabel}>Less</Text>
-        {["#f0ede6", "#ffd4c2", "#ff9f7a", "#7c3aed", "#c8410d"].map((c) => (
+        {[
+          "rgba(255,255,255,0.07)",
+          "rgba(200,208,220,0.35)",
+          "rgba(200,208,220,0.55)",
+          "rgba(200,208,220,0.78)",
+          "#c8d0dc",
+        ].map((c) => (
           <View key={c} style={[yc.legendCell, { backgroundColor: c }]} />
         ))}
         <Text style={yc.legendLabel}>More</Text>
@@ -396,42 +396,51 @@ const yc = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   statCard: {
     flex: 1,
-    backgroundColor: "#f4f2ed",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 14,
     padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   statLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#aaa",
+    color: "rgba(255,255,255,0.3)",
     marginBottom: 3,
   },
   statValue: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: "#ffffff",
     letterSpacing: -0.5,
   },
-  statUnit: { fontSize: 12, fontWeight: "400", color: "#aaa" },
-  dayLabel: { fontSize: 8, fontWeight: "600", color: "#bbb", lineHeight: CELL },
+  statUnit: { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.3)" },
+  dayLabel: {
+    fontSize: 8,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.25)",
+    lineHeight: CELL,
+  },
   monthLabel: {
     position: "absolute",
     fontSize: 9,
     fontWeight: "700",
-    color: "#aaa",
+    color: "rgba(255,255,255,0.3)",
     letterSpacing: 0.4,
     width: 30,
   },
   cell: { width: CELL, height: CELL, borderRadius: 3 },
   tooltip: {
     marginTop: 10,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   tooltipDate: {
     fontSize: 12,
@@ -439,7 +448,7 @@ const yc = StyleSheet.create({
     color: "rgba(255,255,255,0.55)",
     marginBottom: 2,
   },
-  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#7c3aed" },
+  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#a78bfa" },
   legend: {
     flexDirection: "row",
     alignItems: "center",
@@ -447,7 +456,11 @@ const yc = StyleSheet.create({
     marginTop: 10,
     justifyContent: "flex-end",
   },
-  legendLabel: { fontSize: 10, color: "#bbb", fontWeight: "600" },
+  legendLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.25)",
+    fontWeight: "600",
+  },
   legendCell: { width: 11, height: 11, borderRadius: 2 },
 });
 
@@ -611,158 +624,7 @@ const ms = StyleSheet.create({
   divider: { height: 1, backgroundColor: "#f0ede8", marginVertical: 8 },
 });
 
-// ─── ExercisePicker touch: { alignSelf: "auto" }, ─────────────────────────────────────────────────────────── log workout
-function ExercisePicker({ muscleGroup, alreadyAdded, onConfirm, onClose }) {
-  const list = EXERCISE_LIBRARY[muscleGroup] || [];
-  const [picked, setPicked] = useState([]);
-  const toggle = (name) =>
-    setPicked((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-    );
-
-  return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={ep.overlay}>
-        <View style={ep.panel}>
-          <View style={ep.handle} />
-          <View style={ep.header}>
-            <Pressable onPress={onClose}>
-              <Text style={ep.back}>← Back</Text>
-            </Pressable>
-            <Text style={ep.title}>{muscleGroup}</Text>
-            <Text style={ep.count}>{picked.length} selected</Text>
-          </View>
-          <ScrollView style={ep.list} showsVerticalScrollIndicator={false}>
-            {list.map((name) => {
-              const isAdded = alreadyAdded.includes(name);
-              const isSel = picked.includes(name);
-              return (
-                <Pressable
-                  key={name}
-                  disabled={isAdded}
-                  onPress={() => !isAdded && toggle(name)}
-                  style={[
-                    ep.item,
-                    isSel && ep.itemSel,
-                    isAdded && ep.itemAdded,
-                  ]}
-                >
-                  <Text style={[ep.itemText, isSel && ep.itemTextSel]}>
-                    {name}
-                  </Text>
-                  {isAdded ? (
-                    <Text style={ep.addedLabel}>Added</Text>
-                  ) : isSel ? (
-                    <Text
-                      style={{
-                        color: "#7c3aed",
-                        fontWeight: "800",
-                        fontSize: 18,
-                      }}
-                    >
-                      ✓
-                    </Text>
-                  ) : (
-                    <Text style={{ color: "#ccc", fontSize: 22 }}>+</Text>
-                  )}
-                </Pressable>
-              );
-            })}
-            <View style={{ height: 20 }} />
-          </ScrollView>
-          <View style={ep.footer}>
-            <Pressable
-              disabled={picked.length === 0}
-              onPress={() => onConfirm(picked, muscleGroup)}
-              style={[ep.addBtn, picked.length === 0 && ep.addBtnDisabled]}
-            >
-              <Text style={ep.addBtnText}>
-                Add{" "}
-                {picked.length > 0
-                  ? `${picked.length} exercise${picked.length > 1 ? "s" : ""}`
-                  : "exercises"}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-const ep = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  panel: {
-    backgroundColor: "#fafaf8",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "92%",
-    paddingBottom: 36,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#e8e5de",
-    borderRadius: 99,
-    alignSelf: "center",
-    marginTop: 14,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e8e5de",
-  },
-  back: { fontSize: 15, fontWeight: "700", color: "#aaa" },
-  title: { fontSize: 17, fontWeight: "800", color: "#1a1a1a" },
-  count: { fontSize: 13, color: "#aaa", minWidth: 70, textAlign: "right" },
-  list: { padding: 14 },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 8,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-  },
-  itemSel: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  itemAdded: { opacity: 0.4 },
-  itemText: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
-  itemTextSel: { color: "#fff" },
-  addedLabel: { fontSize: 11, fontWeight: "700", color: "#aaa" },
-  footer: { padding: 18, borderTopWidth: 1, borderTopColor: "#e8e5de" },
-  addBtn: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 16,
-    padding: 17,
-    alignItems: "center",
-  },
-  addBtnDisabled: { opacity: 0.3 },
-  addBtnText: { color: "#fafaf8", fontSize: 16, fontWeight: "700" },
-});
-
 // ─── LogSheet ─────────────────────────────────────────────────────────────────
-// ✅ FIX: Completely rebuilt - keyboard no longer pushes screen up.
-// The fix is: ScrollView sits OUTSIDE KeyboardAvoidingView so only the
-// save button area nudges up, not the whole modal content.
-// ─── LogSheet ─────────────────────────────────────────────────────────────────
-// ✅ FIX: Removed KeyboardAvoidingView entirely.
-// ScrollView uses keyboardShouldPersistTaps + automaticallyAdjustKeyboardInsets
-// so content scrolls naturally when keyboard appears. Save button is fixed
-// at the bottom with paddingBottom that accounts for keyboard via inputAccessoryView
-// pattern - no jumping, no empty gap.
-// ─── LogSheet - Fully Redesigned ─────────────────────────────────────────────
-// New approach: Step-based flow. No nested ScrollView + KAV conflicts.
-// Step 1: Pick muscle group → Step 2: Pick exercise → Step 3: Log sets
-// Sets are entered in a fixed bottom panel - keyboard cannot break anything.
 const MG_META: Record<string, { color: string }> = {
   Chest: { color: "#7c3aed" },
   Back: { color: "#6366f1" },
@@ -921,8 +783,6 @@ function LogSheet({
       });
       const json = await res.json();
       if (json.success) {
-        // Cache in SQLite so it shows instantly next open
-        try { saveWorkoutLog(json.data); } catch {}
         setSaved(true);
         onSaved();
         setTimeout(() => onClose(), 1600);
@@ -933,7 +793,7 @@ function LogSheet({
       setSaving(false);
     }
   };
-  //good
+
   const stepIndex = step === "muscles" ? 0 : step === "exercises" ? 1 : 2;
 
   return (
@@ -964,7 +824,6 @@ function LogSheet({
         {/* ── STEP 1: MUSCLES ── */}
         {!saved && step === "muscles" && (
           <View style={lg.flex}>
-            {/* Header */}
             <View style={lg.header}>
               <View style={lg.flex}>
                 <Text style={lg.eyebrow}>NEW WORKOUT</Text>
@@ -979,7 +838,6 @@ function LogSheet({
               </Pressable>
             </View>
 
-            {/* Step pills */}
             <View style={lg.stepRow}>
               {["Muscle", "Exercise", "Sets"].map((label, i) => (
                 <View key={label} style={lg.stepPill}>
@@ -1014,7 +872,6 @@ function LogSheet({
               contentContainerStyle={lg.muscleScroll}
               showsVerticalScrollIndicator={false}
             >
-              {/* 2-col muscle grid */}
               <View style={lg.muscleGrid}>
                 {MUSCLE_GROUPS.map((mg) => {
                   const count = exercises.filter((e) => e.mg === mg).length;
@@ -1047,7 +904,6 @@ function LogSheet({
                 })}
               </View>
 
-              {/* Added exercises */}
               {exercises.length > 0 && (
                 <View style={lg.addedSection}>
                   <Text style={lg.sectionLabel}>Added exercises</Text>
@@ -1087,7 +943,6 @@ function LogSheet({
                 </View>
               )}
 
-              {/* Notes */}
               <View style={lg.notesSection}>
                 <Text style={lg.sectionLabel}>Session notes</Text>
                 <TextInput
@@ -1144,7 +999,6 @@ function LogSheet({
               </Pressable>
             </View>
 
-            {/* Step pills */}
             <View style={lg.stepRow}>
               {["Muscle", "Exercise", "Sets"].map((label, i) => (
                 <View key={label} style={lg.stepPill}>
@@ -1255,7 +1109,6 @@ function LogSheet({
               </Pressable>
             </View>
 
-            {/* Step pills */}
             <View style={lg.stepRow}>
               {["Muscle", "Exercise", "Sets"].map((label, i) => (
                 <View key={label} style={lg.stepPill}>
@@ -1285,7 +1138,6 @@ function LogSheet({
               ))}
             </View>
 
-            {/* Header row */}
             <View style={lg.setHeaderRow}>
               <Text style={[lg.setHeaderLabel, { width: 40 }]}>#</Text>
               <Text
@@ -1452,7 +1304,6 @@ const lg = StyleSheet.create({
   },
   backBtnText: { fontSize: 18, color: "#555", fontWeight: "500" },
 
-  // Step indicator
   stepRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1494,7 +1345,6 @@ const lg = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // ── Step 1: Muscles ──
   muscleScroll: { padding: 20 },
 
   muscleGrid: {
@@ -1534,7 +1384,6 @@ const lg = StyleSheet.create({
   },
   muscleBadgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
 
-  // Added exercises
   addedSection: { marginBottom: 24 },
   addedRow: {
     flexDirection: "row",
@@ -1584,7 +1433,6 @@ const lg = StyleSheet.create({
   },
   addedDelText: { fontSize: 11, fontWeight: "700", color: "#f43f5e" },
 
-  // Notes
   notesSection: { marginBottom: 10 },
   notesInput: {
     backgroundColor: "#fff",
@@ -1598,7 +1446,6 @@ const lg = StyleSheet.create({
     textAlignVertical: "top",
   },
 
-  // Bottom bar
   bottomBar: {
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -1620,7 +1467,6 @@ const lg = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  // ── Step 2: Exercises ──
   exItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1649,7 +1495,6 @@ const lg = StyleSheet.create({
   exBadgeAdded: { backgroundColor: "rgba(124,58,237,0.1)" },
   exBadgeText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
 
-  // ── Step 3: Sets ──
   setHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1729,7 +1574,6 @@ const lg = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  // ── Saved ── add set
   savedWrap: {
     flex: 1,
     alignItems: "center",
@@ -1958,14 +1802,6 @@ export default function TrackingPage() {
   }, []);
 
   const fetchLogs = useCallback(async () => {
-    // 1. Show SQLite data instantly (no spinner on subsequent opens)
-    const cached = getAllWorkoutLogs();
-    if (cached.length > 0) {
-      setLogs(cached);
-      setLoadingLogs(false);
-    }
-
-    // 2. Sync from server in background to pick up any missing entries
     try {
       const token = await getToken();
       const res = await fetch(
@@ -1974,11 +1810,10 @@ export default function TrackingPage() {
       );
       const json = await res.json();
       if (json.success && json.data?.length) {
-        saveWorkoutLogs(json.data);      // bulk-update SQLite cache
         setLogs(json.data);
       }
     } catch (e) {
-      console.error("fetchLogs sync error:", e);
+      console.error("fetchLogs error:", e);
     } finally {
       setLoadingLogs(false);
     }
@@ -1994,16 +1829,13 @@ export default function TrackingPage() {
       setTimeout(() => setConfirmDeleteId(null), 3000);
       return;
     }
-    // Remove from SQLite + UI instantly
-    deleteWorkoutLog(id);
     setLogs((prev) => prev.filter((l) => l._id !== id));
     setConfirmDeleteId(null);
-    // Fire-and-forget server delete
     getToken().then((token) =>
       fetch(`https://yourpocketgym.com/api/tracking?id=${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {})
+      }).catch(() => {}),
     );
   };
 
@@ -2022,9 +1854,10 @@ export default function TrackingPage() {
   const weekVolume = logs
     .filter((l) => new Date(l.date) >= weekStart)
     .reduce((s, l) => s + totalVolLog(l), 0);
+
   return (
     <SafeAreaView style={t.root} edges={["top"]}>
-      <PageBackground variant="tracking" />
+   
       <StatusBar barStyle="dark-content" />
 
       <View style={t.header}>
@@ -2041,68 +1874,76 @@ export default function TrackingPage() {
 
         {!loadingLogs && (
           <View>
-            <Pressable onPress={() => setChartOpen((o) => !o)}>
-              <View style={t.streakRow}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "baseline",
-                    gap: 6,
-                  }}
-                >
-                  <Text style={t.streakCount}>{streakCount}</Text>
-                  <Text style={t.streakOf}>/ 7 sessions</Text>
-                  {weekVolume > 0 && (
-                    <Text style={t.weekVol}>
-                      · {weekVolume.toLocaleString()} lbs
-                    </Text>
-                  )}
-                </View>
-                <View style={[t.badge, streakCount >= 3 && t.badgeActive]}>
-                  <Text
-                    style={[t.badgeText, streakCount >= 3 && t.badgeTextActive]}
+            <View style={t.calCard}>
+              <Pressable onPress={() => setChartOpen((o) => !o)}>
+                <View style={t.streakRow}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "baseline",
+                      gap: 6,
+                    }}
                   >
-                    {streakCount >= 5
-                      ? "🔥 On fire"
-                      : streakCount >= 3
-                        ? "⚡ Good week"
-                        : "💪 Keep going"}
-                  </Text>
-                </View>
-              </View>
-              <View style={t.weekDots}>
-                {weekDays.map((d, i) => (
-                  <View key={i} style={t.dayCol}>
-                    <View
+                    <Text style={t.streakCount}>{streakCount}</Text>
+                    <Text style={t.streakOf}>/ 7 sessions</Text>
+                    {weekVolume > 0 && (
+                      <Text style={t.weekVol}>
+                        · {weekVolume.toLocaleString()} lbs
+                      </Text>
+                    )}
+                  </View>
+                  <View style={[t.badge, streakCount >= 3 && t.badgeActive]}>
+                    <Text
                       style={[
-                        t.dot,
-                        d.active && t.dotActive,
-                        d.today && !d.active && t.dotToday,
+                        t.badgeText,
+                        streakCount >= 3 && t.badgeTextActive,
                       ]}
                     >
-                      {d.active && (
-                        <Text style={[t.dotCheck, d.today && t.dotCheckToday]}>
-                          ✓
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={[t.dayLabel, d.today && t.dayLabelToday]}>
-                      {d.label}
+                      {streakCount >= 5
+                        ? "🔥 On fire"
+                        : streakCount >= 3
+                          ? "⚡ Good week"
+                          : "💪 Keep going"}
                     </Text>
                   </View>
-                ))}
-              </View>
-              <Text style={t.chartToggle}>
-                {chartOpen ? "▲ Hide" : "▼ Year view"}
-              </Text>
-            </Pressable>
-            {chartOpen && (
-              <View style={t.yearChartContainer}>
-                <View style={t.yearChartDivider} />
-                <Text style={t.yearChartTitle}>Past year</Text>
-                <YearChart logs={logs} />
-              </View>
-            )}
+                </View>
+                <View style={t.weekDots}>
+                  {weekDays.map((d, i) => (
+                    <View key={i} style={t.dayCol}>
+                      <View
+                        style={[
+                          t.dot,
+                          d.active && t.dotActive,
+                          d.today && !d.active && t.dotToday,
+                        ]}
+                      >
+                        {d.active && (
+                          <Text
+                            style={[t.dotCheck, d.today && t.dotCheckToday]}
+                          >
+                            ✓
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[t.dayLabel, d.today && t.dayLabelToday]}>
+                        {d.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={t.chartToggle}>
+                  {chartOpen ? "▲ Hide" : "▼ Year view"}
+                </Text>
+              </Pressable>
+
+              {chartOpen && (
+                <View style={t.yearChartInner}>
+                  <View style={t.yearChartDivider} />
+                  <Text style={t.yearChartTitle}>Past year</Text>
+                  <YearChart logs={logs} />
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -2145,7 +1986,7 @@ export default function TrackingPage() {
               end={{ x: 1, y: 1 }}
               style={t.fabBtnGrad}
             >
-              <Text style={t.fabBtnText}>Log workout</Text>
+              <Text style={t.fabBtnText}>+</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -2157,7 +1998,7 @@ export default function TrackingPage() {
   );
 }
 
-// ─── Styles ─────────────────────────────────────────────────────────────────── touch:     { alignSelf: "auto" },
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const t = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#fafaf8" },
   header: {
@@ -2173,7 +2014,12 @@ const t = StyleSheet.create({
     alignItems: "center",
     marginBottom: 18,
   },
-  subtitle: { fontSize: 12, color: "#323131", marginBottom: 2, fontWeight: "400" },
+  subtitle: {
+    fontSize: 12,
+    color: "#323131",
+    marginBottom: 2,
+    fontWeight: "400",
+  },
   title: {
     fontSize: 26,
     fontWeight: "800",
@@ -2181,7 +2027,6 @@ const t = StyleSheet.create({
     letterSpacing: -1,
   },
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
-  //touch
   addBtn: {
     width: 44,
     height: 44,
@@ -2207,6 +2052,21 @@ const t = StyleSheet.create({
     justifyContent: "center",
   },
   avatarIcon: { fontSize: 18 },
+  calCard: {
+    backgroundColor: "#111111",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#222",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+    marginBottom: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
   streakRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -2216,48 +2076,48 @@ const t = StyleSheet.create({
   streakCount: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: "#ffffff",
     letterSpacing: -1,
   },
-  streakOf: { fontSize: 13, color: "#bbb" },
-  weekVol: { fontSize: 12, color: "#aaa" },
+  streakOf: { fontSize: 13, color: "rgba(255,255,255,0.35)" },
+  weekVol: { fontSize: 12, color: "rgba(255,255,255,0.3)" },
   badge: {
     borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
-  badgeActive: { backgroundColor: "rgba(124,58,237,0.09)" },
+  badgeActive: { backgroundColor: "rgba(124,58,237,0.25)" },
   badgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#bbb",
+    color: "rgba(255,255,255,0.35)",
     letterSpacing: 0.3,
   },
-  badgeTextActive: { color: "#7c3aed" },
+  badgeTextActive: { color: "#a78bfa" },
   weekDots: { flexDirection: "row", gap: 6, marginBottom: 12 },
   dayCol: { flex: 1, alignItems: "center", gap: 6 },
   dot: {
     width: "100%",
     aspectRatio: 1,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
-  dotActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  dotToday: { borderWidth: 2, borderColor: "#000000" },
-  dotCheck: { color: "#fff", fontWeight: "800", fontSize: 13 },
+  dotActive: { backgroundColor: "#ffffff", borderColor: "#ffffff" },
+  dotToday: { borderWidth: 2, borderColor: "rgba(255,255,255,0.5)" },
+  dotCheck: { color: "#111111", fontWeight: "800", fontSize: 13 },
   dotCheckToday: { color: "#111111" },
   dayLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#aaa",
+    color: "rgba(255,255,255,0.3)",
     letterSpacing: 0.3,
   },
-  dayLabelToday: { color: "#000000" },
+  dayLabelToday: { color: "rgba(255,255,255,0.8)" },
   tabs: { flexDirection: "row", gap: 4 },
   tab: {
     flex: 1,
@@ -2272,46 +2132,52 @@ const t = StyleSheet.create({
   chartToggle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#ccc",
+    color: "rgba(255,255,255,0.2)",
     letterSpacing: 0.6,
     textTransform: "uppercase",
     textAlign: "right",
     paddingBottom: 10,
     marginTop: 4,
   },
-  yearChartContainer: { paddingBottom: 10 },
-  yearChartDivider: { height: 1, backgroundColor: "#e8e5de", marginBottom: 14 },
+  yearChartInner: { paddingBottom: 8 },
+  yearChartDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    marginBottom: 14,
+  },
   yearChartTitle: {
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.2,
     textTransform: "uppercase",
-    color: "#aaa",
+    color: "rgba(255,255,255,0.3)",
     marginBottom: 10,
   },
-  fab: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 18,
-    paddingBottom: Platform.OS === "ios" ? 10 : 10,
-  },
-  fabBtn: {
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#7c3aed",
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  fabBtnGrad: { paddingVertical: 18, alignItems: "center", borderRadius: 18 },
-  fabBtnText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "800",
-    letterSpacing: -0.2,
-  },
+fab: {
+  position: "absolute",
+  bottom: 0 ,
+  right: 30,
+},
+fabBtn: {
+  borderRadius: 18,
+  overflow: "hidden",
+  shadowColor: "#7c3aed",
+  shadowOpacity: 0.35,
+  shadowRadius: 18,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 8,
+},
+fabBtnGrad: {
+  width: 60,
+  height: 60,
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 18,
+},
+fabBtnText: {
+  color: "#fff",
+  fontSize: 28,
+  fontWeight: "300",
+  lineHeight: 32,
+},
 });
-//added

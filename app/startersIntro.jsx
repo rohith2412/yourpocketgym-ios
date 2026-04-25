@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -48,6 +49,13 @@ export default function IntroPage() {
     setLoading(true);
     try {
       const token = await getToken();
+
+      if (!token) {
+        alert("Authentication error. Please log in again.");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("https://yourpocketgym.com/api/user-intro", {
         method: "POST",
         headers: {
@@ -56,7 +64,28 @@ export default function IntroPage() {
         },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
+
+      // Check response status
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Server error ${res.status}: ${errorText}`);
+        alert(`Server error: ${res.status}. Please try again.`);
+        setLoading(false);
+        return;
+      }
+
+      // Parse JSON response
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonError) {
+        console.error("JSON parse error:", jsonError);
+        alert("Invalid response from server. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Check response data
       if (data.success) {
         // ✅ FIX: update the cached user object in AsyncStorage so hasIntro is
         // now true - without this the AI trainer screen reads the stale false
@@ -72,10 +101,11 @@ export default function IntroPage() {
         setDone(true);
         setTimeout(() => router.replace("/tracking"), 2000);
       } else {
-        alert("Something went wrong: " + data.error);
+        alert("Error: " + (data.error || "Something went wrong"));
       }
     } catch (err) {
-      alert("Network error. Please try again.");
+      console.error("Submit error:", err);
+      alert("Network error: " + err.message);
     } finally {
       setLoading(false);
     }

@@ -49,8 +49,7 @@
       "@react-native-google-signin/google-signin",
       "expo-image-picker",
       "expo-secure-store",
-      "expo-web-browser",
-      "expo-sqlite"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

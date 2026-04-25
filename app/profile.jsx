@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { cacheDelete, cacheGet, cacheSet } from "@/src/db/gymDb";
 import { useRouter } from "expo-router";
+
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -14,7 +14,7 @@ import {
   Text,
   View,
 } from "react-native";
-//profile $12
+//profile $12 cut calories your goal
 import Svg, {
   Circle, ClipPath, Defs, Ellipse, G,
   LinearGradient as SvgGradient, Path, Rect, Stop,
@@ -227,17 +227,47 @@ function MenuRow({ label, labelStyle, right, onPress, disabled }) {
   );
 }
 
-// ── Edit Sheet ────────────────────────────────────────────────────────────────
+// ── Edit Sheet load ────────────────────────────────────────────────────────────────
+const GOALS_META = [
+  { val: "lose fat",    label: "Lose Fat",    },
+  { val: "gain muscle", label: "Gain Muscle", },
+  { val: "strength",    label: "Strength",    },
+];
+const EXP_META = [
+  { val: "beginner",     label: "Beginner",      },
+  { val: "intermediate", label: "Intermediate",  },
+  { val: "advanced",     label: "Advanced",      },
+];
+
 function EditSheet({ profile, token, onClose, onSaved }) {
   const [form, setForm] = useState({
-    gender: profile.gender, age: profile.age,
-    height: profile.height, weight: profile.weight,
-    fitnessGoal: profile.fitnessGoal,
-    experienceLevel: profile.experienceLevel,
-    workoutDaysPerWeek: profile.workoutDaysPerWeek,
+    gender:             profile.gender             ?? "male",
+    age:                profile.age                ?? 25,
+    height:             profile.height             ?? 170,
+    weight:             profile.weight             ?? 70,
+    fitnessGoal:        profile.fitnessGoal        ?? "gain muscle",
+    experienceLevel:    profile.experienceLevel    ?? "beginner",
+    workoutDaysPerWeek: profile.workoutDaysPerWeek ?? 3,
   });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const slideAnim   = useRef(new Animated.Value(600)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(backdropAnim, { toValue: 1, duration: 240, useNativeDriver: true }),
+      Animated.spring(slideAnim,    { toValue: 0, tension: 62, friction: 13, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const dismiss = () => {
+    Animated.parallel([
+      Animated.timing(backdropAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(slideAnim,    { toValue: 600, duration: 220, useNativeDriver: true }),
+    ]).start(() => onClose());
+  };
 
   const save = async () => {
     setSaving(true);
@@ -248,114 +278,275 @@ function EditSheet({ profile, token, onClose, onSaved }) {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (data.success) { onSaved(form); onClose(); }
+      if (data.success) { onSaved(form); dismiss(); }
       else alert("Save failed: " + data.error);
     } finally { setSaving(false); }
   };
 
-  const Chips = ({ label, field, options }) => (
-    <View style={es.group}>
-      <Text style={es.groupLabel}>{label}</Text>
-      <View style={es.chips}>
-        {options.map((o) => (
-          <Pressable key={o.val} style={[es.chip, form[field] === o.val && es.chipActive]} onPress={() => set(field, o.val)}>
-            <Text style={[es.chipText, form[field] === o.val && es.chipTextActive]}>{o.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
+  // ── Sub-components load ───────────────────────────────────────────────────────────
+  const SectionHead = ({ children }) => (
+    <Text style={es.sectionHead}>{children}</Text>
   );
 
   const Stepper = ({ label, field, min, max, unit }) => (
-    <View style={es.group}>
-      <Text style={es.groupLabel}>{label}</Text>
-      <View style={es.stepRow}>
-        <Pressable style={es.stepBtn} onPress={() => set(field, Math.max(min, (form[field] || min) - 1))}>
+    <View style={es.stepCard}>
+      <Text style={es.stepCardLabel}>{label}</Text>
+      <Text style={es.stepCardVal}>
+        {form[field]}<Text style={es.stepCardUnit}> {unit}</Text>
+      </Text>
+      <View style={es.stepBtns}>
+        <Pressable
+          style={es.stepBtn}
+          onPress={() => set(field, Math.max(min, (form[field] || min) - 1))}
+        >
           <Text style={es.stepBtnText}>−</Text>
         </Pressable>
-        <Text style={es.stepVal}>{form[field]} <Text style={es.stepUnit}>{unit}</Text></Text>
-        <Pressable style={es.stepBtn} onPress={() => set(field, Math.min(max, (form[field] || min) + 1))}>
-          <Text style={es.stepBtnText}>+</Text>
+        <Pressable
+          style={[es.stepBtn, es.stepBtnPlus]}
+          onPress={() => set(field, Math.min(max, (form[field] || min) + 1))}
+        >
+          <Text style={[es.stepBtnText, { color: "#fff" }]}>+</Text>
         </Pressable>
       </View>
     </View>
   );
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={es.overlay} onPress={onClose} />
-      <View style={es.sheet}>
-        <View style={es.handle} />
-        <View style={es.head}>
-          <Text style={es.headTitle}>Edit profile</Text>
-          <Pressable onPress={onClose}><Text style={es.closeBtn}>✕</Text></Pressable>
-        </View>
-        <ScrollView style={es.body} showsVerticalScrollIndicator={false}>
-          <Chips label="Biological sex" field="gender" options={[
-            { val: "male",   label: "Male"   },
-            { val: "female", label: "Female" },
-            { val: "other",  label: "Other"  },
-          ]} />
-          <Stepper label="Age"    field="age"    min={10}  max={99}  unit="yrs" />
-          <Stepper label="Height" field="height" min={100} max={250} unit="cm"  />
-          <Stepper label="Weight" field="weight" min={30}  max={200} unit="kg"  />
-          <Chips label="Main goal" field="fitnessGoal" options={[
-            { val: "lose fat",    label: "Lose fat"    },
-            { val: "gain muscle", label: "Gain muscle" },
-            { val: "strength",    label: "Strength"    },
-          ]} />
-          <Chips label="Experience" field="experienceLevel" options={[
-            { val: "beginner",     label: "Beginner"     },
-            { val: "intermediate", label: "Intermediate" },
-            { val: "advanced",     label: "Advanced"     },
-          ]} />
-          <View style={es.group}>
-            <Text style={es.groupLabel}>Days per week</Text>
-            <View style={es.daysRow}>
-              {[1,2,3,4,5,6,7].map((n) => (
-                <Pressable key={n} style={[es.dayBtn, form.workoutDaysPerWeek === n && es.dayBtnActive]} onPress={() => set("workoutDaysPerWeek", n)}>
-                  <Text style={[es.dayBtnText, form.workoutDaysPerWeek === n && es.dayBtnTextActive]}>{n}</Text>
-                </Pressable>
-              ))}
-            </View>
+    <Modal visible transparent animationType="none" onRequestClose={dismiss}>
+      {/* Backdrop */}
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.55)", opacity: backdropAnim }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+      </Animated.View>
+
+      {/* Sheet */}
+      <Animated.View style={[es.sheet, { transform: [{ translateY: slideAnim }] }]}>
+
+        {/* Header */}
+        <View style={es.header}>
+          <View style={es.handle} />
+          <View style={es.headRow}>
+            <Text style={es.headTitle}>Edit Profile</Text>
+            <Pressable onPress={dismiss} style={es.closeBtn}>
+              <Text style={es.closeBtnText}>✕</Text>
+            </Pressable>
           </View>
-          <Pressable style={[es.saveBtn, saving && { opacity: 0.4 }]} onPress={save} disabled={saving}>
-            <Text style={es.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
+        </View>
+
+        <ScrollView
+          style={es.body}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+
+          {/* ── Goal ── */}
+          <SectionHead>Your Goal</SectionHead>
+          <View style={es.goalGrid}>
+            {GOALS_META.map((g) => {
+              const active = form.fitnessGoal === g.val;
+              return (
+                <Pressable
+                  key={g.val}
+                  onPress={() => set("fitnessGoal", g.val)}
+                  style={[es.goalCard, active && es.goalCardActive]}
+                >
+                  <Text style={[es.goalLabel, active && es.goalLabelActive]}>{g.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ── Experience ── */}
+          <SectionHead>Experience Level</SectionHead>
+          <View style={es.expRow}>
+            {EXP_META.map((e) => {
+              const active = form.experienceLevel === e.val;
+              return (
+                <Pressable
+                  key={e.val}
+                  onPress={() => set("experienceLevel", e.val)}
+                  style={[es.expCard, active && es.expCardActive]}
+                >
+                  <Text style={[es.expLabel, active && es.expLabelActive]}>{e.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ── Body stats ── */}
+          <SectionHead>Body Stats</SectionHead>
+          <View style={es.stepRow}>
+            <Stepper label="Age"    field="age"    min={10}  max={99}  unit="yrs" />
+            <Stepper label="Height" field="height" min={100} max={250} unit="cm"  />
+            <Stepper label="Weight" field="weight" min={30}  max={250} unit="kg"  />
+          </View>
+
+          {/* ── Sex ── */}
+          <SectionHead>Biological Sex</SectionHead>
+          <View style={es.genderRow}>
+            {["Male", "Female", "Other"].map((label) => {
+              const val = label.toLowerCase();
+              const active = form.gender === val;
+              return (
+                <Pressable
+                  key={val}
+                  onPress={() => set("gender", val)}
+                  style={[es.genderBtn, active && es.genderBtnActive]}
+                >
+                  <Text style={[es.genderLabel, active && es.genderLabelActive]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ── Days per week ── */}
+          <SectionHead>Training Days / Week</SectionHead>
+          <View style={es.daysRow}>
+            {[1,2,3,4,5,6,7].map((n) => {
+              const active = form.workoutDaysPerWeek === n;
+              return (
+                <Pressable
+                  key={n}
+                  onPress={() => set("workoutDaysPerWeek", n)}
+                  style={[es.dayBtn, active && es.dayBtnActive]}
+                >
+                  <Text style={[es.dayBtnText, active && es.dayBtnTextActive]}>{n}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* ── Save ── */}
+          <Pressable
+            style={[es.saveBtn, saving && { opacity: 0.5 }]}
+            onPress={save}
+            disabled={saving}
+          >
+            {saving
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={es.saveBtnText}>Save changes</Text>
+            }
           </Pressable>
-          <View style={{ height: 48 }} />
+
         </ScrollView>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const es = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
-  sheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#fff", borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: "90%" },
-  handle: { width: 36, height: 4, backgroundColor: "#e8e5de", borderRadius: 99, alignSelf: "center", marginTop: 12 },
-  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: "#e8e5de" },
-  headTitle: { fontSize: 16, fontWeight: "700", color: "#1a1a1a" },
-  closeBtn: { fontSize: 14, color: "#bbb", padding: 4 },
-  body: { padding: 20 },
-  group: { marginBottom: 22 },
-  groupLabel: { fontSize: 10, fontWeight: "700", color: "#aaa", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fafaf8" },
-  chipActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  chipText: { fontSize: 13, fontWeight: "500", color: "#555" },
-  chipTextActive: { color: "#fff" },
-  stepRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  stepBtn: { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fafaf8", alignItems: "center", justifyContent: "center" },
-  stepBtnText: { fontSize: 22, color: "#1a1a1a", lineHeight: 26 },
-  stepVal: { fontSize: 22, fontWeight: "800", color: "#1a1a1a", flex: 1, textAlign: "center" },
-  stepUnit: { fontSize: 13, fontWeight: "400", color: "#aaa" },
-  daysRow: { flexDirection: "row", gap: 6 },
-  dayBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fafaf8", alignItems: "center" },
+  // Sheet
+  sheet: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    backgroundColor: "#fafaf8",
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    maxHeight: "94%",
+    shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24,
+    shadowOffset: { width: 0, height: -6 }, elevation: 24,
+  },
+
+  // Dark header
+  header: {
+    backgroundColor: "#111111",
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingHorizontal: 20, paddingBottom: 20,
+  },
+  handle: {
+    width: 36, height: 4, backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 99, alignSelf: "center", marginTop: 12, marginBottom: 16,
+  },
+  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headEyebrow: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.3)", letterSpacing: 1.4, marginBottom: 4 },
+  headTitle: { fontSize: 22, fontWeight: "800", color: "#ffffff", letterSpacing: -0.5 },
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center", justifyContent: "center",
+  },
+  closeBtnText: { fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: "700" },
+
+  body: { paddingHorizontal: 20, paddingTop: 24 },
+
+  sectionHead: {
+    fontSize: 11, fontWeight: "700", color: "#aaa",
+    letterSpacing: 1.2, textTransform: "uppercase",
+    marginBottom: 12, marginTop: 4,
+  },
+
+  // Goal cards
+  goalGrid: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  goalCard: {
+    flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#e8e5de",
+    backgroundColor: "#fff", paddingVertical: 14, paddingHorizontal: 10,
+    alignItems: "center", gap: 4,
+  },
+  goalCardActive: { backgroundColor: "#111111", borderColor: "#111111" },
+  goalLabel: { fontSize: 12, fontWeight: "700", color: "#1a1a1a", textAlign: "center" },
+  goalLabelActive: { color: "#ffffff" },
+  goalDesc: { fontSize: 10, color: "#bbb", textAlign: "center", lineHeight: 14 },
+  goalDescActive: { color: "rgba(255,255,255,0.35)" },
+
+  // Experience
+  expRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  expCard: {
+    flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#e8e5de",
+    backgroundColor: "#fff", paddingVertical: 14, paddingHorizontal: 8,
+    alignItems: "center", gap: 3,
+  },
+  expCardActive: { backgroundColor: "#111111", borderColor: "#111111" },
+  expLabel: { fontSize: 12, fontWeight: "700", color: "#1a1a1a", textAlign: "center" },
+  expLabelActive: { color: "#fff" },
+  expSub: { fontSize: 10, color: "#bbb", textAlign: "center" },
+  expSubActive: { color: "rgba(255,255,255,0.35)" },
+
+  // Body stats steppers
+  stepRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  stepCard: {
+    flex: 1, backgroundColor: "#fff", borderRadius: 14,
+    borderWidth: 1, borderColor: "#e8e5de",
+    padding: 12, alignItems: "center", gap: 6,
+  },
+  stepCardLabel: { fontSize: 10, fontWeight: "600", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
+  stepCardVal: { fontSize: 20, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.5 },
+  stepCardUnit: { fontSize: 11, fontWeight: "400", color: "#ccc" },
+  stepBtns: { flexDirection: "row", gap: 6, width: "100%" },
+  stepBtn: {
+    flex: 1, height: 34, borderRadius: 8,
+    borderWidth: 1, borderColor: "#e8e5de",
+    backgroundColor: "#f5f5f4", alignItems: "center", justifyContent: "center",
+  },
+  stepBtnPlus: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  stepBtnText: { fontSize: 18, color: "#1a1a1a", fontWeight: "500", lineHeight: 22 },
+
+  // Gender
+  genderRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  genderBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 14,
+    borderWidth: 1, borderColor: "#e8e5de",
+    backgroundColor: "#fff", alignItems: "center",
+  },
+  genderBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  genderLabel: { fontSize: 13, fontWeight: "600", color: "#666" },
+  genderLabelActive: { color: "#fff" },
+
+  // Days
+  daysRow: { flexDirection: "row", gap: 5, marginBottom: 24 },
+  dayBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 12,
+    borderWidth: 1, borderColor: "#e8e5de",
+    backgroundColor: "#fff", alignItems: "center",
+  },
   dayBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  dayBtnText: { fontSize: 13, fontWeight: "600", color: "#aaa" },
+  dayBtnText: { fontSize: 14, fontWeight: "600", color: "#bbb" },
   dayBtnTextActive: { color: "#fff" },
-  saveBtn: { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 8 },
-  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
+
+  // Save
+  saveBtn: {
+    backgroundColor: "#111111", borderRadius: 14,
+    paddingVertical: 17, alignItems: "center",
+    marginTop: 4,
+  },
+  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700", letterSpacing: -0.1 },
 });
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -377,16 +568,11 @@ export default function ProfileScreen() {
         if (!t) { router.replace("/login"); return; }
         setToken(t);
 
-        // Show cached profile instantly (1h TTL)
-        const cached = cacheGet("profile");
-        if (cached) { setProfile(cached); setLoading(false); }
-
-        // Refresh from server
+        // Fetch profile from server
         const res  = await fetch(`${API}/profile`, { headers: { Authorization: `Bearer ${t}` } });
         const json = await res.json();
-        if (!json.success) { if (!cached) router.replace("/login"); return; }
+        if (!json.success) { router.replace("/login"); return; }
         setProfile(json.data);
-        cacheSet("profile", json.data, 3600); // 1h TTL
       } catch (_) {}
       setLoading(false);
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
@@ -397,8 +583,6 @@ export default function ProfileScreen() {
     setSigningOut(true);
     await removeToken();
     await AsyncStorage.multiRemove(["token", "user"]);
-    cacheDelete("profile");
-    cacheDelete("user_intro");
     router.replace("/login");
   };
 
@@ -414,7 +598,7 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return <View style={s.centered}><ActivityIndicator size="large" color="#7c3aed" /></View>;
+    return <View style={s.centered}><ActivityIndicator size="large" color="#000000" /></View>;
   }
 
   const bmiVal      = profile ? calcBmi(profile.weight, profile.height) : null;

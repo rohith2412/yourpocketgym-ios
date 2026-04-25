@@ -1,7 +1,8 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PageBackground from "@/components/PageBackground";
-import { cacheGet, cacheSet } from "@/src/db/gymDb";
+import PremiumGate from "@/components/PremiumGate";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -285,6 +286,7 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
 
 export default function useA() {
   const { token, userName } = useAuth();
+  const { isPremium } = useSubscription();
 
   const [mainTab, setMainTab] = useState("find");
   const [selected, setSelected] = useState([]);
@@ -347,13 +349,9 @@ export default function useA() {
   const fetchLibrary = useCallback(async (page = 1) => {
     setLibLoading(true);
     try {
-      // Use cached seed data if available (cache forever — it's a static file)
-      let all = cacheGet("recipes_seed");
-      if (!all) {
-        const res = await fetch("https://raw.githubusercontent.com/rohith2412/recipes_seed/main/recipes_seed.json");
-        all = await res.json();
-        cacheSet("recipes_seed", all, 0); // 0 = forever
-      }
+      // Fetch seed data from GitHub
+      const res = await fetch("https://raw.githubusercontent.com/rohith2412/recipes_seed/main/recipes_seed.json");
+      const all = await res.json();
       const filtered = all.filter((r) => {
         if (libGoal && r.goal !== libGoal) return false;
         if (libMeal && r.mealType !== libMeal) return false;
@@ -384,11 +382,12 @@ export default function useA() {
   }
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
-      <PageBackground variant="recipes" />
+    <PremiumGate isUserPremium={isPremium} featureName="Recipes">
+      <SafeAreaView style={s.screen} edges={["top"]}>
+        {/* <PageBackground variant="recipes" /> */}
 
-      {/* Header */}
-      <View style={s.header}>
+        {/* Header */}
+        <View style={s.header}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <View>
             <Text style={s.greeting}>Good {getGreeting()}{userName ? `, ${userName}` : ""}</Text>
@@ -431,7 +430,7 @@ export default function useA() {
             keyboardShouldPersistTaps="handled"
           >
 
-            {/* ── DARK CUSTOM INGREDIENT CARD with food image ── */}
+            {/* darkInputImageWrap ── DARK CUSTOM INGREDIENT CARD with food image ── */}
             <View style={s.darkInputCard}>
               {/* Left: text + input */}
               <View style={s.darkInputLeft}>
@@ -616,7 +615,8 @@ export default function useA() {
         onMealChange={setLibMeal}
         onClose={() => setShowFilter(false)}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </PremiumGate>
   );
 }
 //libCard
@@ -717,20 +717,17 @@ const s = StyleSheet.create({
   darkChipText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   darkClearBtn: { alignSelf: "flex-start", marginTop: 2 },
   darkClearBtnText: { fontSize: 10, fontWeight: "700", color: "rgba(244,63,94,0.7)" },
-  darkInputImageWrap: {
-    flex: 1,
-    overflow: "hidden",
-    marginRight: -1,
-    marginTop: -1,
-    marginBottom: -1,
-  },
-  darkInputImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+darkInputImageWrap: {
+  flex: 1,
+  overflow: "hidden",
+  borderTopRightRadius: 22,
+  borderBottomRightRadius: 22,
+},
+darkInputImage: {
+  width: "100%",
+  height: "100%",
+  resizeMode: "cover",
+},
   darkInputImageOverlay: {
     position: "absolute",
     top: 0,
@@ -738,6 +735,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "transparent",
+    pointerEvents: "none",
   },
 
   label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: "#aaa", marginBottom: 8 },

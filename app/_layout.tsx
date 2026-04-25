@@ -1,5 +1,6 @@
 import { Stack, usePathname } from "expo-router";
 import Dock from "../components/Dock";
+import SubscriptionInit from "../components/SubscriptionInit";
 import { View, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -41,9 +42,9 @@ function AppShell() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      
+      <SubscriptionInit>
         <AppShell />
-  
+      </SubscriptionInit>
     </GestureHandlerRootView>
   );
 }

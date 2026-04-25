@@ -1,15 +1,9 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PageBackground from "@/components/PageBackground";
-import {
-  cacheGet,
-  cacheSet,
-  getAllSavedPlans,
-  removeAIPlan,
-  saveAIPlan,
-  saveBulkAIPlans,
-} from "@/src/db/gymDb";
 import { useRouter } from "expo-router";
+import PremiumGate from "@/components/PremiumGate";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -818,6 +812,7 @@ function ExtraForm({ extra, onChange, onClose }) {
 export default function AITrainerScreen() {
   const router = useRouter();
   const { session, ready } = useAuth();
+  const { isPremium } = useSubscription();
 
   const [intro, setIntro] = useState(null);
   const [introReady, setIntroReady] = useState(false);
@@ -849,11 +844,7 @@ export default function AITrainerScreen() {
       router.replace("/login");
       return;
     }
-    // Load user-intro from SQLite cache first (instant)
-    const cachedIntro = cacheGet("user_intro");
-    if (cachedIntro) { setIntro(cachedIntro); setIntroReady(true); }
-
-    // Refresh from server in background, cache for 24h
+    // Fetch user-intro from server
     fetch(`${BASE_URL}/api/user-intro`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -861,7 +852,6 @@ export default function AITrainerScreen() {
       .then((json) => {
         if (json.success && json.data) {
           setIntro(json.data);
-          cacheSet("user_intro", json.data, 86400); // 24h TTL
         }
       })
       .catch(() => {})
@@ -871,19 +861,14 @@ export default function AITrainerScreen() {
   useEffect(() => {
     if (mainTab !== "saved") return;
 
-    // Show SQLite cache instantly
-    const cached = getAllSavedPlans();
-    if (cached.length > 0) { setSavedPlans(cached); setSavedLoading(false); }
-    else setSavedLoading(true);
-
-    // Sync from server to pick up any changes
+    setSavedLoading(true);
+    // Fetch saved plans from server
     fetch(`${BASE_URL}/api/ai-trainer/saved`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((json) => {
         if (json.success && json.data) {
-          saveBulkAIPlans(json.data);
           setSavedPlans(json.data);
         }
       })
@@ -936,8 +921,6 @@ export default function AITrainerScreen() {
       if (json.success) {
         const id = json.data._id;
         setSavedId(id);
-        // Cache locally so it appears instantly next time
-        saveAIPlan(id, plan, new Date().toISOString());
       }
     } catch {
     } finally {
@@ -946,8 +929,7 @@ export default function AITrainerScreen() {
   }
 
   async function removePlan(id) {
-    // Remove from SQLite + UI immediately
-    removeAIPlan(id);
+    // Remove from UI immediately
     setSavedPlans((p) => p.filter((sv) => sv._id !== id));
     if (viewingSaved?._id === id) setViewingSaved(null);
     if (savedId === id) setSavedId(null);
@@ -968,10 +950,11 @@ export default function AITrainerScreen() {
   const showTabs = !showPlan && !viewingSaved;
 
   return (
-    <SafeAreaView style={s.screen} edges={["top"]}>
-      <PageBackground variant="trainer" />
-      {/* ── Header ── */}
-      <View style={s.header}>
+    <PremiumGate isUserPremium={isPremium} featureName="AI Trainer">
+      <SafeAreaView style={s.screen} edges={["top"]}>
+        {/* <PageBackground variant="trainer" /> */}
+        {/* ── Header ── */}
+        <View style={s.header}>
         <View style={s.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={s.greeting}>
@@ -1189,7 +1172,8 @@ export default function AITrainerScreen() {
           onClose={() => setShowExtra(false)}
         />
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </PremiumGate>
   );
 }
 
