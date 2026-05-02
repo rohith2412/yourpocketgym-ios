@@ -2,7 +2,7 @@ import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -15,12 +15,21 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+  Text as SvgText,
+} from "react-native-svg";
 import { getToken } from "../src/auth/storage";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// ─── helpers progress 7d 30d ──────────────────────────────────────────────────────────────────
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
 const maxW = (sets) =>
   sets.length ? Math.max(...sets.map((s) => s.weight)) : 0;
@@ -448,7 +457,7 @@ const yc = StyleSheet.create({
     color: "rgba(255,255,255,0.55)",
     marginBottom: 2,
   },
-  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#a78bfa" },
+  tooltipVol: { fontSize: 14, fontWeight: "800", color: "#e8380d" },
   legend: {
     flexDirection: "row",
     alignItems: "center",
@@ -462,6 +471,408 @@ const yc = StyleSheet.create({
     fontWeight: "600",
   },
   legendCell: { width: 11, height: 11, borderRadius: 2 },
+});
+
+// ─── DEMO MODE ────────────────────────────────────────────────────────────────
+// true  → static pre-filled data for App Store screenshots
+// false → live data from the server (normal user experience)
+const DEMO_MODE = false;
+
+// Generates a full year of deterministic demo gym logs for screenshots.
+// • Days 7–365 : pseudo-random year grid (fills the heat map)
+// • Days 0–6   : hand-crafted sessions → smooth flowing line chart
+//   Volumes:  10.2k → 14.0k → 12.8k → 18.0k → 12.9k → 15.4k → 17.3k
+function buildDemoLogs(): any[] {
+  const SESSIONS = [
+    { name: "Bench Press",        muscleGroup: "Chest",     baseW: 145, baseR: 10, numSets: 4 },
+    { name: "Squat",              muscleGroup: "Legs",      baseW: 215, baseR: 8,  numSets: 5 },
+    { name: "Deadlift",           muscleGroup: "Back",      baseW: 255, baseR: 5,  numSets: 4 },
+    { name: "Overhead Press",     muscleGroup: "Shoulders", baseW: 105, baseR: 8,  numSets: 4 },
+    { name: "Lat Pulldown",       muscleGroup: "Back",      baseW: 150, baseR: 10, numSets: 3 },
+    { name: "Barbell Curl",       muscleGroup: "Arms",      baseW: 95,  baseR: 12, numSets: 3 },
+    { name: "Leg Press",          muscleGroup: "Legs",      baseW: 315, baseR: 12, numSets: 3 },
+    { name: "Incline Bench Press",muscleGroup: "Chest",     baseW: 125, baseR: 10, numSets: 4 },
+    { name: "Romanian Deadlift",  muscleGroup: "Legs",      baseW: 175, baseR: 10, numSets: 3 },
+    { name: "Seated Cable Row",   muscleGroup: "Back",      baseW: 145, baseR: 12, numSets: 3 },
+  ];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const result: any[] = [];
+
+  // ── Year backdrop (days 7-365) ─────────────────────────────────────────────
+  for (let daysAgo = 365; daysAgo > 6; daysAgo--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - daysAgo);
+    const dow  = d.getDay();
+    const seed = daysAgo * 37 + 19;
+    const p1   = seed % 100;
+    const p2   = (seed * 13 + 7) % 100;
+
+    const trains =
+      ([1, 2, 3, 4, 5].includes(dow) && p1 > 14) ||
+      (dow === 6 && p1 > 69);
+    if (!trains) continue;
+
+    const progress  = 1 + ((365 - daysAgo) / 365) * 0.15;
+    const sess      = SESSIONS[(daysAgo * 3 + 5) % SESSIONS.length];
+    const intensity = 0.65 + (p2 / 100) * 0.35;
+    const baseW     = Math.round((sess.baseW * progress * intensity) / 5) * 5;
+    const reps      = Math.max(3, Math.round(sess.baseR * intensity));
+
+    const dx = new Date(today);
+    dx.setDate(dx.getDate() - daysAgo);
+    dx.setHours(10, 0, 0, 0);
+    result.push({
+      _id: `demo_${daysAgo}`,
+      date: dx.toISOString(),
+      exercises: [{ name: sess.name, muscleGroup: sess.muscleGroup,
+        sets: Array.from({ length: sess.numSets }, (_, i) => ({ setNumber: i+1, reps, weight: baseW + i*5 })),
+      }],
+    });
+  }
+
+  // ── Last 7 days: hand-crafted for a beautiful flowing line chart ───────────
+  // Shape: start medium → rise → slight dip → big peak → dip → rise → finish high
+  type S = { setNumber:number; reps:number; weight:number };
+  type E = { name:string; mg:string; sets:S[] };
+  const WEEK: { da:number; ex:E[] }[] = [
+    {
+      da: 6, // ~10,200 — Push: chest + shoulders + tris
+      ex: [
+        { name:"Bench Press",    mg:"Chest",     sets:[{setNumber:1,reps:10,weight:130},{setNumber:2,reps:8,weight:145},{setNumber:3,reps:6,weight:155},{setNumber:4,reps:6,weight:155}] },
+        { name:"Overhead Press", mg:"Shoulders", sets:[{setNumber:1,reps:10,weight:95}, {setNumber:2,reps:8,weight:105},{setNumber:3,reps:6,weight:115}] },
+        { name:"Tricep Pushdown",mg:"Arms",      sets:[{setNumber:1,reps:15,weight:60}, {setNumber:2,reps:12,weight:70},{setNumber:3,reps:12,weight:75},{setNumber:4,reps:10,weight:80}] },
+      ],
+    },
+    {
+      da: 5, // ~14,000 — Pull: back compound day
+      ex: [
+        { name:"Deadlift",        mg:"Back", sets:[{setNumber:1,reps:5,weight:235},{setNumber:2,reps:4,weight:255},{setNumber:3,reps:3,weight:270},{setNumber:4,reps:3,weight:280}] },
+        { name:"Lat Pulldown",    mg:"Back", sets:[{setNumber:1,reps:12,weight:145},{setNumber:2,reps:10,weight:155},{setNumber:3,reps:8,weight:165},{setNumber:4,reps:6,weight:175}] },
+        { name:"Seated Cable Row",mg:"Back", sets:[{setNumber:1,reps:12,weight:130},{setNumber:2,reps:10,weight:145},{setNumber:3,reps:10,weight:150}] },
+      ],
+    },
+    {
+      da: 4, // ~12,800 — Legs light + accessories
+      ex: [
+        { name:"Squat",        mg:"Legs", sets:[{setNumber:1,reps:8,weight:175},{setNumber:2,reps:6,weight:190},{setNumber:3,reps:5,weight:205},{setNumber:4,reps:4,weight:215}] },
+        { name:"Leg Curl",     mg:"Legs", sets:[{setNumber:1,reps:15,weight:85},{setNumber:2,reps:12,weight:95},{setNumber:3,reps:10,weight:105},{setNumber:4,reps:10,weight:110}] },
+        { name:"Leg Extension",mg:"Legs", sets:[{setNumber:1,reps:15,weight:90},{setNumber:2,reps:12,weight:100},{setNumber:3,reps:12,weight:105}] },
+      ],
+    },
+    {
+      da: 3, // ~18,000 — PEAK legs day (big volume spike)
+      ex: [
+        { name:"Squat",             mg:"Legs", sets:[{setNumber:1,reps:8,weight:185},{setNumber:2,reps:6,weight:205},{setNumber:3,reps:5,weight:220},{setNumber:4,reps:4,weight:235}] },
+        { name:"Leg Press",         mg:"Legs", sets:[{setNumber:1,reps:15,weight:255},{setNumber:2,reps:12,weight:280},{setNumber:3,reps:10,weight:305}] },
+        { name:"Romanian Deadlift", mg:"Legs", sets:[{setNumber:1,reps:10,weight:145},{setNumber:2,reps:10,weight:155},{setNumber:3,reps:8,weight:165}] },
+      ],
+    },
+    {
+      da: 2, // ~12,900 — Full body recovery
+      ex: [
+        { name:"Bench Press",   mg:"Chest",     sets:[{setNumber:1,reps:10,weight:145},{setNumber:2,reps:8,weight:155},{setNumber:3,reps:6,weight:165}] },
+        { name:"Barbell Row",   mg:"Back",      sets:[{setNumber:1,reps:10,weight:155},{setNumber:2,reps:8,weight:165},{setNumber:3,reps:8,weight:170}] },
+        { name:"Overhead Press",mg:"Shoulders", sets:[{setNumber:1,reps:10,weight:95},{setNumber:2,reps:8,weight:105},{setNumber:3,reps:6,weight:115}] },
+        { name:"Barbell Curl",  mg:"Arms",      sets:[{setNumber:1,reps:12,weight:75},{setNumber:2,reps:10,weight:85},{setNumber:3,reps:8,weight:95}] },
+      ],
+    },
+    {
+      da: 1, // ~15,400 — Upper push heavy
+      ex: [
+        { name:"Bench Press",        mg:"Chest", sets:[{setNumber:1,reps:8,weight:155},{setNumber:2,reps:8,weight:165},{setNumber:3,reps:6,weight:175},{setNumber:4,reps:5,weight:185},{setNumber:5,reps:4,weight:195}] },
+        { name:"Incline Bench Press",mg:"Chest", sets:[{setNumber:1,reps:10,weight:130},{setNumber:2,reps:8,weight:140},{setNumber:3,reps:6,weight:150},{setNumber:4,reps:6,weight:155}] },
+        { name:"Seated Cable Row",   mg:"Back",  sets:[{setNumber:1,reps:12,weight:130},{setNumber:2,reps:10,weight:145},{setNumber:3,reps:10,weight:150},{setNumber:4,reps:8,weight:160}] },
+      ],
+    },
+    {
+      da: 0, // ~17,300 — Upper push + pull, finish strong
+      ex: [
+        { name:"Bench Press",   mg:"Chest",     sets:[{setNumber:1,reps:8,weight:160},{setNumber:2,reps:6,weight:175},{setNumber:3,reps:5,weight:185},{setNumber:4,reps:4,weight:195},{setNumber:5,reps:3,weight:205}] },
+        { name:"Barbell Row",   mg:"Back",      sets:[{setNumber:1,reps:8,weight:160},{setNumber:2,reps:8,weight:170},{setNumber:3,reps:6,weight:180},{setNumber:4,reps:5,weight:190},{setNumber:5,reps:4,weight:200}] },
+        { name:"Lat Pulldown",  mg:"Back",      sets:[{setNumber:1,reps:12,weight:155},{setNumber:2,reps:10,weight:165},{setNumber:3,reps:8,weight:175}] },
+        { name:"Overhead Press",mg:"Shoulders", sets:[{setNumber:1,reps:8,weight:110},{setNumber:2,reps:6,weight:120},{setNumber:3,reps:5,weight:130}] },
+      ],
+    },
+  ];
+
+  for (const { da, ex } of WEEK) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - da);
+    d.setHours(10, 0, 0, 0);
+    result.push({
+      _id: `demo_w${da}`,
+      date: d.toISOString(),
+      exercises: ex.map(({ name, mg, sets }) => ({ name, muscleGroup: mg, sets })),
+    });
+  }
+
+  return result;
+}
+
+const DEMO_LOGS: any[] = buildDemoLogs();
+
+// ─── VolumeLineChart ──────────────────────────────────────────────────────────
+const ORANGE = "#FF6B1A";
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function buildVolumeSeries(logs: any[], days: number) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+  cutoff.setHours(0, 0, 0, 0);
+
+  const volByDate: Record<string, number> = {};
+  logs.forEach((log) => {
+    const iso = toISODate(log.date);
+    const vol = log.exercises?.reduce(
+      (s: number, ex: any) =>
+        s + (ex.sets?.reduce((ss: number, set: any) => ss + set.reps * set.weight, 0) ?? 0),
+      0,
+    ) ?? 0;
+    volByDate[iso] = (volByDate[iso] ?? 0) + vol;
+  });
+
+  const points: { label: string; vol: number }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    const iso = toISODate(d);
+    const label =
+      days <= 7
+        ? ["S", "M", "T", "W", "T", "F", "S"][d.getDay()]
+        : d.getDate() === 1
+          ? d.toLocaleDateString("en-US", { month: "short" })
+          : i % 7 === 0
+            ? String(d.getDate())
+            : "";
+    points.push({ label, vol: volByDate[iso] ?? 0 });
+  }
+  return points;
+}
+
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0].x},${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const curr = pts[i];
+    const cpx = (prev.x + curr.x) / 2;
+    d += ` C${cpx},${prev.y} ${cpx},${curr.y} ${curr.x},${curr.y}`;
+  }
+  return d;
+}
+
+function VolumeLineChart({
+  logs,
+  slideWidth,
+}: {
+  logs: any[];
+  slideWidth: number;
+}) {
+  const [period, setPeriod] = useState(0); // 0 = 7d, 1 = 30d
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: false }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 1200, useNativeDriver: false }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  const series7 = useMemo(() => buildVolumeSeries(logs, 7), [logs]);
+  const series30 = useMemo(() => buildVolumeSeries(logs, 30), [logs]);
+  const series = period === 0 ? series7 : series30;
+
+  const PAD_L = 12;
+  const PAD_R = 12;
+  const PAD_T = 10;
+  const PAD_B = 20;
+  const H = 100;
+
+  // inner chart dims — subtract card horizontal padding (16*2) so SVG fills card
+  const innerW = slideWidth - 32; // card paddingHorizontal is 16 each side
+  const chartW = innerW - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  const maxVol = useMemo(
+    () => Math.max(...series.map((p) => p.vol), 1),
+    [series],
+  );
+
+  const pts = useMemo((): { x: number; y: number }[] => {
+    if (!innerW) return [];
+    return series.map((p, i) => ({
+      x: PAD_L + (i / Math.max(series.length - 1, 1)) * chartW,
+      y: PAD_T + (1 - p.vol / maxVol) * chartH,
+    }));
+  }, [series, innerW, maxVol, chartW, chartH]);
+
+  const linePath = useMemo(() => smoothPath(pts), [pts]);
+
+  const areaPath = useMemo(() => {
+    if (!pts.length || !linePath) return "";
+    const base = PAD_T + chartH;
+    return `${linePath} L${pts[pts.length - 1].x},${base} L${pts[0].x},${base} Z`;
+  }, [linePath, pts, chartH]);
+
+  const hasData = useMemo(() => series.some((p) => p.vol > 0), [series]);
+
+  // Always the rightmost tip of the line — that's where the glow lives
+  const lastActivePt = useMemo(
+    () => (pts.length > 0 && hasData ? pts[pts.length - 1] : null),
+    [pts, hasData],
+  );
+
+  return (
+    <View style={vc.inner}>
+      {/* Minimal header row */}
+      <View style={vc.row}>
+        <Text style={vc.label}>Your chart</Text>
+        <View style={vc.pillRow}>
+          {([] as const).map((p, i) => (
+            <TouchableOpacity
+              key={p}
+              onPress={() => setPeriod(i)}
+              activeOpacity={0.75}
+              style={[vc.pill, period === i && vc.pillActive]}
+            >
+              <Text style={[vc.pillText, period === i && vc.pillTextActive]}>
+                {p}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Chart */}
+      {innerW > 0 && (
+        <Svg width={innerW} height={H} style={{ overflow: "visible" }}>
+          <Defs>
+            <SvgLinearGradient id="vg" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor={ORANGE} stopOpacity="0.28" />
+              <Stop offset="100%" stopColor={ORANGE} stopOpacity="0.01" />
+            </SvgLinearGradient>
+          </Defs>
+
+          {areaPath ? <Path d={areaPath} fill="url(#vg)" /> : null}
+
+          {linePath ? (
+            <>
+              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={18} opacity={0.04} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={10} opacity={0.10} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={5}  opacity={0.25} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={2.5} opacity={0.70} strokeLinecap="round" strokeLinejoin="round" />
+              <Path d={linePath} fill="none" stroke="#fff"   strokeWidth={1.5} opacity={0.90} strokeLinecap="round" strokeLinejoin="round" />
+            </>
+          ) : null}
+
+          {/* Regular mid-line dots */}
+          {pts.map((pt, i) => {
+            if (series[i]?.vol <= 0) return null;
+            if (i === pts.length - 1) return null; // tip drawn separately with glow
+            return <Circle key={i} cx={pt.x} cy={pt.y} r={2.5} fill={ORANGE} opacity={0.7} />;
+          })}
+
+          {/* Last active point — subtle glow + pulse */}
+          {lastActivePt && (
+            <>
+              {/* Single soft glow halo */}
+              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={10} fill={ORANGE} opacity={0.15} />
+              {/* Animated pulse ring */}
+              <AnimatedCircle
+                cx={lastActivePt.x}
+                cy={lastActivePt.y}
+                r={pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [5, 11] })}
+                fill="none"
+                stroke={ORANGE}
+                strokeWidth={1}
+                opacity={pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] })}
+              />
+              {/* Main dot */}
+              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={4}   fill={ORANGE} opacity={1} />
+              {/* White centre */}
+              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={2}   fill="#fff"   opacity={0.9} />
+            </>
+          )}
+
+          {series.map((p, i) =>
+            p.label ? (
+              <SvgText
+                key={i}
+                x={PAD_L + (i / Math.max(series.length - 1, 1)) * chartW}
+                y={H - 3}
+                textAnchor="middle"
+                fontSize={8}
+                fontWeight="600"
+                fill="rgba(255,255,255,0.28)"
+              >
+                {p.label}
+              </SvgText>
+            ) : null,
+          )}
+        </Svg>
+      )}
+
+      {!hasData && (
+        <Text style={vc.empty}>Log workouts to see volume</Text>
+      )}
+    </View>
+  );
+}
+
+const vc = StyleSheet.create({
+  inner: {
+    paddingTop: 14,
+    paddingBottom: 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    color: "rgba(255,255,255,0.3)",
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  pill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 99,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+  },
+  pillActive: {
+    backgroundColor: "rgba(232,56,13,0.18)",
+    borderColor: "rgba(232,56,13,0.35)",
+  },
+  pillText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.3)",
+  },
+  pillTextActive: { color: ORANGE },
+  empty: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.18)",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 10,
+  },
 });
 
 // ─── DeltaBadge ───────────────────────────────────────────────────────────────
@@ -626,8 +1037,8 @@ const ms = StyleSheet.create({
 
 // ─── LogSheet ─────────────────────────────────────────────────────────────────
 const MG_META: Record<string, { color: string }> = {
-  Chest: { color: "#7c3aed" },
-  Back: { color: "#6366f1" },
+  Chest: { color: "#e8380d" },
+  Back: { color: "#e8380d" },
   Shoulders: { color: "#f59e0b" },
   Arms: { color: "#22c55e" },
   Legs: { color: "#3b82f6" },
@@ -807,7 +1218,7 @@ function LogSheet({
       >
         <View style={lg.handle} />
 
-        {/* ── SAVED ── */}
+        {/* ── SAVED session ── */}
         {saved && (
           <View style={lg.savedWrap}>
             <LinearGradient
@@ -875,7 +1286,7 @@ function LogSheet({
               <View style={lg.muscleGrid}>
                 {MUSCLE_GROUPS.map((mg) => {
                   const count = exercises.filter((e) => e.mg === mg).length;
-                  const meta = MG_META[mg] || { color: "#7c3aed" };
+                  const meta = MG_META[mg] || { color: "#e8380d" };
                   return (
                     <Pressable
                       key={mg}
@@ -913,7 +1324,7 @@ function LogSheet({
                         style={[
                           lg.addedAccent,
                           {
-                            backgroundColor: MG_META[ex.mg]?.color || "#7c3aed",
+                            backgroundColor: MG_META[ex.mg]?.color || "#e8380d",
                           },
                         ]}
                       />
@@ -1058,7 +1469,7 @@ function LogSheet({
                           lg.exAccent,
                           {
                             backgroundColor:
-                              MG_META[activeMg!]?.color || "#7c3aed",
+                              MG_META[activeMg!]?.color || "#e8380d",
                           },
                         ]}
                       />
@@ -1067,7 +1478,7 @@ function LogSheet({
                       style={[
                         lg.exItemName,
                         isAdded && {
-                          color: "#7c3aed",
+                          color: "#e8380d",
                           fontWeight: "700" as const,
                         },
                       ]}
@@ -1078,7 +1489,7 @@ function LogSheet({
                       <Text
                         style={[
                           lg.exBadgeText,
-                          isAdded && { color: "#7c3aed" },
+                          isAdded && { color: "#e8380d" },
                         ]}
                       >
                         {isAdded ? "Edit" : "+"}
@@ -1273,7 +1684,7 @@ const lg = StyleSheet.create({
   eyebrow: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#7c3aed",
+    color: "#e8380d",
     letterSpacing: 1.2,
     marginBottom: 3,
   },
@@ -1323,7 +1734,7 @@ const lg = StyleSheet.create({
     justifyContent: "center",
     marginRight: 6,
   },
-  stepDotActive: { backgroundColor: "#7c3aed" },
+  stepDotActive: { backgroundColor: "#e8380d" },
   stepDotText: { fontSize: 10, fontWeight: "800", color: "#bbb" },
   stepLabel: { fontSize: 11, fontWeight: "600", color: "#bbb" },
   stepLabelActive: { color: "#1a1a1a" },
@@ -1334,7 +1745,7 @@ const lg = StyleSheet.create({
     marginHorizontal: 6,
     borderRadius: 99,
   },
-  stepLineActive: { backgroundColor: "#7c3aed" },
+  stepLineActive: { backgroundColor: "#e8380d" },
 
   sectionLabel: {
     fontSize: 11,
@@ -1374,7 +1785,7 @@ const lg = StyleSheet.create({
   muscleDot: { width: 10, height: 10, borderRadius: 5 },
   muscleName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a", flex: 1 },
   muscleBadge: {
-    backgroundColor: "#7c3aed",
+    backgroundColor: "#e8380d",
     borderRadius: 99,
     minWidth: 20,
     height: 20,
@@ -1403,7 +1814,7 @@ const lg = StyleSheet.create({
   addedMg: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#7c3aed",
+    color: "#e8380d",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 2,
@@ -1660,7 +2071,7 @@ const ps = StyleSheet.create({
 function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
   if (loading)
     return (
-      <ActivityIndicator style={{ padding: 60 }} color="#7c3aed" size="large" />
+      <ActivityIndicator style={{ padding: 60 }} color="#e8380d" size="large" />
     );
   if (!logs.length) {
     return (
@@ -1788,6 +2199,24 @@ export default function TrackingPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [chartOpen, setChartOpen] = useState(false);
   const [userName, setUserName] = useState("");
+  const [cardPage, setCardPage] = useState(0);
+  const [cardWidth, setCardWidth] = useState(0);
+  const cardScrollRef = useRef<ScrollView>(null);
+  const cardPageRef = useRef(0);
+
+  // Auto-cycle between the two cards every 10 seconds
+  useEffect(() => {
+    if (!cardWidth) return;
+    const timer = setInterval(() => {
+      const next = cardPageRef.current === 0 ? 1 : 0;
+      // collapse year view before leaving slide 0
+      if (next === 1) setChartOpen(false);
+      cardScrollRef.current?.scrollTo({ x: next * cardWidth, animated: true });
+      cardPageRef.current = next;
+      setCardPage(next);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [cardWidth]);
   const router = useRouter();
 
   useEffect(() => {
@@ -1846,12 +2275,15 @@ export default function TrackingPage() {
     return "evening";
   }
 
-  const weekDays = getWeekActivity(logs);
+  // DEMO_MODE → use static logs for the card section only
+  const displayLogs = DEMO_MODE ? DEMO_LOGS : logs;
+
+  const weekDays = getWeekActivity(displayLogs);
   const streakCount = weekDays.filter((d) => d.active).length;
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 6);
   weekStart.setHours(0, 0, 0, 0);
-  const weekVolume = logs
+  const weekVolume = displayLogs
     .filter((l) => new Date(l.date) >= weekStart)
     .reduce((s, l) => s + totalVolLog(l), 0);
 
@@ -1872,77 +2304,115 @@ export default function TrackingPage() {
           <AvatarButton />
         </View>
 
-        {!loadingLogs && (
-          <View>
-            <View style={t.calCard}>
-              <Pressable onPress={() => setChartOpen((o) => !o)}>
-                <View style={t.streakRow}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "baseline",
-                      gap: 6,
-                    }}
-                  >
-                    <Text style={t.streakCount}>{streakCount}</Text>
-                    <Text style={t.streakOf}>/ 7 sessions</Text>
-                    {weekVolume > 0 && (
-                      <Text style={t.weekVol}>
-                        · {weekVolume.toLocaleString()} lbs
+        {(!loadingLogs || DEMO_MODE) && (
+          <View
+            onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
+          >
+            {cardWidth > 0 && (
+              // Clipping wrapper — overflow:hidden correctly masks the black
+              // background to the border radius on iOS
+              <View style={[t.calCardWrap, { width: cardWidth }]}>
+                <ScrollView
+                  ref={cardScrollRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  scrollEventThrottle={16}
+                  onMomentumScrollEnd={(e) => {
+                    const page = Math.round(
+                      e.nativeEvent.contentOffset.x / cardWidth,
+                    );
+                    if (page === 1) setChartOpen(false);
+                    cardPageRef.current = page;
+                    setCardPage(page);
+                  }}
+                  style={{ width: cardWidth }}
+                  contentContainerStyle={{ alignItems: "stretch" }}
+                >
+                  {/* ── Slide 0: Streak week view ── */}
+                  <View style={[t.calSlide, { width: cardWidth }]}>
+                    <Pressable onPress={() => setChartOpen((o) => !o)}>
+                      <View style={t.streakRow}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "baseline",
+                            gap: 6,
+                          }}
+                        >
+                          <Text style={t.streakCount}>{streakCount}</Text>
+                          <Text style={t.streakOf}>/ 7 sessions</Text>
+                          {weekVolume > 0 && (
+                            <Text style={t.weekVol}>
+                              · {weekVolume.toLocaleString()} lbs
+                            </Text>
+                          )}
+                        </View>
+                        <View style={[t.badge, streakCount >= 3 && t.badgeActive]}>
+                          <Text
+                            style={[
+                              t.badgeText,
+                              streakCount >= 3 && t.badgeTextActive,
+                            ]}
+                          >
+                            {streakCount >= 5
+                              ? "🔥 On fire"
+                              : streakCount >= 3
+                                ? "⚡ Good week"
+                                : "💪 Keep going"}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={t.weekDots}>
+                        {weekDays.map((d, i) => (
+                          <View key={i} style={t.dayCol}>
+                            <View
+                              style={[
+                                t.dot,
+                                d.active && t.dotActive,
+                                d.today && !d.active && t.dotToday,
+                              ]}
+                            >
+                              {d.active && (
+                                <Text
+                                  style={[t.dotCheck, d.today && t.dotCheckToday]}
+                                >
+                                  ✓
+                                </Text>
+                              )}
+                            </View>
+                            <Text style={[t.dayLabel, d.today && t.dayLabelToday]}>
+                              {d.label}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={t.chartToggle}>
+                        {chartOpen ? "▲ Hide" : "▼ Year view"}
                       </Text>
+                    </Pressable>
+
+                    {chartOpen && (
+                      <View style={t.yearChartInner}>
+                        <View style={t.yearChartDivider} />
+                        <Text style={t.yearChartTitle}>Past year</Text>
+                        <YearChart logs={displayLogs} />
+                      </View>
                     )}
                   </View>
-                  <View style={[t.badge, streakCount >= 3 && t.badgeActive]}>
-                    <Text
-                      style={[
-                        t.badgeText,
-                        streakCount >= 3 && t.badgeTextActive,
-                      ]}
-                    >
-                      {streakCount >= 5
-                        ? "🔥 On fire"
-                        : streakCount >= 3
-                          ? "⚡ Good week"
-                          : "💪 Keep going"}
-                    </Text>
-                  </View>
-                </View>
-                <View style={t.weekDots}>
-                  {weekDays.map((d, i) => (
-                    <View key={i} style={t.dayCol}>
-                      <View
-                        style={[
-                          t.dot,
-                          d.active && t.dotActive,
-                          d.today && !d.active && t.dotToday,
-                        ]}
-                      >
-                        {d.active && (
-                          <Text
-                            style={[t.dotCheck, d.today && t.dotCheckToday]}
-                          >
-                            ✓
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={[t.dayLabel, d.today && t.dayLabelToday]}>
-                        {d.label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-                <Text style={t.chartToggle}>
-                  {chartOpen ? "▲ Hide" : "▼ Year view"}
-                </Text>
-              </Pressable>
 
-              {chartOpen && (
-                <View style={t.yearChartInner}>
-                  <View style={t.yearChartDivider} />
-                  <Text style={t.yearChartTitle}>Past year</Text>
-                  <YearChart logs={logs} />
-                </View>
-              )}
+                  {/* ── Slide 1: Volume chart ── */}
+                  <View style={[t.calSlide, { width: cardWidth }]}>
+                    <VolumeLineChart logs={displayLogs} slideWidth={cardWidth} />
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Page indicator dots */}
+            <View style={t.pageDots}>
+              <View style={[t.pageDot, cardPage === 0 && t.pageDotActive]} />
+              <View style={[t.pageDot, cardPage === 1 && t.pageDotActive]} />
             </View>
           </View>
         )}
@@ -1966,7 +2436,7 @@ export default function TrackingPage() {
       </View>
 
       <View style={{ flex: 1 }}>
-        {tab === "progress" && <ProgressScreen logs={logs} />}
+        {tab === "progress" && <ProgressScreen logs={displayLogs} />}
         {tab === "history" && (
           <HistoryScreen
             logs={logs}
@@ -2052,20 +2522,59 @@ const t = StyleSheet.create({
     justifyContent: "center",
   },
   avatarIcon: { fontSize: 18 },
+  pageDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 8,
+    marginBottom: 2,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.18)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 99,
+  },
+  pageDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 99,
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  pageDotActive: {
+    backgroundColor: ORANGE,
+    width: 14,
+  },
+  // Outer wrapper: handles border radius + clipping so the black bg
+  // is correctly masked to rounded corners on iOS
+  calCardWrap: {
+    borderRadius: 22,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#111111",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  // Individual slide — just padding, background inherited from wrapper
+  calSlide: {
+    backgroundColor: "#111111",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  // Keep calCard for any remaining references
   calCard: {
     backgroundColor: "#111111",
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#222",
+    borderColor: "#2a2a2a",
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 6,
-    marginBottom: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
   },
   streakRow: {
     flexDirection: "row",
@@ -2094,7 +2603,7 @@ const t = StyleSheet.create({
     color: "rgba(255,255,255,0.35)",
     letterSpacing: 0.3,
   },
-  badgeTextActive: { color: "#a78bfa" },
+  badgeTextActive: { color: "#e8380d" },
   weekDots: { flexDirection: "row", gap: 6, marginBottom: 12 },
   dayCol: { flex: 1, alignItems: "center", gap: 6 },
   dot: {
@@ -2161,7 +2670,7 @@ fab: {
 fabBtn: {
   borderRadius: 18,
   overflow: "hidden",
-  shadowColor: "#7c3aed",
+  shadowColor: "#e8380d",
   shadowOpacity: 0.35,
   shadowRadius: 18,
   shadowOffset: { width: 0, height: 6 },

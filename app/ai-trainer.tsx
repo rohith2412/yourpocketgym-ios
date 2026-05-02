@@ -56,6 +56,104 @@ const QUICK_PROMPTS = [
   "How do I lose fat without losing muscle?",
 ];
 
+// ─── DEMO MODE ────────────────────────────────────────────────────────────────
+// true  → show a pre-built plan for App Store screenshots
+// false → normal live experience
+const TRAINER_DEMO_MODE = true;
+
+const DEMO_PLAN = {
+  planTitle: "Hypertrophy Push·Pull·Legs",
+  difficulty: "Intermediate",
+  planSummary: "A 6-day PPL split engineered for maximum muscle growth. Progressive overload and deload built in from week 1.",
+  weeklyVolume: "18–22 sets per muscle group / week",
+  days: [
+    {
+      day: "Monday", label: "Push Day A", focus: "Chest", restDay: false, estimatedTime: 65,
+      warmup: "5 min incline walk · 2 × 15 band pull-aparts",
+      exercises: [
+        { name: "Barbell Bench Press",    muscleGroup: "Chest",     sets: 4, reps: "6–8",   rest: "3 min",  tempo: "3-1-1-0", notes: "Drive through your lats. Touch chest lightly each rep." },
+        { name: "Incline Dumbbell Press", muscleGroup: "Chest",     sets: 3, reps: "8–10",  rest: "2 min",  tempo: "2-1-1-0", notes: "30–45° incline. Elbows at ~60° from torso." },
+        { name: "Cable Lateral Raise",   muscleGroup: "Shoulders", sets: 4, reps: "12–15", rest: "90 sec", tempo: "2-0-1-1", notes: "Lead with elbow. Slight forward lean." },
+        { name: "Overhead Press",        muscleGroup: "Shoulders", sets: 3, reps: "8–10",  rest: "2 min",  tempo: "2-1-1-0", notes: "Bar path slightly forward of the crown." },
+        { name: "Tricep Pushdown",       muscleGroup: "Arms",      sets: 3, reps: "10–12", rest: "90 sec", tempo: "2-0-1-1", notes: "Keep elbows fixed at sides." },
+      ],
+      cooldown: "Chest doorway stretch 60s each side · shoulder cross-body stretch",
+    },
+    {
+      day: "Tuesday", label: "Pull Day A", focus: "Back", restDay: false, estimatedTime: 60,
+      warmup: "Dead hang 3 × 20s · band face pulls 2 × 15",
+      exercises: [
+        { name: "Weighted Pull-Up",   muscleGroup: "Back",      sets: 4, reps: "5–7",   rest: "3 min",  tempo: "3-1-1-0", notes: "Full dead hang at bottom. Squeeze lat at top." },
+        { name: "Barbell Row",        muscleGroup: "Back",      sets: 4, reps: "6–8",   rest: "2.5 min",tempo: "2-1-1-0", notes: "Hinge to ~45°. Pull bar to lower sternum." },
+        { name: "Seated Cable Row",   muscleGroup: "Back",      sets: 3, reps: "10–12", rest: "90 sec", tempo: "2-1-1-1", notes: "Pause at full contraction each rep." },
+        { name: "Barbell Curl",       muscleGroup: "Arms",      sets: 3, reps: "8–10",  rest: "2 min",  tempo: "3-0-1-0", notes: "Supinate fully at top. No body swing." },
+        { name: "Face Pull",          muscleGroup: "Shoulders", sets: 3, reps: "15–20", rest: "60 sec", tempo: "2-1-1-0", notes: "Pull to forehead. External rotate at end." },
+      ],
+      cooldown: "Lat stretch in doorway 45s each side · bicep wall stretch 30s",
+    },
+    {
+      day: "Wednesday", label: "Legs Day A", focus: "Legs", restDay: false, estimatedTime: 70,
+      warmup: "5 min bike · bodyweight squats 2 × 15 · hip circles",
+      exercises: [
+        { name: "Barbell Back Squat",      muscleGroup: "Legs", sets: 4, reps: "6–8",   rest: "3 min",  tempo: "3-1-1-0", notes: "Break parallel. Knees tracking over toes." },
+        { name: "Bulgarian Split Squat",   muscleGroup: "Legs", sets: 3, reps: "8–10",  rest: "2 min",  tempo: "2-1-1-0", notes: "Front foot forward. Rear foot elevated." },
+        { name: "Leg Press",               muscleGroup: "Legs", sets: 3, reps: "12–15", rest: "2 min",  tempo: "2-0-1-0", notes: "High foot for more glute activation." },
+        { name: "Romanian Deadlift",       muscleGroup: "Legs", sets: 3, reps: "10–12", rest: "2 min",  tempo: "3-1-1-0", notes: "Feel the hamstring stretch at bottom." },
+        { name: "Leg Extension",           muscleGroup: "Legs", sets: 3, reps: "12–15", rest: "90 sec", tempo: "2-0-1-2", notes: "Pause at top. Control the eccentric." },
+      ],
+      cooldown: "Couch stretch 90s each side · pigeon pose 60s each side",
+    },
+    {
+      day: "Thursday", label: "Rest & Recovery", focus: "Recovery", restDay: true, estimatedTime: 0,
+      warmup: null, exercises: [], cooldown: null,
+    },
+    {
+      day: "Friday", label: "Push Day B", focus: "Shoulders", restDay: false, estimatedTime: 60,
+      warmup: "Shoulder CARs 2 × 5 each · band pull-aparts 2 × 15",
+      exercises: [
+        { name: "Dumbbell Shoulder Press", muscleGroup: "Shoulders", sets: 4, reps: "8–10",  rest: "2 min",  tempo: "2-1-1-0", notes: "Neutral grip. Full range of motion." },
+        { name: "Incline Cable Fly",       muscleGroup: "Chest",     sets: 3, reps: "12–15", rest: "90 sec", tempo: "3-0-1-0", notes: "Slight bend in elbow. Squeeze at centre." },
+        { name: "Arnold Press",            muscleGroup: "Shoulders", sets: 3, reps: "10–12", rest: "90 sec", tempo: "2-1-1-0", notes: "Rotate palms out as you press." },
+        { name: "Skull Crusher",           muscleGroup: "Arms",      sets: 3, reps: "10–12", rest: "90 sec", tempo: "3-0-1-0", notes: "Keep upper arms vertical." },
+      ],
+      cooldown: "Chest stretch on floor 60s · overhead tricep stretch 30s each",
+    },
+    {
+      day: "Saturday", label: "Pull Day B", focus: "Back", restDay: false, estimatedTime: 60,
+      warmup: "Scapular pull-ups 2 × 8 · band rows 2 × 15",
+      exercises: [
+        { name: "Lat Pulldown",          muscleGroup: "Back", sets: 4, reps: "8–10",  rest: "2 min",  tempo: "2-1-2-0", notes: "Wide overhand grip. Lean back slightly." },
+        { name: "Dumbbell Row",          muscleGroup: "Back", sets: 3, reps: "10–12", rest: "90 sec", tempo: "2-1-1-0", notes: "Brace core. Elbow close to torso." },
+        { name: "Hammer Curl",           muscleGroup: "Arms", sets: 3, reps: "10–12", rest: "90 sec", tempo: "2-0-1-1", notes: "Neutral grip. No swinging." },
+        { name: "Incline Dumbbell Curl", muscleGroup: "Arms", sets: 3, reps: "10–12", rest: "90 sec", tempo: "3-0-1-0", notes: "Full stretch at bottom each rep." },
+      ],
+      cooldown: "Lat hang 30s · bicep wall stretch 30s each",
+    },
+    {
+      day: "Sunday", label: "Rest & Recovery", focus: "Recovery", restDay: true, estimatedTime: 0,
+      warmup: null, exercises: [], cooldown: null,
+    },
+  ],
+  weeklyGoals: [
+    "Add 2.5 kg to main lifts when you hit the top of the rep range for 3 consecutive sessions",
+    "Log every session — track small wins to stay motivated and accountable",
+    "Sleep 7–9 hours. Most muscle repair happens during deep sleep",
+    "Hit your daily protein: 1.6–2.2 g per kg of bodyweight",
+  ],
+  progressionTips: [
+    "Double progression: first add reps to top of range, then add weight",
+    "Deload every 4–6 weeks — reduce volume by 40% to let joints recover",
+    "Take progress photos every 4 weeks rather than weighing daily",
+    "If a lift stalls, reset 10% and rebuild — breaking through plateaus takes patience",
+  ],
+  nutritionTips: [
+    "Eat 300–500 kcal surplus on training days for lean muscle gain",
+    "30 g protein within 2 hours post-workout aids recovery significantly",
+    "Carb-load before heavy leg days — glycogen drives high-intensity performance",
+    "Creatine monohydrate 3–5 g daily is the most evidence-backed supplement",
+  ],
+};
+
 // ─── Auth Hook - reads from AsyncStorage synchronously on mount ───────────────
 // No loading spinner: session is pre-loaded from cache instantly.
 function useAuth() {
@@ -89,13 +187,13 @@ function getGreeting() {
 
 function muscleColor(mg = "") {
   const map = {
-    chest: "#7c3aed",
-    back: "#6366f1",
+    chest: "#e8380d",
+    back: "#e8380d",
     shoulders: "#f59e0b",
     arms: "#ec4899",
     legs: "#22c55e",
     core: "#14b8a6",
-    glutes: "#8b5cf6",
+    glutes: "#e8380d",
     cardio: "#ef4444",
   };
   return map[(mg || "").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
@@ -174,64 +272,44 @@ function ExerciseCard({ ex, index }) {
   const [open, setOpen] = useState(false);
   const color = muscleColor(ex.muscleGroup);
   return (
-    <Pressable onPress={() => setOpen((o) => !o)} style={s.exerciseCard}>
+    <Pressable onPress={() => setOpen(o => !o)} style={s.exerciseCard}>
       <View style={s.exerciseRow}>
-        <View style={[s.exNum, open && s.exNumOpen]}>
-          <Text style={[s.exNumText, open && { color: "#fff" }]}>
-            {index + 1}
-          </Text>
-        </View>
+        <Text style={s.exNum}>{String(index + 1).padStart(2, "0")}</Text>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={s.exName} numberOfLines={1}>
-            {ex.name}
-          </Text>
-          <Text style={s.exMuscle}>{ex.muscleGroup}</Text>
+          <Text style={s.exName} numberOfLines={1}>{ex.name}</Text>
+          <Text style={[s.exMuscle, { color }]}>{ex.muscleGroup}</Text>
         </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={s.exSets}>
-            {ex.sets} × {ex.reps}
-          </Text>
-          <Text style={s.exRest}>rest {ex.rest}</Text>
-        </View>
-        <View style={[s.dot, { backgroundColor: color }]} />
+        <Text style={s.exSetsText}>{ex.sets}×{ex.reps}</Text>
       </View>
       {open && (
         <View style={s.exDetail}>
-          {ex.tempo && (
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                marginBottom: 6,
-                alignItems: "center",
-              }}
-            >
-              <Text style={s.tempoLabel}>Tempo</Text>
-              <View style={s.tempoBadge}>
-                <Text style={s.tempoBadgeText}>{ex.tempo}</Text>
-              </View>
-            </View>
-          )}
           {ex.notes && <Text style={s.exNotes}>{ex.notes}</Text>}
+          {ex.tempo && (
+            <Text style={s.exTempo}>Tempo {ex.tempo}  ·  Rest {ex.rest}</Text>
+          )}
         </View>
       )}
     </Pressable>
   );
 }
 
-// ─── Day Card ai trainer ─────────────────────────────────────────────────────────────────
+// ─── Day Card ────────────────────────────────────────────────────────────────
 function DayCard({ day, index }) {
   const [open, setOpen] = useState(index === 0 && !day.restDay);
+  const color = muscleColor(day.focus);
 
   if (day.restDay) {
     return (
-      <View style={s.restDayCard}>
-        <View style={s.restDayBox}>
-          <Text style={s.restDayLabel}>REST</Text>
-        </View>
-        <View>
-          <Text style={s.dayCardTitle}>{day.day}</Text>
-          <Text style={s.dayCardSub}>Rest & Recovery</Text>
+      <View style={[s.dayCard, s.restDayCard]}>
+        <View style={s.dayCardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.dayWeekday}>{day.day}</Text>
+            <Text style={s.dayLabel}>Rest & Recovery</Text>
+            <Text style={s.dayMeta}>Active recovery · mobility</Text>
+          </View>
+          <View style={s.restPill}>
+            <Text style={s.restPillText}>REST</Text>
+          </View>
         </View>
       </View>
     );
@@ -239,50 +317,34 @@ function DayCard({ day, index }) {
 
   return (
     <View style={s.dayCard}>
-      <Pressable onPress={() => setOpen((o) => !o)} style={s.dayCardHeader}>
-        <View style={[s.dayBox, open && s.dayBoxOpen]}>
-          <Text
-            style={[s.dayBoxLabel, open && { color: "rgba(255,255,255,0.5)" }]}
-          >
-            {day.day?.slice(0, 3).toUpperCase()}
-          </Text>
-          <Text style={[s.dayBoxNum, open && { color: "#fff" }]}>
-            {index + 1}
-          </Text>
-        </View>
+      <Pressable onPress={() => setOpen(o => !o)} style={s.dayCardHeader}>
         <View style={{ flex: 1 }}>
+          <Text style={s.dayWeekday}>{day.day}</Text>
           <Text style={s.dayLabel}>{day.label}</Text>
-          <Text style={s.dayMeta}>
-            {day.exercises?.length} exercises · {day.estimatedTime}min
-          </Text>
+          <Text style={s.dayMeta}>{day.exercises?.length} exercises · {day.estimatedTime} min</Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={s.focusBadge}>
-            <Text style={s.focusBadgeText}>{day.focus}</Text>
-          </View>
-          <Text
-            style={[s.chevron, open && { transform: [{ rotate: "90deg" }] }]}
-          >
-            ›
-          </Text>
+        <View style={[s.focusBadge, { backgroundColor: color + "15" }]}>
+          <Text style={[s.focusBadgeText, { color }]}>{day.focus}</Text>
         </View>
+        <Text style={[s.chevron, open && { transform: [{ rotate: "90deg" }] }]}>›</Text>
       </Pressable>
+
       {open && (
         <View style={s.dayBody}>
           {day.warmup && (
-            <View style={s.warmupBox}>
-              <Text style={s.warmupLabel}>Warmup</Text>
+            <View style={[s.warmupBox, { borderLeftColor: color }]}>
+              <Text style={[s.warmupLabel, { color }]}>Warmup</Text>
               <Text style={s.warmupText}>{day.warmup}</Text>
             </View>
           )}
-          <View style={{ gap: 6, marginBottom: 10 }}>
+          <View style={{ gap: 1, marginBottom: day.cooldown ? 10 : 0 }}>
             {day.exercises?.map((ex, i) => (
               <ExerciseCard key={i} ex={ex} index={i} />
             ))}
           </View>
           {day.cooldown && (
-            <View style={s.cooldownBox}>
-              <Text style={s.cooldownLabel}>Cooldown</Text>
+            <View style={[s.cooldownBox, { borderLeftColor: color }]}>
+              <Text style={[s.cooldownLabel, { color }]}>Cooldown</Text>
               <Text style={s.cooldownText}>{day.cooldown}</Text>
             </View>
           )}
@@ -291,6 +353,41 @@ function DayCard({ day, index }) {
     </View>
   );
 }
+
+// ─── Week Strip ───────────────────────────────────────────────────────────────
+function WeekStrip({ days }) {
+  const DAY_SHORT = ["M", "T", "W", "T", "F", "S", "S"];
+  return (
+    <View style={ws.wrap}>
+      {days.map((day, i) => {
+        const color = day.restDay ? "rgba(255,255,255,0.07)" : muscleColor(day.focus);
+        return (
+          <View key={i} style={ws.dayCol}>
+            <View style={[ws.dot, { backgroundColor: color }]} />
+            <Text style={[ws.dayLbl, !day.restDay && { color: "rgba(255,255,255,0.6)" }]}>
+              {DAY_SHORT[i]}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const ws = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 22,
+    marginTop: 10,
+  },
+  dayCol: { alignItems: "center", gap: 10 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  dayLbl: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.16)" },
+});
 
 // ─── Plan View ────────────────────────────────────────────────────────────────
 function PlanView({
@@ -380,6 +477,9 @@ function PlanView({
         </View>
       </View>
 
+      {/* Week strip */}
+      {plan.days && <WeekStrip days={plan.days} />}
+
       {/* Tab switcher */}
       <View style={s.segControl}>
         {[
@@ -432,7 +532,7 @@ function PlanView({
                       { backgroundColor: "rgba(99,102,241,0.1)" },
                     ]}
                   >
-                    <Text style={[s.tipNumText, { color: "#6366f1" }]}>
+                    <Text style={[s.tipNumText, { color: "#e8380d" }]}>
                       {i + 1}
                     </Text>
                   </View>
@@ -824,10 +924,10 @@ export default function AITrainerScreen() {
   });
   const [showExtra, setShowExtra] = useState(false);
   const [mainTab, setMainTab] = useState("plan");
-  const [plan, setPlan] = useState(null);
+  const [plan, setPlan] = useState(TRAINER_DEMO_MODE ? DEMO_PLAN : null);
   const [planLoad, setPlanLoad] = useState(false);
   const [planError, setPlanError] = useState(null);
-  const [showPlan, setShowPlan] = useState(false);
+  const [showPlan, setShowPlan] = useState(TRAINER_DEMO_MODE);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState(null);
   const [savedPlans, setSavedPlans] = useState([]);
@@ -944,7 +1044,7 @@ export default function AITrainerScreen() {
   }
 
   // ── No spinner - show screen immediately from cached session ─────────────
-  if (!ready) return null;
+  if (!ready && !TRAINER_DEMO_MODE) return null;
 
   const firstName = session?.user?.name?.split(" ")[0] ?? "Athlete";
   const showTabs = !showPlan && !viewingSaved;
@@ -1242,7 +1342,7 @@ const s = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#7c3aed",
+    backgroundColor: "#e8380d",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
@@ -1498,157 +1598,109 @@ const s = StyleSheet.create({
     borderColor: "#e8e5de",
     overflow: "hidden",
   },
+  restDayCard: { opacity: 0.55 },
   dayCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     padding: 16,
   },
-  dayBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    backgroundColor: "#f4f2ed",
-    alignItems: "center",
-    justifyContent: "center",
+  dayWeekday: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#c0bdb5",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 3,
   },
-  dayBoxOpen: { backgroundColor: "#1a1a1a" },
-  dayBoxLabel: {
-    fontSize: 8,
-    fontWeight: "800",
-    color: "#bbb",
-    letterSpacing: 0.5,
-  },
-  dayBoxNum: { fontSize: 18, fontWeight: "800", color: "#1a1a1a" },
   dayLabel: {
     fontSize: 15,
     fontWeight: "700",
     color: "#1a1a1a",
     letterSpacing: -0.3,
   },
-  dayMeta: { fontSize: 12, color: "#aaa", marginTop: 2 },
+  dayMeta: { fontSize: 12, color: "#bbb", marginTop: 2 },
   focusBadge: {
-    backgroundColor: "rgba(124,58,237,0.08)",
     borderRadius: 99,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
   },
-  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#7c3aed" },
-  chevron: { fontSize: 20, color: "#ccc" },
-  dayBody: { borderTopWidth: 1, borderTopColor: "#f0ede8", padding: 14 },
+  focusBadgeText: { fontSize: 11, fontWeight: "700" },
+  chevron: { fontSize: 18, color: "#ccc", marginLeft: 4 },
+  dayBody: { borderTopWidth: 1, borderTopColor: "#f4f1ec", padding: 12, gap: 10 },
 
   warmupBox: {
-    backgroundColor: "#fafaf8",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#ece9e3",
+    backgroundColor: "#fafaf8", borderRadius: 10, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: "#e8380d",
   },
   warmupLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "#7c3aed",
-    marginBottom: 4,
-  },
-  warmupText: { fontSize: 13, color: "#666", lineHeight: 19 },
-  cooldownBox: {
-    backgroundColor: "#fafaf8",
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: "#ece9e3",
-  },
-  cooldownLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "#6366f1",
-    marginBottom: 4,
-  },
-  cooldownText: { fontSize: 13, color: "#666", lineHeight: 19 },
-
-  restDayCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 16,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-    borderRadius: 18,
-  },
-  restDayBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    backgroundColor: "#f4f2ed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  restDayLabel: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#bbb",
-    letterSpacing: 1,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "#c0bdb5",
+    marginBottom: 4,
   },
-  dayCardTitle: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  dayCardSub: { fontSize: 12, color: "#bbb", marginTop: 2 },
+  warmupText: { fontSize: 12, color: "#777", lineHeight: 18 },
+  cooldownBox: {
+    backgroundColor: "#fafaf8", borderRadius: 10, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: "#e8380d",
+  },
+  cooldownLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    color: "#c0bdb5",
+    marginBottom: 4,
+  },
+  cooldownText: { fontSize: 12, color: "#777", lineHeight: 18 },
 
-  // Exercise card
+  restPill: {
+    backgroundColor: "#f0ede8",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  restPillText: { fontSize: 9, fontWeight: "800", color: "#c0bdb5", letterSpacing: 1.2 },
+
+  // Exercise card — minimal list style
   exerciseCard: {
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e8e5de",
-    borderRadius: 14,
-    overflow: "hidden",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f4f1ec",
   },
   exerciseRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 12,
+    gap: 12,
+    paddingHorizontal: 2,
+    paddingVertical: 11,
   },
   exNum: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    backgroundColor: "#f4f2ed",
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#d0cdc5",
+    width: 22,
+    textAlign: "right",
+    flexShrink: 0,
   },
-  exNumOpen: { backgroundColor: "#1a1a1a" },
-  exNumText: { fontSize: 13, fontWeight: "800", color: "#aaa" },
-  exName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  exMuscle: { fontSize: 11, color: "#aaa", marginTop: 1 },
-  exSets: { fontSize: 13, fontWeight: "800", color: "#1a1a1a" },
-  exRest: { fontSize: 11, color: "#bbb" },
+  exName: { fontSize: 14, fontWeight: "600", color: "#1a1a1a" },
+  exMuscle: { fontSize: 11, marginTop: 1, fontWeight: "500" },
+  exSetsText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a", flexShrink: 0 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   exDetail: {
-    borderTopWidth: 1,
-    borderTopColor: "#f4f2ed",
-    padding: 12,
-    backgroundColor: "#fafaf8",
+    paddingLeft: 34,
+    paddingRight: 2,
+    paddingBottom: 12,
   },
-  tempoLabel: {
-    fontSize: 10,
-    fontWeight: "700",
+  exNotes: { fontSize: 13, color: "#777", lineHeight: 20 },
+  exTempo: {
+    fontSize: 11,
     color: "#bbb",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    marginTop: 6,
+    fontWeight: "500",
   },
-  tempoBadge: {
-    backgroundColor: "rgba(124,58,237,0.08)",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#7c3aed" },
-  exNotes: { fontSize: 13, color: "#666", lineHeight: 20 },
 
   // Tips
   tipSectionTitle: {
@@ -1672,7 +1724,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  tipNumText: { fontSize: 11, fontWeight: "800", color: "#7c3aed" },
+  tipNumText: { fontSize: 11, fontWeight: "800", color: "#e8380d" },
   tipText: { fontSize: 14, color: "#555", lineHeight: 21, flex: 1 },
 
   // Saved plan card

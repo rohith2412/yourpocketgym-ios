@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- plate rim (top-down) -->
+  <circle cx="32" cy="34" r="26" fill="#f0ece4" stroke="#d4cfc6" stroke-width="2"/>
+  <!-- plate surface -->
+  <circle cx="32" cy="34" r="20" fill="#faf8f4"/>
+  <!-- steak shape from top-down -->
+  <path d="M18 28 Q20 18 30 16 Q42 14 48 24 Q54 32 48 42 Q44 50 34 50 Q22 52 16 42 Q12 36 18 28 Z" fill="#c0392b"/>
+  <!-- marbling / fat lines -->
+  <path d="M24 22 Q30 28 28 36" stroke="#f5d08a" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M34 18 Q38 26 36 38" stroke="#f5d08a" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M42 26 Q44 32 40 42" stroke="#f5d08a" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <!-- grill marks from top -->
+  <path d="M20 30 Q28 28 36 30 Q44 32 46 36" stroke="#7B1A0A" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M18 38 Q28 36 38 38 Q44 40 46 42" stroke="#7B1A0A" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <!-- sheen highlight -->
+  <ellipse cx="28" cy="24" rx="6" ry="3" fill="white" opacity="0.12" transform="rotate(-20 28 24)"/>
+  <!-- fork (top-down, left of plate) -->
+  <line x1="5" y1="28" x2="5" y2="42" stroke="#bbb" stroke-width="2" stroke-linecap="round"/>
+  <line x1="3" y1="28" x2="3" y2="33" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="5" y1="28" x2="5" y2="33" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="7" y1="28" x2="7" y2="33" stroke="#bbb" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- knife (top-down, right of plate) -->
+  <line x1="59" y1="28" x2="59" y2="42" stroke="#bbb" stroke-width="2" stroke-linecap="round"/>
+  <path d="M57 28 Q55 30 57 35 L59 33 Z" fill="#ccc"/>
+</svg>

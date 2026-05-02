@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- bowl rim (top-down) -->
+  <circle cx="32" cy="32" r="28" fill="#e8dcc8" stroke="#b89a6a" stroke-width="2"/>
+  <!-- inner bowl -->
+  <circle cx="32" cy="32" r="22" fill="#fff8ee"/>
+  <!-- noodle swirls from top-down -->
+  <path d="M18 28 Q22 18 32 20 Q42 22 44 30 Q46 38 38 42 Q28 46 20 40 Q14 34 18 28 Z" fill="none" stroke="#e8c456" stroke-width="3" stroke-linecap="round"/>
+  <path d="M22 30 Q26 22 34 24 Q40 26 40 32 Q40 38 34 40 Q26 42 22 38 Q18 34 22 30 Z" fill="none" stroke="#d4a830" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M26 32 Q28 27 33 28 Q37 29 37 33 Q37 37 33 38 Q28 39 26 36 Q24 34 26 32 Z" fill="none" stroke="#e8c456" stroke-width="2" stroke-linecap="round"/>
+  <!-- broth showing through -->
+  <circle cx="32" cy="32" r="5" fill="#f0a830" opacity="0.3"/>
+  <!-- toppings from top: egg yolk -->
+  <circle cx="40" cy="24" r="5" fill="#fff8e1" stroke="#e8c456" stroke-width="1"/>
+  <circle cx="40" cy="24" r="3" fill="#f5a623"/>
+  <!-- toppings: dark meat piece -->
+  <ellipse cx="22" cy="38" rx="4" ry="3" fill="#8B3A1A" opacity="0.85" transform="rotate(20 22 38)"/>
+  <!-- green onion dots -->
+  <circle cx="36" cy="36" r="1.5" fill="#5a8a3c"/>
+  <circle cx="34" cy="38" r="1.2" fill="#5a8a3c"/>
+  <circle cx="38" cy="34" r="1" fill="#5a8a3c"/>
+  <!-- chopsticks resting on rim -->
+  <line x1="12" y1="16" x2="40" y2="44" stroke="#8B5E3C" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+  <line x1="16" y1="12" x2="44" y2="40" stroke="#8B5E3C" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+</svg>

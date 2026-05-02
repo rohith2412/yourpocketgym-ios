@@ -1,4 +1,5 @@
 import AvatarButton from "@/components/AvatarButton";
+import FoodImage from "@/components/FoodImage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PremiumGate from "@/components/PremiumGate";
 import { useSubscription } from "@/src/hooks/useSubscription";
@@ -22,14 +23,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle, G } from "react-native-svg";
-
+import Svg, { Circle, G, Path, Rect, Line } from "react-native-svg";
+//MACRO_DEMO_MODE = false;
 const AnimArc = Animated.createAnimatedComponent(Circle);
 const AnimatedG = Animated.createAnimatedComponent(G);
 
 const BASE_URL = "https://yourpocketgym.com";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function toLocalISO(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
@@ -50,19 +50,99 @@ function sumMacros(logs) {
 function fmt(n)   { return Math.round(n ?? 0); }
 function round1(n){ return Math.round((n ?? 0) * 10) / 10; }
 function mealLabel(type) {
-  return ({ breakfast:"Breakfast", lunch:"Lunch", dinner:"Dinner", snack:"Snack" }[type] ?? type);
+  return ({
+    breakfast:    "Breakfast",
+    
+    lunch:        "Lunch",
+    afternoon:    "Afternoon",
+    dinner:       "Dinner",
+    snack:        "Snack",
+    dessert:      "Dessert",
+    smoothie:     "Smoothie",
+    preworkout:   "Pre-workout",
+    postworkout:  "Post-workout",
+    latenight:    "Late Night",
+  }[type] ?? type);
 }
 function getGreeting() {
   const h = new Date().getHours();
   return h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
 }
 
+// ─── DEMO MODE ────────────────────────────────────────────────────────────────
+// true  → static pre-filled nutrition data for App Store screenshots
+// false → live data from the server (normal user experience)
+const MACRO_DEMO_MODE = false;
+
+const DEMO_GOALS = { calories: 2200, protein: 160, carbs: 250, fat: 70, fiber: 30 };
+
+const DEMO_MACRO_LOGS = [
+  {
+    _id: "dm1",
+    mealType: "breakfast",
+    localDate: todayISO(),
+    date: new Date().toISOString(),
+    totals: { calories: 385, protein: 29, carbs: 44, fat: 9, fiber: 5 },
+    foods: [
+      { name: "Greek Yogurt",    portion: "200g",  macros: { calories: 130, protein: 17, carbs: 9,  fat: 3 }, confidence: 0.96 },
+      { name: "Rolled Oats",     portion: "60g",   macros: { calories: 210, protein: 7,  carbs: 35, fat: 4 }, confidence: 0.98 },
+      { name: "Mixed Berries",   portion: "80g",   macros: { calories: 45,  protein: 1,  carbs: 11, fat: 0 }, confidence: 0.94 },
+    ],
+    aiNotes: "High protein breakfast — great way to start the day.",
+  },
+  {
+    _id: "dm2",
+    mealType: "lunch",
+    localDate: todayISO(),
+    date: new Date().toISOString(),
+    totals: { calories: 570, protein: 46, carbs: 66, fat: 12, fiber: 7 },
+    foods: [
+      { name: "Grilled Chicken Breast", portion: "180g",  macros: { calories: 297, protein: 38, carbs: 0,  fat: 7  }, confidence: 0.97 },
+      { name: "Brown Rice",             portion: "150g",  macros: { calories: 165, protein: 4,  carbs: 36, fat: 1  }, confidence: 0.95 },
+      { name: "Steamed Broccoli",       portion: "100g",  macros: { calories: 34,  protein: 3,  carbs: 7,  fat: 0  }, confidence: 0.99 },
+      { name: "Olive Oil drizzle",      portion: "5ml",   macros: { calories: 44,  protein: 0,  carbs: 0,  fat: 5  }, confidence: 0.88 },
+    ],
+    aiNotes: "Balanced macro bowl — solid protein and complex carbs.",
+  },
+  {
+    _id: "dm3",
+    mealType: "preworkout",
+    localDate: todayISO(),
+    date: new Date().toISOString(),
+    totals: { calories: 195, protein: 20, carbs: 22, fat: 3, fiber: 2 },
+    foods: [
+      { name: "Banana",          portion: "1 medium", macros: { calories: 89,  protein: 1,  carbs: 23, fat: 0 }, confidence: 0.99 },
+      { name: "Whey Protein",    portion: "30g scoop",macros: { calories: 120, protein: 24, carbs: 4,  fat: 2 }, confidence: 0.96 },
+    ],
+    aiNotes: "Quick pre-workout fuel — fast carbs + protein.",
+  },
+  {
+    _id: "dm4",
+    mealType: "postworkout",
+    localDate: todayISO(),
+    date: new Date().toISOString(),
+    totals: { calories: 430, protein: 40, carbs: 50, fat: 6, fiber: 5 },
+    foods: [
+      { name: "Grilled Salmon",  portion: "150g",  macros: { calories: 250, protein: 34, carbs: 0,  fat: 12 }, confidence: 0.95 },
+      { name: "Sweet Potato",    portion: "200g",  macros: { calories: 172, protein: 3,  carbs: 40, fat: 0  }, confidence: 0.97 },
+      { name: "Asparagus",       portion: "80g",   macros: { calories: 18,  protein: 2,  carbs: 3,  fat: 0  }, confidence: 0.93 },
+    ],
+    aiNotes: "Excellent post-workout recovery meal.",
+  },
+];
+
 const DEFAULT_GOALS = { calories: 2200, protein: 160, carbs: 250, fat: 70, fiber: 30 };
 const MEAL_TYPES = [
-  { key: "breakfast", label: "Breakfast" },
-  { key: "lunch",     label: "Lunch"     },
-  { key: "dinner",    label: "Dinner"    },
-  { key: "snack",     label: "Snack"     },
+  { key: "breakfast",   label: "Breakfast"    },
+  { key: "lunch",       label: "Lunch"        },
+  { key: "smoothie",    label: "Smoothie"     },
+  { key: "afternoon",   label: "Afternoon"    },
+  { key: "dinner",      label: "Dinner"       },
+  { key: "snack",       label: "Snack"        },
+  { key: "dessert",     label: "Dessert"      },
+  { key: "preworkout",  label: "Pre-workout"  },
+  { key: "postworkout", label: "Post-workout" },
+  { key: "latenight",   label: "Late Night"   },
 ];
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -136,7 +216,7 @@ const sh = StyleSheet.create({
 
 // ─── Calorie Arc ──────────────────────────────────────────────────────────────
 function CalorieArc({ consumed, goal }) {
-  const SIZE = 196, CX = 98, R = 80, SW = 16;
+  const SIZE = 140, CX = 70, R = 56, SW = 13;
   const CIRC = 2 * Math.PI * R;
 
   const pct  = goal > 0 ? Math.min(consumed / goal, 1) : 0;
@@ -161,8 +241,8 @@ function CalorieArc({ consumed, goal }) {
   const dashOffset  = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [CIRC, 0] });
   const dotRotation = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 360] });
   const haloR       = pulseAnim.interpolate({ inputRange: [1, 1.5], outputRange: [12, 18] });
-  const arcColor    = over ? "#f87171" : warn ? "#fbbf24" : "#c8d0dc";
-  const ARC_TRANSFORM = `rotate(-90, ${CX}, ${CX})`;
+  const arcColor    = over ? "#f87171" : warn ? "#fbbf24" : "#e8380d";
+  const ARC_TRANSFORM = `rotate(-90, 70, 70)`;
 
   return (
     <View style={{ width: SIZE, height: SIZE, alignItems: "center", justifyContent: "center" }}>
@@ -186,15 +266,15 @@ function CalorieArc({ consumed, goal }) {
       </Svg>
       <View style={{ alignItems: "center" }}>
         <Text style={arc.num}>{fmt(consumed)}</Text>
-        <Text style={arc.unit}>KCAL</Text>
+        <Text style={arc.unit}>cal</Text>
       </View>
     </View>
   );
 }
 
 const arc = StyleSheet.create({
-  num:  { fontSize: 32, fontWeight: "900", color: "#ffffff", letterSpacing: -1.5, lineHeight: 36 },
-  unit: { fontSize: 10, color: "rgba(255,255,255,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 3 },
+  num:  { fontSize: 24, fontWeight: "900", color: "#ffffff", letterSpacing: -1, lineHeight: 28 },
+  unit: { fontSize: 9, color: "rgba(255,255,255,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 2 },
 });
 
 // ─── Macro Bar ────────────────────────────────────────────────────────────────
@@ -209,7 +289,7 @@ function MacroBar({ label, value, goal, delay = 0, dark = false }) {
   }, [pct]);
 
   const widthPct = animW.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
-  const barColor = over ? "#f87171" : dark ? "#c8d0dc" : "#9ca3af";
+  const barColor = over ? "#f87171" : dark ? "#e8380d" : "#e8380d";
   const labelCol = dark ? "rgba(255,255,255,0.45)" : "#555";
   const valCol   = over ? "#f87171" : dark ? "#ffffff" : "#1a1a1a";
   const goalCol  = dark ? "rgba(255,255,255,0.2)" : "#aaa";
@@ -422,9 +502,15 @@ function EditMacrosSheet({ visible, log, onClose, onSave, token }) {
     { key: "fiber",    label: "Fiber",    unit: "g"   },
   ];
 
-  function save() {
+  async function save() {
     setSaving(true);
     try {
+      // Save to backend
+      await fetch(`${BASE_URL}/api/meal-log?id=${log._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ totals: macros }),
+      });
       onSave(macros);
       onClose();
     } catch (e) {
@@ -467,6 +553,152 @@ function EditMacrosSheet({ visible, log, onClose, onSave, token }) {
           </ScrollView>
           <Pressable onPress={save} disabled={saving} style={[g.saveBtn, saving && { opacity: 0.5 }]}>
             <Text style={g.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
+          </Pressable>
+          <View style={{ height: Platform.OS === "ios" ? 36 : 20 }} />
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+// ─── Manual Log Sheet ─────────────────────────────────────────────────────────
+function ManualLogSheet({ visible, onClose, onSuccess, token }) {
+  const [foodName,  setFoodName]  = useState("");
+  const [mealType,  setMealType]  = useState("snack");
+  const [calories,  setCalories]  = useState("");
+  const [protein,   setProtein]   = useState("");
+  const [carbs,     setCarbs]     = useState("");
+  const [fat,       setFat]       = useState("");
+  const [fiber,     setFiber]     = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState(null);
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim    = useRef(new Animated.Value(600)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(slideAnim,    { toValue: 0, tension: 65, friction: 12, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(backdropAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(slideAnim,    { toValue: 600, duration: 200, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  function reset() {
+    setFoodName(""); setMealType("snack");
+    setCalories(""); setProtein(""); setCarbs(""); setFat(""); setFiber("");
+    setError(null);
+  }
+
+  function handleClose() { reset(); onClose(); }
+
+  async function submit() {
+    if (!foodName.trim()) { setError("Enter a food name."); return; }
+    if (!calories)        { setError("Calories is required."); return; }
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch(`${BASE_URL}/api/meal-log`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          mealType,
+          note: foodName.trim(),
+          localDate: toLocalISO(),
+          manualMacros: {
+            calories: parseFloat(calories) || 0,
+            protein:  parseFloat(protein)  || 0,
+            carbs:    parseFloat(carbs)    || 0,
+            fat:      parseFloat(fat)      || 0,
+            fiber:    parseFloat(fiber)    || 0,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Failed to save");
+      onSuccess(json.data);
+      handleClose();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal visible transparent animationType="none" onRequestClose={handleClose}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.5)", opacity: backdropAnim }]} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+      </Animated.View>
+      <KeyboardAvoidingView style={{ flex: 1, justifyContent: "flex-end" }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <Animated.View style={[gs.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          <View style={gs.handle} />
+          <View style={g.row}>
+            <Text style={g.title}>Add food manually</Text>
+            <Pressable onPress={handleClose}><Text style={g.cancel}>Cancel</Text></Pressable>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ maxHeight: 480 }}>
+            {/* Food name */}
+            <Text style={ml.fieldLabel}>Food name</Text>
+            <TextInput
+              style={ml.input}
+              placeholder="e.g. Grilled chicken breast"
+              placeholderTextColor="#bbb"
+              value={foodName}
+              onChangeText={setFoodName}
+            />
+
+            {/* Meal type */}
+            <Text style={ml.fieldLabel}>Meal type</Text>
+            <View style={ml.mealRow}>
+              {MEAL_TYPES.map(({ key, label }) => (
+                <Pressable key={key} onPress={() => setMealType(key)}
+                  style={[ml.mealBtn, mealType === key && ml.mealBtnActive]}>
+                  <Text style={[ml.mealBtnText, mealType === key && { color: "#fff" }]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Macros */}
+            <Text style={ml.fieldLabel}>Macros</Text>
+            <View style={ml.macroGrid}>
+              {[
+                { label: "Calories",    state: calories, set: setCalories, required: true },
+                { label: "Protein (g)", state: protein,  set: setProtein  },
+                { label: "Carbs (g)",   state: carbs,    set: setCarbs    },
+                { label: "Fat (g)",     state: fat,      set: setFat      },
+                { label: "Fiber (g)",   state: fiber,    set: setFiber    },
+              ].map(({ label, state, set, required }) => (
+                <View key={label} style={ml.macroField}>
+                  <Text style={ml.macroLabel}>{label}{required ? " *" : ""}</Text>
+                  <TextInput
+                    style={ml.macroInput}
+                    keyboardType="decimal-pad"
+                    placeholder="0"
+                    placeholderTextColor="#bbb"
+                    value={state}
+                    onChangeText={set}
+                  />
+                </View>
+              ))}
+            </View>
+
+            {error ? <Text style={ml.errorText}>{error}</Text> : null}
+            <View style={{ height: 12 }} />
+          </ScrollView>
+
+          <Pressable onPress={submit} disabled={loading}
+            style={[g.saveBtn, { opacity: loading ? 0.5 : 1, marginTop: 12 }]}>
+            {loading
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Text style={g.saveBtnText}>Save meal</Text>}
           </Pressable>
           <View style={{ height: Platform.OS === "ios" ? 36 : 20 }} />
         </Animated.View>
@@ -518,7 +750,7 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
       const res  = await fetch(`${BASE_URL}/api/meal-log`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ image: base64, mealType }),
+        body: JSON.stringify({ image: base64, mealType, localDate: toLocalISO() }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Unknown error");
@@ -550,10 +782,10 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
         )}
       </Pressable>
       <Text style={lf.fieldLabel}>Meal type</Text>
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
-        {MEAL_TYPES.map((t) => (
-          <Pressable key={t.key} onPress={() => setMealType(t.key)} style={[lf.mealBtn, mealType === t.key && lf.mealBtnActive]}>
-            <Text style={[lf.mealBtnText, mealType === t.key && { color: "#fff" }]}>{t.label}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+        {MEAL_TYPES.map(({ key, label }) => (
+          <Pressable key={key} onPress={() => setMealType(key)} style={[lf.mealBtn, mealType === key && lf.mealBtnActive]}>
+            <Text style={[lf.mealBtnText, mealType === key && { color: "#fff" }]}>{label}</Text>
           </Pressable>
         ))}
       </View>
@@ -581,9 +813,9 @@ const lf = StyleSheet.create({
   pickerLabel: { fontSize: 14, fontWeight: "600", color: "#bbb" },
   pickerSub:   { fontSize: 12, color: "#ccc" },
   fieldLabel:  { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 10 },
-  mealBtn:     { flex: 1, paddingVertical: 11, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center" },
-  mealBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  mealBtnText: { fontSize: 11, fontWeight: "700", color: "#888" },
+  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center" },
+  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  mealBtnText:  { fontSize: 12, fontWeight: "600", color: "#888" },
   err:         { fontSize: 13, color: "#ef4444", fontWeight: "600", marginBottom: 12 },
 });
 
@@ -691,23 +923,27 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
   return (
     <>
       <View style={mc.card}>
-        <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 14 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", padding: 10, gap: 10 }}>
+          {/* Food SVG icon */}
+          <View style={mc.foodIconWrap}>
+            <FoodImage foodNames={log.foods.map((f) => f.name)} size={40} />
+          </View>
+          {/* Food info */}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
               <Text style={mc.type}>{mealLabel(log.mealType)}</Text>
               {index === 0 && <View style={mc.latestBadge}><Text style={mc.latestText}>Latest</Text></View>}
             </View>
             <Text style={mc.foods} numberOfLines={1}>{log.foods.map((f) => f.name).join(", ")}</Text>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={mc.cal}>{fmt(totals?.calories ?? 0)}<Text style={mc.calUnit}> cal</Text></Text>
-              <Text style={mc.prot}>{fmt(totals?.protein ?? 0)}g protein</Text>
-            </View>
-            <Pressable onPress={openMenu} style={mc.dotBtn} hitSlop={8}>
-              <View style={mc.dot} /><View style={mc.dot} /><View style={mc.dot} />
-            </Pressable>
+          {/* Macros + menu */}
+          <View style={{ alignItems: "flex-end", gap: 4 }}>
+            <Text style={mc.cal}>{fmt(totals?.calories ?? 0)}<Text style={mc.calUnit}> cal</Text></Text>
+            <Text style={mc.prot}>{fmt(totals?.protein ?? 0)}g protein</Text>
           </View>
+          <Pressable onPress={openMenu} style={mc.dotBtn} hitSlop={8}>
+            <View style={mc.dot} /><View style={mc.dot} /><View style={mc.dot} />
+          </Pressable>
         </View>
       </View>
 
@@ -717,7 +953,10 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
             <Pressable onPress={(e) => e.stopPropagation()}>
               <Animated.View style={[mc.menuPopup, { opacity: menuAnim, transform: [{ scale: menuScale }] }]}>
                 <Pressable onPress={handleEdit} style={mc.menuItem}>
-                  <Text style={mc.menuItemIcon}>✎</Text>
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="#333" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+                    <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#333" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+                  </Svg>
                   <Text style={mc.menuItemText}>Edit macros</Text>
                 </Pressable>
                 <View style={mc.menuDivider} />
@@ -736,7 +975,9 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
                   </View>
                 ) : (
                   <Pressable onPress={handleDelete} style={mc.menuItem}>
-                    <Text style={[mc.menuItemIcon, { color: "#f43f5e" }]}>✕</Text>
+                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                      <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#f43f5e" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+                    </Svg>
                     <Text style={[mc.menuItemText, { color: "#f43f5e" }]}>Delete meal</Text>
                   </Pressable>
                 )}
@@ -758,7 +999,8 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
 }
 
 const mc = StyleSheet.create({
-  card:              { flexDirection: "column", backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", overflow: "hidden", marginBottom: 8, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  card:              { flexDirection: "column", backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", overflow: "hidden", marginBottom: 0, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  foodIconWrap:      { width: 52, height: 52, borderRadius: 14, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", marginRight: 12 },
   type:              { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
   latestBadge:       { backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
   latestText:        { fontSize: 9, fontWeight: "700", color: "#666" },
@@ -800,6 +1042,7 @@ export default function NutritionScreen() {
   const [hasCustom,  setHasCustom]  = useState(false);
   const [goalsLoad,  setGoalsLoad]  = useState(true);
   const [showGoals,  setShowGoals]  = useState(false);
+  const [showManual, setShowManual] = useState(false);
 
   // Fetch nutrition goals
   useEffect(() => {
@@ -838,20 +1081,33 @@ export default function NutritionScreen() {
     setShowLog(false);
     setResult(newLog);
     setShowResult(true);
-    if (toLocalISO(new Date(newLog.date)) === selDate)
+    // Use localDate (timezone-safe) for comparison
+    const logDate = newLog.localDate || toLocalISO(new Date(newLog.date));
+    if (logDate === selDate)
       setLogs((prev) => [newLog, ...prev]);
   }
 
   // ── Delete meal log ──
   async function handleDelete(id) {
+    // Optimistically remove from UI
+    const snapshot = logs;
     setLogs((prev) => prev.filter((l) => String(l._id) !== id));
     if (token) {
       try {
-        await fetch(`${BASE_URL}/api/meal-log/${id}`, {
+        const res = await fetch(`${BASE_URL}/api/meal-log?id=${id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
-      } catch (e) { console.warn("Server delete failed:", e); }
+        if (!res.ok) {
+          // Backend failed — restore the item
+          setLogs(snapshot);
+          Alert.alert("Error", "Could not delete meal. Please try again.");
+        }
+      } catch (e) {
+        // Network error — restore the item
+        setLogs(snapshot);
+        Alert.alert("Error", "Could not delete meal. Please try again.");
+      }
     }
   }
 
@@ -873,10 +1129,14 @@ export default function NutritionScreen() {
     if (selDate === toLocalISO(yest)) return "Yesterday";
     return new Date(selDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
+//today's i
+  // DEMO_MODE overrides — flip MACRO_DEMO_MODE to false for live usage
+  const displayLogs  = MACRO_DEMO_MODE ? DEMO_MACRO_LOGS : logs;
+  const displayGoals = MACRO_DEMO_MODE ? DEMO_GOALS      : goals;
 
-  const totals  = sumMacros(logs);
+  const totals  = sumMacros(displayLogs);
   const isToday = selDate === todayISO();
-  const busy    = loading || goalsLoad;
+  const busy    = MACRO_DEMO_MODE ? false : (loading || goalsLoad);
   const calPct  = goals.calories > 0 ? Math.min(totals.calories / goals.calories, 1) : 0;
   const calStatus =
     calPct >= 0.9 ? { text: "Near limit",  color: "#f87171",               bg: "rgba(248,113,113,0.12)"  } :
@@ -894,60 +1154,96 @@ export default function NutritionScreen() {
         <View style={n.avatar}><AvatarButton /></View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
-        {/* Date nav */}
-        <View style={n.dateNav}>
-          <Pressable onPress={() => shiftDate(-1)} style={n.dateBtn}><Text style={n.dateBtnText}>‹</Text></Pressable>
-          <Text style={n.dateLabel}>{dateLabel()}</Text>
-          <Pressable onPress={() => shiftDate(1)} disabled={isToday} style={[n.dateBtn, isToday && { opacity: 0.25 }]}>
-            <Text style={n.dateBtnText}>›</Text>
-          </Pressable>
-        </View>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 140, gap: 8 }} showsVerticalScrollIndicator={false}>
 
         {busy ? (
-          <><Skeleton height={300} /><Skeleton height={80} /><Skeleton height={80} /></>
-        ) : (
           <>
-            {/* Hero card */}
+            {/* Hero card skeleton — same dark shell, real arc + macro labels, shimmer bars */}
             <View style={n.heroCard}>
-              <View style={n.heroCardTop}>
-                <View>
-                  <Text style={n.heroEyebrow}>{isToday ? "Today's intake" : dateLabel()}</Text>
-                  <View style={[n.statusPill, { backgroundColor: calStatus.bg }]}>
-                    <View style={[n.statusDot, { backgroundColor: calStatus.color }]} />
-                    <Text style={[n.statusText, { color: calStatus.color }]}>{calStatus.text}</Text>
-                  </View>
+              {/* date nav + goals placeholder in one row */}
+              <View style={n.dateNav}>
+                <View style={[n.dateBtn, { opacity: 0.3 }]} />
+                <View style={{ width: 90, height: 13, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.15)" }} />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ width: 60, height: 26, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.08)" }} />
+                  <View style={[n.dateBtn, { opacity: 0.3 }]} />
                 </View>
-                <Pressable onPress={() => setShowGoals(true)} style={n.editGoalsBtn}>
-                  <Text style={n.editGoalsBtnText}>{hasCustom ? "Custom goals" : "Edit goals"}</Text>
-                </Pressable>
               </View>
+              {/* arc + macro bars — real arc with 0, shimmer label rows */}
               <View style={n.heroBody}>
-                <CalorieArc consumed={totals.calories} goal={goals.calories} />
-                <View style={{ flex: 1 }}>
-                  <MacroBar label="Protein" value={round1(totals.protein)} goal={goals.protein} delay={100} dark />
-                  <MacroBar label="Carbs"   value={round1(totals.carbs)}   goal={goals.carbs}   delay={200} dark />
-                  <MacroBar label="Fat"     value={round1(totals.fat)}     goal={goals.fat}     delay={300} dark />
-                  <MacroBar label="Fiber"   value={round1(totals.fiber)}   goal={goals.fiber}   delay={400} dark />
+                <CalorieArc consumed={0} goal={displayGoals.calories || DEFAULT_GOALS.calories} />
+                <View style={{ flex: 1, gap: 10 }}>
+                  {["Protein","Carbs","Fat","Fiber"].map((label) => (
+                    <View key={label}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                        <View style={{ width: 44, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.15)" }} />
+                        <View style={{ width: 28, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.1)" }} />
+                      </View>
+                      <View style={{ height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)" }} />
+                    </View>
+                  ))}
                 </View>
               </View>
             </View>
+            {/* meal card placeholders */}
+            <Skeleton height={72} />
+            <Skeleton height={72} />
+          </>
+        ) : (
+          <>
+            {/* Hero card — date nav lives inside the dark bg */}
+            <View style={n.heroCard}>
+
+              {/* Date nav + Edit goals in one row */}
+              <View style={n.dateNav}>
+                <Pressable onPress={() => shiftDate(-1)} style={n.dateBtn}>
+                  <Text style={n.dateBtnText}>‹</Text>
+                </Pressable>
+                <Text style={n.dateLabel}>{dateLabel()}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Pressable onPress={() => setShowGoals(true)} style={n.editGoalsBtn}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                        <Path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="rgba(255,255,255,0.5)" strokeWidth={2}/>
+                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="rgba(255,255,255,0.5)" strokeWidth={2}/>
+                      </Svg>
+                      <Text style={n.editGoalsBtnText}>{hasCustom ? "Custom" : "Goals"}</Text>
+                    </View>
+                  </Pressable>
+                  <Pressable onPress={() => shiftDate(1)} disabled={isToday} style={[n.dateBtn, isToday && { opacity: 0.25 }]}>
+                    <Text style={n.dateBtnText}>›</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Calorie arc + macro bars */}
+              <View style={n.heroBody}>
+                <CalorieArc consumed={totals.calories} goal={displayGoals.calories} />
+                <View style={{ flex: 1 }}>
+                  <MacroBar label="Protein" value={round1(totals.protein)} goal={displayGoals.protein} delay={100} dark />
+                  <MacroBar label="Carbs"   value={round1(totals.carbs)}   goal={displayGoals.carbs}   delay={200} dark />
+                  <MacroBar label="Fat"     value={round1(totals.fat)}     goal={displayGoals.fat}     delay={300} dark />
+                  <MacroBar label="Fiber"   value={round1(totals.fiber)}   goal={displayGoals.fiber}   delay={400} dark />
+                </View>
+              </View>
+
+            </View>
 
             {/* Meals */}
-            {logs.length > 0 && (
+            {displayLogs.length > 0 && (
               <>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <Text style={n.sectionLabel}>Meals logged</Text>
-                  <Text style={n.sectionCount}>{logs.length} meal{logs.length !== 1 ? "s" : ""}</Text>
+                  <Text style={n.sectionCount}>{displayLogs.length} meal{displayLogs.length !== 1 ? "s" : ""}</Text>
                 </View>
-                {logs.map((log, i) => (
+                {displayLogs.map((log, i) => (
                   <MealCard key={log._id} log={log} index={i} onDelete={handleDelete} onEdit={handleEdit} token={token} />
                 ))}
               </>
             )}
 
             {/* Empty state */}
-            {logs.length === 0 && (
+            {displayLogs.length === 0 && (
               <View style={n.emptyCard}>
                 <Text style={n.emptyTitle}>{isToday ? "Nothing logged yet" : "No meals this day"}</Text>
                 <Text style={n.emptyDesc}>
@@ -961,13 +1257,39 @@ export default function NutritionScreen() {
 
       {isToday && (
         <View style={n.stickyBar}>
+          <Pressable onPress={() => setShowManual(true)} style={n.manualBtn}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+              <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#1a1a1a" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+              </Svg>
+              <Text style={n.manualBtnText}>Add manually</Text>
+            </View>
+          </Pressable>
           <Pressable onPress={() => setShowLog(true)} style={n.logBtn}>
-            <Text style={n.logBtnText}>+ Scan your food</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+              {/* scanner viewfinder with apple inside */}
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+                {/* corner brackets */}
+                <Path d="M3 9V5a2 2 0 0 1 2-2h4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
+                <Path d="M21 9V5a2 2 0 0 0-2-2h-4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
+                <Path d="M3 15v4a2 2 0 0 0 2 2h4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
+                <Path d="M21 15v4a2 2 0 0 1-2 2h-4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
+                {/* apple stem */}
+                <Path d="M12 7 C12 7 12.5 5.5 14 5.5" stroke="#fff" strokeWidth={1.3} strokeLinecap="round"/>
+                {/* apple leaf */}
+                <Path d="M12.5 6 C13 5 15 4.5 15 6 C14 6.2 12.5 6 12.5 6 Z" fill="#fff" opacity="0.9"/>
+                {/* apple body — classic two-lobe shape */}
+                <Path d="M9 10 C7.5 10 7 11.5 7 13 C7 15.5 8.5 18.5 10 18.5 C10.8 18.5 11 18 12 18 C13 18 13.2 18.5 14 18.5 C15.5 18.5 17 15.5 17 13 C17 11.5 16.5 10 15 10 C14.2 10 13.5 10.5 12 10.5 C10.5 10.5 9.8 10 9 10 Z" fill="#fff" opacity="0.95"/>
+              </Svg>
+              <Text style={n.logBtnText}>Scan your food</Text>
+            </View>
           </Pressable>
         </View>
       )}
 
       <LogSheet visible={showLog} onClose={() => setShowLog(false)} onSuccess={handleSuccess} token={token} />
+      <ManualLogSheet visible={showManual} onClose={() => setShowManual(false)} onSuccess={handleSuccess} token={token} />
       <ResultSheet visible={showResult} log={result} onClose={() => { setShowResult(false); setResult(null); }} />
       <GoalsSheet
         visible={showGoals} goals={goals} calculated={calculated} hasCustom={hasCustom} token={token}
@@ -986,11 +1308,11 @@ const n = StyleSheet.create({
   greeting:         { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
   title:            { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1 },
   avatar:           { flexDirection: "row", alignItems: "center", gap: 10 },
-  dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dateBtn:          { width: 36, height: 36, borderRadius: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", alignItems: "center", justifyContent: "center" },
-  dateBtnText:      { fontSize: 20, color: "#1a1a1a" },
-  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
-  heroCard:         { backgroundColor: "#111111", borderRadius: 22, borderWidth: 1, borderColor: "#222222", padding: 18, shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+  dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  dateBtn:          { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
+  dateBtnText:      { fontSize: 20, color: "#ffffff" },
+  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#ffffff" },
+  heroCard:         { backgroundColor: "#111111", borderRadius: 22, borderWidth: 1, borderColor: "#222222", padding: 14, shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   heroCardTop:      { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
   heroEyebrow:      { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 6 },
   statusPill:       { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
@@ -998,13 +1320,29 @@ const n = StyleSheet.create({
   statusText:       { fontSize: 11, fontWeight: "700" },
   editGoalsBtn:     { backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.45)" },
-  heroBody:         { flexDirection: "row", alignItems: "center", gap: 14 },
-  stickyBar:        { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 16, backgroundColor: "#fafaf8", borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" },
-  logBtn:           { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  heroBody:         { flexDirection: "row", alignItems: "center", gap: 10 },
+  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, backgroundColor: "#fafaf8", borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)", gap: 10 },
+  logBtn:           { flex: 1, backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   logBtnText:       { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
+  manualBtn:        { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
+  manualBtnText:    { fontSize: 15, fontWeight: "600", color: "#1a1a1a", letterSpacing: 0.1 },
   sectionLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
   sectionCount:     { fontSize: 11, fontWeight: "600", color: "#ccc" },
   emptyCard:        { backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: "#e8e5de", padding: 36, alignItems: "center" },
   emptyTitle:       { fontSize: 16, fontWeight: "700", color: "#1a1a1a", marginBottom: 6, textAlign: "center" },
   emptyDesc:        { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
+});
+
+const ml = StyleSheet.create({
+  fieldLabel:   { fontSize: 12, fontWeight: "700", color: "#888", letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
+  input:        { backgroundColor: "#f4f2ed", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 15, color: "#1a1a1a", borderWidth: 1, borderColor: "#e8e5de" },
+  mealRow:      { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center" },
+  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  mealBtnText:  { fontSize: 12, fontWeight: "600", color: "#888" },
+  macroGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  macroField:   { width: "47%", gap: 6 },
+  macroLabel:   { fontSize: 11, fontWeight: "600", color: "#999" },
+  macroInput:   { backgroundColor: "#f4f2ed", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: "#1a1a1a", borderWidth: 1, borderColor: "#e8e5de" },
+  errorText:    { fontSize: 13, color: "#f43f5e", fontWeight: "500", marginTop: 12, textAlign: "center" },
 });

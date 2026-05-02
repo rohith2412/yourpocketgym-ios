@@ -1,92 +1,68 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Easing,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Animated,
+  Easing,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { saveToken } from "../src/auth/storage";
-//handleLogin
+
+const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
+const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
+
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading,  setLoading]  = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(24)).current;
+  const spinAnim  = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 900,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 900,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
 
     Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 6000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
+      Animated.timing(spinAnim, { toValue: 1, duration: 8000, easing: Easing.linear, useNativeDriver: true }),
     ).start();
   }, []);
 
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
 
-  // Replace the entire handleLogin function:
   const handleLogin = async () => {
     if (!email || !password) return;
     setLoading(true);
-
     try {
-      const res = await fetch("https://yourpocketgym.com/api/auth/login", {
-        method: "POST",
+      const res  = await fetch("https://yourpocketgym.com/api/auth/login", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body:    JSON.stringify({ email, password }),
       });
-
       const data = await res.json();
+      if (!res.ok || !data.success) { alert(data.error || "Login failed"); return; }
 
-      if (!res.ok || !data.success) {
-        alert(data.error || "Login failed");
-        return;
-      }
       await saveToken(data.token);
-
-      // Save both token AND user object - useAuth needs both
       await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+      await AsyncStorage.setItem("user",  JSON.stringify(data.user));
 
-      // Redirect based on hasIntro from login response (no extra fetch needed)
-      if (!data.user.hasIntro) {
-        router.replace("/startersIntro");
-      } else {
-        router.replace("/tracking");
-      }
-    } catch (err) {
+      if (!data.user.hasIntro) router.replace("/startersIntro");
+      else                     router.replace("/tracking");
+    } catch {
       alert("Something went wrong. Check your connection.");
     } finally {
       setLoading(false);
@@ -98,187 +74,158 @@ export default function Login() {
   return (
     <View style={s.root}>
       <StatusBar barStyle="dark-content" />
-
-      <LinearGradient
-        colors={[
-          "rgba(109, 40, 217, 0.5)",
-          "rgba(55, 48, 163, 0.22)",
-          "rgba(109, 40, 217, 0.07)",
-          "transparent",
-        ]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0.3, y: 0.5 }}
-        style={s.glow}
-        pointerEvents="none"
-      />
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <Animated.View
-          style={[
-            s.inner,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* HEADER handleLogin */}
-          <View style={s.headerSection}>
-            <View style={s.logoRow}>
-              <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                <Image
+          <Animated.View style={[s.inner, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+
+            {/* ── Top bar ── */}
+            <View style={s.topBar}>
+              <Pressable onPress={() => router.back()} style={s.backBtn}>
+                <Text style={s.backBtnText}>←</Text>
+              </Pressable>
+              {/* <View style={s.logoRow}>
+                <Animated.Image
                   source={require("../assets/images/logo.png")}
-                  style={s.logoSmall}
+                  style={[s.logoSmall, { transform: [{ rotate: spin }] }]}
                   resizeMode="contain"
                 />
-              </Animated.View>
-              <Text style={s.logoName}>PocketGym</Text>
-            </View>
-            <Text style={s.title}>
-              Welcome{"\n"}
-              <Text style={s.titleOrange}>back.</Text>
-            </Text>
-            <Text style={s.subtitle}>Sign in to continue your journey.</Text>
-          </View>
-
-          {/* FORM */}
-          <View style={s.form}>
-            <View style={s.inputWrapper}>
-              <Text style={s.label}>Email</Text>
-              <TextInput
-                style={s.input}
-                placeholder="you@example.com"
-                placeholderTextColor="#ccc"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
+                <Text style={s.logoName}>PocketGym</Text>
+              </View> */}
             </View>
 
-            <View style={s.inputWrapper}>
-              <Text style={s.label}>Password</Text>
-              <TextInput
-                style={s.input}
-                placeholder="Your password"
-                placeholderTextColor="#ccc"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
+            {/* ── Headline ── */}
+            <View style={s.headSection}>
+              <Text style={s.title}>Welcome{"\n"}<Text style={s.titleAccent}>back.</Text></Text>
+              <Text style={s.subtitle}>Sign in to continue your journey.</Text>
             </View>
 
-            <Pressable
-              onPress={handleLogin}
-              disabled={!isValid || loading}
-              style={[s.btn, (!isValid || loading) && s.btnDisabled]}
-            >
-              <Text style={s.btnText}>
-                {loading ? "Signing in..." : "Sign In →"}
+            {/* ── Form ── */}
+            <View style={s.form}>
+              <View style={s.inputWrapper}>
+                <Text style={s.label}>Email</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="you@example.com"
+                  placeholderTextColor="#c0bdb5"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+
+              <View style={s.inputWrapper}>
+                <Text style={s.label}>Password</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="Your password"
+                  placeholderTextColor="#c0bdb5"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+              </View>
+
+              <Pressable
+                onPress={handleLogin}
+                disabled={!isValid || loading}
+                style={({ pressed }) => [s.primaryBtn, (!isValid || loading) && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={s.primaryBtnText}>{loading ? "Signing in…" : "Sign in"}</Text>
+              </Pressable>
+            </View>
+
+            <View style={{ flex: 1 }} />
+
+            {/* ── Footer ── */}
+            <View style={s.footer}>
+              <Pressable onPress={() => router.replace("/register")} style={s.secondaryBtn}>
+                <Text style={s.secondaryBtnText}>Create account</Text>
+              </Pressable>
+
+              <Text style={s.terms}>
+                By continuing you agree to our{" "}
+                <Text style={s.termsLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
+                {" "}&{" "}
+                <Text style={s.termsLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy Policy</Text>
               </Text>
-            </Pressable>
-          </View>
+            </View>
 
-          {/* SPACER */}
-          <View style={s.spacer} />
-
-          {/* FOOTER */}
-          <View style={s.footer}>
-            <Pressable onPress={() => router.replace("/register")}>
-              <Text style={s.footerText}>
-                Don't have an account?{" "}
-                <Text style={s.footerLink}>Create one</Text>
-              </Text>
-            </Pressable>
-            <Text style={s.terms}>
-              By continuing, you agree to our{" "}
-              <Text style={s.termsLink}>Terms of Service</Text> and{" "}
-              <Text style={s.termsLink}>Privacy Policy</Text>.
-            </Text>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fafaf8" },
-  glow: {
-    position: "absolute",
-    top: -120,
-    right: -120,
-    width: 600,
-    height: 600,
-    borderRadius: 300,
-  },
+  root: { flex: 1, backgroundColor: "#ffffff" },
   inner: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 80,
-    paddingBottom: 48,
-    gap: 36,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 52,
+    gap: 32,
   },
-  headerSection: { gap: 12 },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  logoSmall: { width: 28, height: 28 },
-  logoName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    letterSpacing: -0.3,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    letterSpacing: -2,
-    lineHeight: 52,
-  },
-  titleOrange: { color: "#7c3aed" },
-  subtitle: { fontSize: 15, color: "#aaa", marginTop: 4 },
+
+  // Top bar
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backBtn: { padding: 8 },
+  backBtnText: { fontSize: 22, color: "#0e0e0e" },
+  logoRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  logoSmall: { width: 26, height: 26 },
+  logoName: { fontSize: 14, fontWeight: "700", color: "#0e0e0e", letterSpacing: -0.3 },
+
+  // Headline
+  headSection: { gap: 8 },
+  title: { fontSize: 48, fontWeight: "800", color: "#0e0e0e", letterSpacing: -2, lineHeight: 52 },
+  titleAccent: { color: "#e8380d" },
+  subtitle: { fontSize: 15, color: "rgba(0,0,0,0.38)" },
+
+  // Form
   form: { gap: 16 },
-  inputWrapper: { gap: 6 },
+  inputWrapper: { gap: 7 },
   label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#888",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+    fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.35)",
+    letterSpacing: 1, textTransform: "uppercase",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f7f5",
     borderRadius: 14,
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     fontSize: 15,
-    color: "#1a1a1a",
+    color: "#0e0e0e",
     borderWidth: 1,
     borderColor: "#e8e5de",
   },
-  btn: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 14,
-    paddingVertical: 17,
+
+  // Buttons
+  primaryBtn: {
+    backgroundColor: "#0e0e0e",
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: "center",
     marginTop: 4,
   },
-  btnDisabled: { opacity: 0.4 },
-  btnText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#fff",
-    letterSpacing: 0.2,
+  primaryBtnText: { fontSize: 16, fontWeight: "700", color: "#ffffff" },
+
+  secondaryBtn: {
+    backgroundColor: "#f4f4f4",
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
   },
-  spacer: { flex: 1 },
-  footer: { gap: 14, alignItems: "center" },
-  footerText: { fontSize: 13, color: "#aaa" },
-  footerLink: { color: "#7c3aed", fontWeight: "700" },
-  terms: { fontSize: 11, color: "#bbb", lineHeight: 18, textAlign: "center" },
-  termsLink: { color: "#888", textDecorationLine: "underline" },
+  secondaryBtnText: { fontSize: 16, fontWeight: "600", color: "#0e0e0e" },
+
+  // Footer
+  footer: { gap: 12 },
+  terms: { fontSize: 12, color: "rgba(0,0,0,0.25)", textAlign: "center", lineHeight: 18 },
+  termsLink: { color: "rgba(0,0,0,0.45)", textDecorationLine: "underline" },
 });

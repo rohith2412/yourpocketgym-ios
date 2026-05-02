@@ -19,8 +19,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // Product IDs for App Store
 // Make sure these match your App Store Connect configuration
 const PRODUCT_IDS = {
-  PREMIUM_MONTHLY: "com.pocketgym.premium.monthly",
-  PREMIUM_ANNUAL: "com.pocketgym.premium.annual",
+  PREMIUM_MONTHLY: "com.rohith.com.yourpocketgym.premium.monthly",
+  PREMIUM_ANNUAL:  "com.rohith.com.yourpocketgym.premium.annual",
 };
 
 const SKUS = Object.values(PRODUCT_IDS);
@@ -67,7 +67,7 @@ class IAPService {
    */
   async shutdown() {
     try {
-      if (!this.isInitialized) return;
+      if (!this.isInitialized || !this.isAvailable) return;
       await endConnection();
       this.isInitialized = false;
     } catch (error) {

@@ -93,7 +93,7 @@ export function useSubscription() {
   const shouldShowPaywall = isPremium === false;
 
   return {
-    isPremium: isPremium === null ? true : isPremium, // Default to true while loading
+    isPremium: isPremium === true, // Only true if explicitly confirmed by server
     loading,
     error,
     subscriptionStatus,
