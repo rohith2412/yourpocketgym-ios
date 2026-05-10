@@ -1,11 +1,9 @@
 import AvatarButton from "@/components/AvatarButton";
-import FoodImage from "@/components/FoodImage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import PremiumGate from "@/components/PremiumGate";
-import { useSubscription } from "@/src/hooks/useSubscription";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -223,45 +221,27 @@ function CalorieArc({ consumed, goal }) {
   const over = pct >= 1;
   const warn = pct >= 0.9;
 
-  const fillAnim  = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.5, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
-      Animated.timing(pulseAnim, { toValue: 1,   duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: false }),
-    ])).start();
-  }, []);
+  const fillAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fillAnim.setValue(0);
     Animated.timing(fillAnim, { toValue: pct, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
   }, [pct]);
 
-  const dashOffset  = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [CIRC, 0] });
-  const dotRotation = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 360] });
-  const haloR       = pulseAnim.interpolate({ inputRange: [1, 1.5], outputRange: [12, 18] });
-  const arcColor    = over ? "#f87171" : warn ? "#fbbf24" : "#e8380d";
-  const ARC_TRANSFORM = `rotate(-90, 70, 70)`;
+  const dashOffset = fillAnim.interpolate({ inputRange: [0, 1], outputRange: [CIRC, 0] });
+  const arcColor   = over ? "#f87171" : warn ? "#fbbf24" : "#e8380d";
 
   return (
     <View style={{ width: SIZE, height: SIZE, alignItems: "center", justifyContent: "center" }}>
       <Svg width={SIZE} height={SIZE} style={{ position: "absolute" }}>
-        <Circle cx={CX} cy={CX} r={R} fill="none" stroke="#1c1c1e" strokeWidth={SW} />
+        <Circle cx={CX} cy={CX} r={R} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={SW} />
         {consumed > 0 && (
           <AnimArc
             cx={CX} cy={CX} r={R} fill="none"
             stroke={arcColor} strokeWidth={SW}
             strokeDasharray={CIRC} strokeDashoffset={dashOffset}
-            strokeLinecap="round" transform={ARC_TRANSFORM}
+            strokeLinecap="round" transform={`rotate(-90, 70, 70)`}
           />
-        )}
-        {consumed > 0 && (
-          <AnimatedG rotation={dotRotation} origin={`${CX}, ${CX}`}>
-            <AnimArc cx={CX} cy={CX - R} r={haloR} fill="rgba(255,255,255,0.12)" />
-            <Circle  cx={CX} cy={CX - R} r={8}     fill="rgba(255,255,255,0.32)" />
-            <Circle  cx={CX} cy={CX - R} r={4}     fill="#ffffff" />
-          </AnimatedG>
         )}
       </Svg>
       <View style={{ alignItems: "center" }}>
@@ -273,12 +253,12 @@ function CalorieArc({ consumed, goal }) {
 }
 
 const arc = StyleSheet.create({
-  num:  { fontSize: 24, fontWeight: "900", color: "#ffffff", letterSpacing: -1, lineHeight: 28 },
-  unit: { fontSize: 9, color: "rgba(255,255,255,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 2 },
+  num:  { fontSize: 24, fontWeight: "900", color: "#1a1a1a", letterSpacing: -1, lineHeight: 28 },
+  unit: { fontSize: 9, color: "rgba(0,0,0,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 2 },
 });
 
 // ─── Macro Bar ────────────────────────────────────────────────────────────────
-function MacroBar({ label, value, goal, delay = 0, dark = false }) {
+function MacroBar({ label, value, goal, delay = 0 }) {
   const rawPct = goal > 0 ? value / goal : 0;
   const pct    = Math.min(rawPct, 1);
   const over   = rawPct >= 1;
@@ -289,25 +269,21 @@ function MacroBar({ label, value, goal, delay = 0, dark = false }) {
   }, [pct]);
 
   const widthPct = animW.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
-  const barColor = over ? "#f87171" : dark ? "#e8380d" : "#e8380d";
-  const labelCol = dark ? "rgba(255,255,255,0.45)" : "#555";
-  const valCol   = over ? "#f87171" : dark ? "#ffffff" : "#1a1a1a";
-  const goalCol  = dark ? "rgba(255,255,255,0.2)" : "#aaa";
-  const trackCol = dark ? "rgba(255,255,255,0.07)" : "#f0ede6";
+  const barColor = over ? "#f87171" : "#e8380d";
 
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: barColor }} />
-          <Text style={{ fontSize: 12, fontWeight: "600", color: labelCol }}>{label}</Text>
+          <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(0,0,0,0.45)" }}>{label}</Text>
         </View>
-        <Text style={{ fontSize: 11, color: goalCol }}>
-          <Text style={{ fontWeight: "800", color: valCol }}>{round1(value)}</Text>
+        <Text style={{ fontSize: 11, color: "#aaa" }}>
+          <Text style={{ fontWeight: "800", color: over ? "#f87171" : "#1a1a1a" }}>{round1(value)}</Text>
           <Text>/{goal}g</Text>
         </Text>
       </View>
-      <View style={{ height: 5, backgroundColor: trackCol, borderRadius: 99, overflow: "hidden" }}>
+      <View style={{ height: 5, backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 99, overflow: "hidden" }}>
         <Animated.View style={{ height: "100%", width: widthPct, backgroundColor: barColor, borderRadius: 99 }} />
       </View>
     </View>
@@ -707,31 +683,107 @@ function ManualLogSheet({ visible, onClose, onSuccess, token }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEAL PHOTO STORAGE
+// All photos live in <documentDirectory>/meal_photos/<mealId>.jpg
+// documentDirectory is private to the app, persists across restarts on iOS.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PHOTOS_DIR = `${FileSystem.documentDirectory}meal_photos/`;
+const PHOTO_KEY  = (id) => `@mealPhoto/${id}`;
+
+// Ensure the photos directory exists (creates it if not).
+async function _ensureDir() {
+  const { exists } = await FileSystem.getInfoAsync(PHOTOS_DIR);
+  if (!exists) await FileSystem.makeDirectoryAsync(PHOTOS_DIR, { intermediates: true });
+}
+
+/**
+ * Save a base64 data URI as a JPEG in documentDirectory.
+ * Returns the file:// path on success, null on failure.
+ * Using writeAsStringAsync(encoding:"base64") — works for ANY picker URI type
+ * (ph://, file://, etc.) because we operate on the base64 payload, not the URI.
+ */
+async function saveMealPhoto(b64DataUri, mealId) {
+  if (!b64DataUri || !mealId) return null;
+  try {
+    const raw = b64DataUri.replace(/^data:image\/\w+;base64,/, "");
+    if (raw.length < 200) return null;                    // guard against empty/broken data
+    await _ensureDir();
+    const path = `${PHOTOS_DIR}${mealId}.jpg`;
+    await FileSystem.writeAsStringAsync(path, raw, { encoding: "base64" });
+    const { exists, size } = await FileSystem.getInfoAsync(path);
+    if (!exists || size === 0) return null;               // verify it actually landed
+    await AsyncStorage.setItem(PHOTO_KEY(mealId), path);
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load the persisted photo path for a meal.
+ * Returns the file:// path if the file exists on disk, null otherwise.
+ * Cleans up stale AsyncStorage entries automatically.
+ */
+async function loadMealPhoto(mealId) {
+  if (!mealId) return null;
+  try {
+    const path = await AsyncStorage.getItem(PHOTO_KEY(mealId));
+    if (!path) return null;
+    const { exists } = await FileSystem.getInfoAsync(path);
+    if (!exists) {
+      await AsyncStorage.removeItem(PHOTO_KEY(mealId));  // stale key — remove it
+      return null;
+    }
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+// Module-level — holds the raw base64 data URI from the last picker session.
+// Lives OUTSIDE all components so it's immune to re-renders and stale closures.
+let _pendingB64 = null;
+
 // ─── Log Sheet ────────────────────────────────────────────────────────────────
 function LogSheet({ visible, onClose, onSuccess, token }) {
   const [imageUri, setImageUri] = useState(null);
-  const [base64, setBase64]     = useState(null);
   const [mealType, setMealType] = useState(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState(null);
 
+  // Reset state every time the sheet opens
   useEffect(() => {
-    if (visible) { setImageUri(null); setBase64(null); setMealType(null); setError(null); }
+    if (visible) {
+      setImageUri(null); setMealType(null); setError(null);
+      _pendingB64 = null;
+    }
   }, [visible]);
 
   async function pickImage() {
     try {
-      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.7, base64: true });
-      if (!r.canceled && r.assets[0]) { setImageUri(r.assets[0].uri); setBase64(`data:image/jpeg;base64,${r.assets[0].base64}`); }
+      const r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"], allowsEditing: true, quality: 0.75, base64: true,
+      });
+      if (!r.canceled && r.assets?.[0]) {
+        _pendingB64 = `data:image/jpeg;base64,${r.assets[0].base64}`;
+        setImageUri(r.assets[0].uri);
+      }
     } catch (e) { Alert.alert("Error", e.message); }
   }
 
   async function takePhoto() {
     try {
-      const p = await ImagePicker.requestCameraPermissionsAsync();
-      if (!p.granted) { Alert.alert("Permission needed", "Please allow camera access in Settings."); return; }
-      const r = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7, base64: true });
-      if (!r.canceled && r.assets[0]) { setImageUri(r.assets[0].uri); setBase64(`data:image/jpeg;base64,${r.assets[0].base64}`); }
+      const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+      if (!granted) { Alert.alert("Permission needed", "Allow camera access in Settings."); return; }
+      const r = await ImagePicker.launchCameraAsync({
+        allowsEditing: true, quality: 0.75, base64: true,
+      });
+      if (!r.canceled && r.assets?.[0]) {
+        _pendingB64 = `data:image/jpeg;base64,${r.assets[0].base64}`;
+        setImageUri(r.assets[0].uri);
+      }
     } catch (e) { Alert.alert("Error", e.message); }
   }
 
@@ -744,17 +796,26 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
   }
 
   async function submit() {
-    if (!base64 || !mealType) return;
+    if (!_pendingB64 || !mealType) return;
     setLoading(true); setError(null);
+    const b64 = _pendingB64;                             // snapshot before any await
     try {
+      // 1. Send to server
       const res  = await fetch(`${BASE_URL}/api/meal-log`, {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ image: base64, mealType, localDate: toLocalISO() }),
+        body:    JSON.stringify({ image: b64, mealType, localDate: toLocalISO() }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Unknown error");
-      onSuccess(json.data);
+
+      // 2. Save photo to documentDirectory (awaited — so we have the real path)
+      const mealId   = String(json.data._id);
+      const photoPath = await saveMealPhoto(b64, mealId);
+
+      // 3. Pass permanent path on the log object → MealCard shows it immediately
+      //    AND it survives app restarts via AsyncStorage
+      onSuccess({ ...json.data, _localPhotoUri: photoPath });
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
@@ -769,7 +830,7 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
         {imageUri ? (
           <>
             <Image source={{ uri: imageUri }} style={lf.preview} />
-            <Pressable onPress={() => { setImageUri(null); setBase64(null); }} style={lf.removeBtn}>
+            <Pressable onPress={() => { setImageUri(null); _pendingB64 = null; }} style={lf.removeBtn}>
               <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>✕</Text>
             </Pressable>
           </>
@@ -790,7 +851,7 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
         ))}
       </View>
       {error && <Text style={lf.err}>{error}</Text>}
-      <Pressable onPress={submit} disabled={!base64 || !mealType || loading} style={[g.saveBtn, { opacity: !base64 || !mealType || loading ? 0.35 : 1 }]}>
+      <Pressable onPress={submit} disabled={!imageUri || !mealType || loading} style={[g.saveBtn, { opacity: !imageUri || !mealType || loading ? 0.35 : 1 }]}>
         {loading ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <ActivityIndicator size="small" color="#fff" />
@@ -894,7 +955,27 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
   const [editOpen,      setEditOpen]      = useState(false);
   const [totals,        setTotals]        = useState(log.totals);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [photoUri, setPhotoUri] = useState(null);
   const menuAnim = useRef(new Animated.Value(0)).current;
+
+  // Resolve photo on mount and when log changes.
+  // Priority: _localPhotoUri on the log object (just logged this session)
+  //        → AsyncStorage + file-existence check (persisted across restarts)
+  useEffect(() => {
+    const id = String(log._id);
+    async function resolve() {
+      // Fast path: photo was just logged and path is already on the object
+      if (log._localPhotoUri) {
+        const { exists } = await FileSystem.getInfoAsync(log._localPhotoUri)
+          .catch(() => ({ exists: false }));
+        if (exists) { setPhotoUri(log._localPhotoUri); return; }
+      }
+      // Slow path: load from persisted storage (after app restart)
+      const path = await loadMealPhoto(id);
+      if (path) setPhotoUri(path);
+    }
+    resolve();
+  }, [log._id, log._localPhotoUri]);
 
   function openMenu() {
     setMenuVisible(true);
@@ -923,24 +1004,31 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
   return (
     <>
       <View style={mc.card}>
-        <View style={{ flexDirection: "row", alignItems: "center", padding: 10, gap: 10 }}>
-          {/* Food SVG icon */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 12, gap: 12 }}>
+          {/* Food photo thumbnail */}
           <View style={mc.foodIconWrap}>
-            <FoodImage foodNames={log.foods.map((f) => f.name)} size={40} />
+            {photoUri
+              ? <Image source={{ uri: photoUri }} style={mc.foodPhoto} />
+              : null}
           </View>
-          {/* Food info */}
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 3 }}>
-              <Text style={mc.type}>{mealLabel(log.mealType)}</Text>
+
+          {/* Food info — names primary, type secondary */}
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <Text style={mc.foods} numberOfLines={1}>{log.foods.map((f) => f.name).join(", ")}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={mc.typeTag}>
+                <Text style={mc.typeTagText}>{mealLabel(log.mealType)}</Text>
+              </View>
               {index === 0 && <View style={mc.latestBadge}><Text style={mc.latestText}>Latest</Text></View>}
             </View>
-            <Text style={mc.foods} numberOfLines={1}>{log.foods.map((f) => f.name).join(", ")}</Text>
           </View>
-          {/* Macros + menu */}
-          <View style={{ alignItems: "flex-end", gap: 4 }}>
+
+          {/* Calories + protein */}
+          <View style={{ alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
             <Text style={mc.cal}>{fmt(totals?.calories ?? 0)}<Text style={mc.calUnit}> cal</Text></Text>
             <Text style={mc.prot}>{fmt(totals?.protein ?? 0)}g protein</Text>
           </View>
+
           <Pressable onPress={openMenu} style={mc.dotBtn} hitSlop={8}>
             <View style={mc.dot} /><View style={mc.dot} /><View style={mc.dot} />
           </Pressable>
@@ -999,12 +1087,14 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
 }
 
 const mc = StyleSheet.create({
-  card:              { flexDirection: "column", backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", overflow: "hidden", marginBottom: 0, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
-  foodIconWrap:      { width: 52, height: 52, borderRadius: 14, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", marginRight: 12 },
-  type:              { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  latestBadge:       { backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
-  latestText:        { fontSize: 9, fontWeight: "700", color: "#666" },
-  foods:             { fontSize: 12, color: "#aaa" },
+  card:              { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e8e5de", shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  foodIconWrap:      { width: 54, height: 54, borderRadius: 14, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
+  foodPhoto:         { width: 54, height: 54 },
+  foods:             { fontSize: 15, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.2 },
+  typeTag:           { backgroundColor: "#f4f2ed", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  typeTagText:       { fontSize: 11, fontWeight: "600", color: "#888" },
+  latestBadge:       { backgroundColor: "rgba(232,56,13,0.1)", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  latestText:        { fontSize: 9, fontWeight: "700", color: "#e8380d" },
   cal:               { fontSize: 15, fontWeight: "800", color: "#1a1a1a" },
   calUnit:           { fontSize: 11, fontWeight: "400", color: "#bbb" },
   prot:              { fontSize: 12, color: "#888", fontWeight: "700" },
@@ -1026,10 +1116,96 @@ const mc = StyleSheet.create({
   confirmDeleteText: { fontSize: 13, fontWeight: "700", color: "#f43f5e" },
 });
 
+// ─── Week Strip ───────────────────────────────────────────────────────────────
+const DAY_ABBR  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function MacroWeekStrip({ selDate, onSelect, weekCalories = {}, calorieGoal = 2000 }) {
+  const colRefs  = useRef({});
+
+  // Build 7-day window ending today
+  const days = useMemo(() => {
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      result.push(toLocalISO(d));
+    }
+    return result;
+  }, []);
+
+  const R = 18; // radius of progress ring
+  const CIRC = 2 * Math.PI * R;
+
+  return (
+    <View style={ws.container}>
+      {days.map((date) => {
+        const d       = new Date(date + "T12:00:00");
+        const abbr    = DAY_ABBR[d.getDay()];
+        const num     = d.getDate();
+        const isSel   = date === selDate;
+        const isToday = date === todayISO();
+        const cal     = weekCalories[date] ?? 0;
+        const pct     = calorieGoal > 0 ? Math.min(cal / calorieGoal, 1) : 0;
+        const dash    = pct * CIRC;
+        const ringColor = isSel ? "rgba(255,255,255,0.7)" : "#e8380d";
+        const trackColor = isSel ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.07)";
+
+        return (
+          <Pressable key={date} style={ws.col} onLayout={(e) => { colRefs.current[date] = e.nativeEvent.layout; }} onPress={() => onSelect(date)}>
+            <Text style={[ws.abbr, isSel && ws.abbrSel]}>{abbr}</Text>
+            <View style={ws.circleWrap}>
+              {/* Calorie ring SVG */}
+              <Svg width={40} height={40} style={{ position: "absolute" }}>
+                <Circle cx={20} cy={20} r={R} stroke={trackColor} strokeWidth={2.5} fill="none" />
+                {pct > 0 && (
+                  <Circle
+                    cx={20} cy={20} r={R}
+                    stroke={ringColor}
+                    strokeWidth={2.5}
+                    fill="none"
+                    strokeDasharray={`${dash} ${CIRC - dash}`}
+                    strokeDashoffset={CIRC / 4}
+                    strokeLinecap="round"
+                  />
+                )}
+              </Svg>
+              <View style={[ws.dayBubble, isSel && ws.dayBubbleSel]}>
+                <Text style={[ws.num, isSel && ws.numSel]}>{num}</Text>
+              </View>
+              {isToday && !isSel && cal === 0 && <View style={ws.dot} />}
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const ws = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    marginBottom: 4,
+    backgroundColor: "#fff",
+    borderRadius: 22,
+    paddingVertical: 12,
+    borderWidth: 1, borderColor: "#e8e5de",
+    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+  },
+  col:          { flex: 1, alignItems: "center", gap: 5, paddingVertical: 2 },
+  abbr:         { fontSize: 11, fontWeight: "600", color: "#bbb", letterSpacing: 0.2 },
+  abbrSel:      { color: "#1a1a1a", fontWeight: "800" },
+  circleWrap:   { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  dayBubble:    { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  dayBubbleSel: { backgroundColor: "#1a1a1a" },
+  num:          { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  numSel:       { color: "#fff" },
+  dot:          { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
+});
+
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const { token, userName } = useAuth();
-  const { isPremium } = useSubscription();
 
   const [logs,       setLogs]       = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -1042,7 +1218,8 @@ export default function NutritionScreen() {
   const [hasCustom,  setHasCustom]  = useState(false);
   const [goalsLoad,  setGoalsLoad]  = useState(true);
   const [showGoals,  setShowGoals]  = useState(false);
-  const [showManual, setShowManual] = useState(false);
+  const [showManual,    setShowManual]    = useState(false);
+  const [weekCalories,  setWeekCalories]  = useState({});
 
   // Fetch nutrition goals
   useEffect(() => {
@@ -1070,6 +1247,9 @@ export default function NutritionScreen() {
       const json = await res.json();
       if (json.success && json.data) {
         setLogs(json.data);
+        // Track calories per date for week strip rings
+        const cal = json.data.reduce((s, l) => s + (l.totals?.calories ?? 0), 0);
+        setWeekCalories((prev) => ({ ...prev, [date]: cal }));
       }
     } catch (e) { console.error("fetchLogs error:", e); }
     finally { setLoading(false); }
@@ -1077,14 +1257,40 @@ export default function NutritionScreen() {
 
   useEffect(() => { fetchLogs(selDate); }, [token, selDate, fetchLogs]);
 
+  // Pre-fetch calorie totals for all 7 days so week rings show without clicking
+  useEffect(() => {
+    if (!token) return;
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      days.push(toLocalISO(d));
+    }
+    days.forEach((date) => {
+      fetch(`${BASE_URL}/api/meal-log?date=${date}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success && json.data) {
+            const cal = json.data.reduce((s, l) => s + (l.totals?.calories ?? 0), 0);
+            setWeekCalories((prev) => ({ ...prev, [date]: cal }));
+          }
+        })
+        .catch(() => {});
+    });
+  }, [token]);
+
   function handleSuccess(newLog) {
     setShowLog(false);
     setResult(newLog);
     setShowResult(true);
-    // Use localDate (timezone-safe) for comparison
     const logDate = newLog.localDate || toLocalISO(new Date(newLog.date));
-    if (logDate === selDate)
-      setLogs((prev) => [newLog, ...prev]);
+    if (logDate === selDate) {
+      setLogs((prev) => {
+        const next = [newLog, ...prev];
+        const cal  = next.reduce((s, l) => s + (l.totals?.calories ?? 0), 0);
+        setWeekCalories((w) => ({ ...w, [logDate]: cal }));
+        return next;
+      });
+    }
   }
 
   // ── Delete meal log ──
@@ -1144,42 +1350,40 @@ export default function NutritionScreen() {
                     { text: "Keep eating", color: "rgba(255,255,255,0.3)", bg: "rgba(255,255,255,0.06)" };
 
   return (
-    <PremiumGate isUserPremium={isPremium} featureName="Macro Scanner">
       <SafeAreaView style={n.screen} edges={["top"]}>
         <View style={n.header}>
-        <View>
-          <Text style={n.greeting}>Good {getGreeting()}{userName ? `, ${userName}` : ""}</Text>
-          <Text style={n.title}>Nutrition</Text>
+          <View style={n.headerRow}>
+            <View>
+              <Text style={n.greeting}>Good {getGreeting()}{userName ? `, ${userName}` : ""}</Text>
+              <Text style={n.title}>Nutrition</Text>
+            </View>
+            <AvatarButton />
+          </View>
         </View>
-        <View style={n.avatar}><AvatarButton /></View>
-      </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingBottom: 140, gap: 8 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
+
+        {/* Week strip — always visible */}
+        <MacroWeekStrip selDate={selDate} onSelect={setSelDate} weekCalories={weekCalories} calorieGoal={displayGoals.calories} />
 
         {busy ? (
           <>
-            {/* Hero card skeleton — same dark shell, real arc + macro labels, shimmer bars */}
+            {/* Hero card skeleton */}
             <View style={n.heroCard}>
-              {/* date nav + goals placeholder in one row */}
               <View style={n.dateNav}>
-                <View style={[n.dateBtn, { opacity: 0.3 }]} />
-                <View style={{ width: 90, height: 13, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.15)" }} />
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <View style={{ width: 60, height: 26, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.08)" }} />
-                  <View style={[n.dateBtn, { opacity: 0.3 }]} />
-                </View>
+                <View style={{ width: 90, height: 13, borderRadius: 7, backgroundColor: "rgba(0,0,0,0.07)" }} />
+                <View style={{ width: 60, height: 26, borderRadius: 99, backgroundColor: "rgba(0,0,0,0.05)" }} />
               </View>
-              {/* arc + macro bars — real arc with 0, shimmer label rows */}
               <View style={n.heroBody}>
                 <CalorieArc consumed={0} goal={displayGoals.calories || DEFAULT_GOALS.calories} />
                 <View style={{ flex: 1, gap: 10 }}>
                   {["Protein","Carbs","Fat","Fiber"].map((label) => (
                     <View key={label}>
                       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                        <View style={{ width: 44, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.15)" }} />
-                        <View style={{ width: 28, height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.1)" }} />
+                        <View style={{ width: 44, height: 10, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.07)" }} />
+                        <View style={{ width: 28, height: 10, borderRadius: 5, backgroundColor: "rgba(0,0,0,0.05)" }} />
                       </View>
-                      <View style={{ height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)" }} />
+                      <View style={{ height: 5, borderRadius: 3, backgroundColor: "rgba(0,0,0,0.05)" }} />
                     </View>
                   ))}
                 </View>
@@ -1191,39 +1395,31 @@ export default function NutritionScreen() {
           </>
         ) : (
           <>
-            {/* Hero card — date nav lives inside the dark bg */}
+            {/* Hero card */}
             <View style={n.heroCard}>
 
-              {/* Date nav + Edit goals in one row */}
+              {/* Date label + Goals button */}
               <View style={n.dateNav}>
-                <Pressable onPress={() => shiftDate(-1)} style={n.dateBtn}>
-                  <Text style={n.dateBtnText}>‹</Text>
-                </Pressable>
                 <Text style={n.dateLabel}>{dateLabel()}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Pressable onPress={() => setShowGoals(true)} style={n.editGoalsBtn}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-                        <Path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="rgba(255,255,255,0.5)" strokeWidth={2}/>
-                        <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="rgba(255,255,255,0.5)" strokeWidth={2}/>
-                      </Svg>
-                      <Text style={n.editGoalsBtnText}>{hasCustom ? "Custom" : "Goals"}</Text>
-                    </View>
-                  </Pressable>
-                  <Pressable onPress={() => shiftDate(1)} disabled={isToday} style={[n.dateBtn, isToday && { opacity: 0.25 }]}>
-                    <Text style={n.dateBtnText}>›</Text>
-                  </Pressable>
-                </View>
+                <Pressable onPress={() => setShowGoals(true)} style={n.editGoalsBtn}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+                      <Path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="#888" strokeWidth={2}/>
+                      <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="#888" strokeWidth={2}/>
+                    </Svg>
+                    <Text style={n.editGoalsBtnText}>{hasCustom ? "Custom" : "Goals"}</Text>
+                  </View>
+                </Pressable>
               </View>
 
               {/* Calorie arc + macro bars */}
               <View style={n.heroBody}>
                 <CalorieArc consumed={totals.calories} goal={displayGoals.calories} />
                 <View style={{ flex: 1 }}>
-                  <MacroBar label="Protein" value={round1(totals.protein)} goal={displayGoals.protein} delay={100} dark />
-                  <MacroBar label="Carbs"   value={round1(totals.carbs)}   goal={displayGoals.carbs}   delay={200} dark />
-                  <MacroBar label="Fat"     value={round1(totals.fat)}     goal={displayGoals.fat}     delay={300} dark />
-                  <MacroBar label="Fiber"   value={round1(totals.fiber)}   goal={displayGoals.fiber}   delay={400} dark />
+                  <MacroBar label="Protein" value={round1(totals.protein)} goal={displayGoals.protein} delay={100} />
+                  <MacroBar label="Carbs"   value={round1(totals.carbs)}   goal={displayGoals.carbs}   delay={200} />
+                  <MacroBar label="Fat"     value={round1(totals.fat)}     goal={displayGoals.fat}     delay={300} />
+                  <MacroBar label="Fiber"   value={round1(totals.fiber)}   goal={displayGoals.fiber}   delay={400} />
                 </View>
               </View>
 
@@ -1231,15 +1427,17 @@ export default function NutritionScreen() {
 
             {/* Meals */}
             {displayLogs.length > 0 && (
-              <>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4 }}>
                   <Text style={n.sectionLabel}>Meals logged</Text>
                   <Text style={n.sectionCount}>{displayLogs.length} meal{displayLogs.length !== 1 ? "s" : ""}</Text>
                 </View>
-                {displayLogs.map((log, i) => (
-                  <MealCard key={log._id} log={log} index={i} onDelete={handleDelete} onEdit={handleEdit} token={token} />
-                ))}
-              </>
+                <View style={{ gap: 8 }}>
+                  {displayLogs.map((log, i) => (
+                    <MealCard key={log._id} log={log} index={i} onDelete={handleDelete} onEdit={handleEdit} token={token} />
+                  ))}
+                </View>
+              </View>
             )}
 
             {/* Empty state */}
@@ -1297,38 +1495,30 @@ export default function NutritionScreen() {
         onSaved={(newGoals, custom) => { setGoals(newGoals); setHasCustom(custom); }}
       />
       </SafeAreaView>
-    </PremiumGate>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const n = StyleSheet.create({
   screen:           { flex: 1, backgroundColor: "#fafaf8" },
-  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)", backgroundColor: "transparent" },
+  header:           { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0, backgroundColor: "transparent", borderBottomWidth: 1, borderBottomColor: "rgba(232,229,222,0.5)" },
+  headerRow:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   greeting:         { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
-  title:            { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1 },
-  avatar:           { flexDirection: "row", alignItems: "center", gap: 10 },
+  title:            { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1, lineHeight: 30 },
   dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  dateBtn:          { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" },
-  dateBtnText:      { fontSize: 20, color: "#ffffff" },
-  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#ffffff" },
-  heroCard:         { backgroundColor: "#111111", borderRadius: 22, borderWidth: 1, borderColor: "#222222", padding: 14, shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
-  heroCardTop:      { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
-  heroEyebrow:      { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 6 },
-  statusPill:       { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
-  statusDot:        { width: 6, height: 6, borderRadius: 3 },
-  statusText:       { fontSize: 11, fontWeight: "700" },
-  editGoalsBtn:     { backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.45)" },
-  heroBody:         { flexDirection: "row", alignItems: "center", gap: 10 },
-  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8, backgroundColor: "#fafaf8", borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)", gap: 10 },
+  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
+  heroCard:         { backgroundColor: "#ffffff", borderRadius: 22, borderWidth: 1, borderColor: "#e8e5de", padding: 18, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  editGoalsBtn:     { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
+  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "#888" },
+  heroBody:         { flexDirection: "row", alignItems: "center", gap: 12 },
+  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, backgroundColor: "#fafaf8", borderTopWidth: 1, borderTopColor: "rgba(232,229,222,0.6)", gap: 10 },
   logBtn:           { flex: 1, backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   logBtnText:       { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
   manualBtn:        { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
   manualBtnText:    { fontSize: 15, fontWeight: "600", color: "#1a1a1a", letterSpacing: 0.1 },
   sectionLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
   sectionCount:     { fontSize: 11, fontWeight: "600", color: "#ccc" },
-  emptyCard:        { backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: "#e8e5de", padding: 36, alignItems: "center" },
+  emptyCard:        { backgroundColor: "#fff", borderRadius: 22, borderWidth: 1, borderColor: "#e8e5de", padding: 36, alignItems: "center" },
   emptyTitle:       { fontSize: 16, fontWeight: "700", color: "#1a1a1a", marginBottom: 6, textAlign: "center" },
   emptyDesc:        { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import {
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +14,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
+
+const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
+const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
 interface PremiumGateProps {
   isUserPremium: boolean;
@@ -128,12 +132,12 @@ export default function PremiumGate({
                   onError={() => setLogoReady(true)}
                 />
                 <View>
-                  <Text style={s.eyebrow}>POCKETGYM</Text>
-                  <Text style={s.bandTitle}>Premium</Text>
+                  <Text style={s.eyebrow}>POCKETGYM PREMIUM</Text>
+                  <Text style={s.bandTitle}>Monthly</Text>
                 </View>
               </View>
               <View style={s.priceBadge}>
-                <Text style={s.priceAmount}>$12</Text>
+                <Text style={s.priceAmount}>$12.99</Text>
                 <Text style={s.pricePer}>/mo</Text>
               </View>
             </View>
@@ -175,7 +179,7 @@ export default function PremiumGate({
                   <View style={s.ctaInner}>
                     <Text style={s.ctaText}>Continue</Text>
                     <View style={s.ctaPricePill}>
-                      <Text style={s.ctaPriceText}>$12 / mo</Text>
+                      <Text style={s.ctaPriceText}>$12.99 / mo</Text>
                     </View>
                   </View>
                 )}
@@ -187,9 +191,27 @@ export default function PremiumGate({
                 </Text>
               </Pressable>
 
-              <Text style={s.terms}>
-                Tracking is always free. Cancel anytime.
+              {/* Apple-required subscription disclosure */}
+              <Text style={s.renewalNotice}>
+                PocketGym Premium · $12.99 / month (auto-renews){"\n"}
+                Subscription auto-renews monthly unless cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple ID account. You can manage or cancel your subscription at any time in your App Store account settings.
               </Text>
+
+              <View style={s.legalRow}>
+                <Text
+                  style={s.legalLink}
+                  onPress={() => Linking.openURL(TERMS_URL)}
+                >
+                  Terms of Use
+                </Text>
+                <Text style={s.legalDot}> · </Text>
+                <Text
+                  style={s.legalLink}
+                  onPress={() => Linking.openURL(PRIVACY_URL)}
+                >
+                  Privacy Policy
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -415,11 +437,28 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: MUTED,
     textDecorationLine: "underline",
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  terms: {
-    fontSize: 11,
+  renewalNotice: {
+    fontSize: 10,
     color: MUTED,
     textAlign: "center",
+    lineHeight: 15,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  legalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  legalLink: {
+    fontSize: 11,
+    color: "#4a90d9",
+    textDecorationLine: "underline",
+  },
+  legalDot: {
+    fontSize: 11,
+    color: MUTED,
   },
 });

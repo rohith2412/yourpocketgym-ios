@@ -1,21 +1,21 @@
 import AvatarButton from "@/components/AvatarButton";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import PageBackground from "@/components/PageBackground";
+import MealPlanView from "@/components/MealPlanView";
 import PremiumGate from "@/components/PremiumGate";
 import { useSubscription } from "@/src/hooks/useSubscription";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -171,7 +171,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <View>
               <Text style={s.calorieEyebrow}>Calories</Text>
-              <Text style={s.calorieNum}>{fmt(recipe.macros?.calories)}<Text style={s.calorieUnit}> kcal</Text></Text>
+              <Text style={s.calorieNum}>{fmt(recipe.macros?.calories)}<Text style={s.calorieUnit}> cal</Text></Text>
             </View>
             <View style={{ flexDirection: "row", gap: 14 }}>
               {[
@@ -250,7 +250,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
               {isSaved ? "Recipe saved" : "Save this recipe"}
             </Text>
             <Text style={s.detailSaveBtnSub}>
-              {isSaved ? "Tap to remove from saved" : "Access it anytime in your Saved tab"}
+              {isSaved ? "Tap to remove from saved" : "Find it anytime under All Recipes → Saved"}
             </Text>
           </View>
         </View>
@@ -270,7 +270,7 @@ function LibraryCard({ recipe, onPress }) {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 }}>
           <Text style={s.libProtein}>{fmt(recipe.macros?.protein)}g protein</Text>
           <Text style={s.libDot}>·</Text>
-          <Text style={s.libMeta}>{fmt(recipe.macros?.calories)} kcal</Text>
+          <Text style={s.libMeta}>{fmt(recipe.macros?.calories)} cal</Text>
           <Text style={s.libDot}>·</Text>
           <Text style={s.libMeta}>{totalTime(recipe)}m</Text>
         </View>
@@ -414,7 +414,7 @@ function RecipeCard({ recipe, onPress, onSave, isSaved = false, index = 0 }: {
       {/* ── White footer stats ── */}
       <View style={rc.footer}>
         {[
-          { label: "Calories", val: `${calories} kcal` },
+          { label: "Calories", val: `${calories} cal` },
           { label: "Total time", val: `${time} min` },
           { label: "Servings", val: `${recipe.servings ?? "—"}` },
           { label: "Carbs", val: `${fmt(recipe.macros?.carbs)}g` },
@@ -481,7 +481,8 @@ export default function useA() {
   const { token, userName } = useAuth();
   const { isPremium } = useSubscription();
 
-  const [mainTab, setMainTab] = useState("find");
+  const [mainTab, setMainTab] = useState("mealplan");
+  const [allSubTab, setAllSubTab] = useState<"all" | "saved">("all");
   const [selected, setSelected] = useState([]);
   const [customInput, setCustomInput] = useState("");
   const [openCat, setOpenCat] = useState(null);
@@ -664,11 +665,11 @@ export default function useA() {
 
         {!isShowingDetail && (
           <View style={s.tabsRow}>
-            {[["find", "Find"], ["all", "All Recipes"], ["saved", "Saved"]].map(([key, label]) => (
+            {[["mealplan", "Meal Plan"], ["find", "Find"], ["all", "All Recipes"]].map(([key, label]) => (
               <TouchableOpacity key={key} onPress={() => setMainTab(key)} style={s.mainTab}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                   <Text style={[s.mainTabText, mainTab === key && s.mainTabTextActive]}>{label}</Text>
-                  {key === "saved" && savedRecipes.length > 0 && (
+                  {key === "all" && savedRecipes.length > 0 && (
                     <View style={s.savedTabBadge}>
                       <Text style={s.savedTabBadgeText}>{savedRecipes.length}</Text>
                     </View>
@@ -849,170 +850,198 @@ export default function useA() {
           </ScrollView>
         )}
 
-        {/* ─── All Recipes Tab ─── */}
+        {/* ─── Meal Plan Tab ─── */}
+        {!isShowingDetail && mainTab === "mealplan" && (
+          <MealPlanView enabled={isPremium} />
+        )}
+
+        {/* ─── All Recipes Tab (includes Saved sub-section) ─── */}
         {!isShowingDetail && mainTab === "all" && (
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: 120 }}
           >
-            {/* ── Search + Filter button bar ── */}
-            <View style={s.allTopBar}>
-              <View style={s.searchBar}>
-                <Text style={s.searchIcon}>🔍</Text>
-                <TextInput
-                  value={libSearch}
-                  onChangeText={setLibSearch}
-                  placeholder="Search recipes…"
-                  placeholderTextColor="#bbb"
-                  style={s.searchInput}
-                  returnKeyType="search"
-                  clearButtonMode="while-editing"
-                />
-                {libSearch.length > 0 && (
-                  <TouchableOpacity onPress={() => setLibSearch("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={{ fontSize: 13, color: "#bbb", fontWeight: "700" }}>✕</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setShowFilter(true)} style={s.filterBtn2}>
-                <Text style={s.filterBtn2Text}>Filter</Text>
-                {(() => {
-                  const count = [libGoal, libMeal, libSort !== "default", libMaxTime > 0, libMinProtein > 0, libDifficulty].filter(Boolean).length;
-                  return count > 0 ? (
-                    <View style={s.filterBadge}><Text style={s.filterBadgeText}>{count}</Text></View>
-                  ) : null;
-                })()}
+            {/* ── All / Saved sub-toggle ── */}
+            <View style={s.subToggleRow}>
+              <TouchableOpacity
+                onPress={() => setAllSubTab("all")}
+                style={[s.subToggleBtn, allSubTab === "all" && s.subToggleBtnActive]}
+              >
+                <Text style={[s.subToggleText, allSubTab === "all" && s.subToggleTextActive]}>All Recipes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setAllSubTab("saved")}
+                style={[s.subToggleBtn, allSubTab === "saved" && s.subToggleBtnActive]}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <Text style={[s.subToggleText, allSubTab === "saved" && s.subToggleTextActive]}>Saved</Text>
+                  {savedRecipes.length > 0 && (
+                    <View style={[s.savedTabBadge, allSubTab === "saved" && { backgroundColor: "#fff" }]}>
+                      <Text style={[s.savedTabBadgeText, allSubTab === "saved" && { color: "#1a1a1a" }]}>{savedRecipes.length}</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
 
-            {/* Active filter summary chips */}
-            {(libGoal || libMeal || libSort !== "default" || libMaxTime > 0 || libMinProtein > 0 || libDifficulty) && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 6, paddingBottom: 10 }}>
-                {libGoal      && <TouchableOpacity onPress={() => setLibGoal("")}       style={s.activeChip}><Text style={s.activeChipText}>{libGoal} ✕</Text></TouchableOpacity>}
-                {libMeal      && <TouchableOpacity onPress={() => setLibMeal("")}       style={s.activeChip}><Text style={s.activeChipText}>{libMeal} ✕</Text></TouchableOpacity>}
-                {libSort !== "default" && <TouchableOpacity onPress={() => setLibSort("default")} style={s.activeChip}><Text style={s.activeChipText}>Sort: {libSort} ✕</Text></TouchableOpacity>}
-                {libMaxTime > 0   && <TouchableOpacity onPress={() => setLibMaxTime(0)}     style={s.activeChip}><Text style={s.activeChipText}>Under {libMaxTime}m ✕</Text></TouchableOpacity>}
-                {libMinProtein > 0 && <TouchableOpacity onPress={() => setLibMinProtein(0)}  style={s.activeChip}><Text style={s.activeChipText}>{libMinProtein}g+ protein ✕</Text></TouchableOpacity>}
-                {libDifficulty && <TouchableOpacity onPress={() => setLibDifficulty("")}  style={s.activeChip}><Text style={s.activeChipText}>{libDifficulty} ✕</Text></TouchableOpacity>}
-              </ScrollView>
-            )}
+            {/* ════ ALL sub-tab ════ */}
+            {allSubTab === "all" && (
+              <>
+                {/* ── Search + Filter button bar ── */}
+                <View style={s.allTopBar}>
+                  <View style={s.searchBar}>
+                    <Text style={s.searchIcon}>🔍</Text>
+                    <TextInput
+                      value={libSearch}
+                      onChangeText={setLibSearch}
+                      placeholder="Search recipes…"
+                      placeholderTextColor="#bbb"
+                      style={s.searchInput}
+                      returnKeyType="search"
+                      clearButtonMode="while-editing"
+                    />
+                    {libSearch.length > 0 && (
+                      <TouchableOpacity onPress={() => setLibSearch("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={{ fontSize: 13, color: "#bbb", fontWeight: "700" }}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <TouchableOpacity onPress={() => setShowFilter(true)} style={s.filterBtn2}>
+                    <Text style={s.filterBtn2Text}>Filter</Text>
+                    {(() => {
+                      const count = [libGoal, libMeal, libSort !== "default", libMaxTime > 0, libMinProtein > 0, libDifficulty].filter(Boolean).length;
+                      return count > 0 ? (
+                        <View style={s.filterBadge}><Text style={s.filterBadgeText}>{count}</Text></View>
+                      ) : null;
+                    })()}
+                  </TouchableOpacity>
+                </View>
 
-            {/* Results count */}
-            <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
-              <Text style={{ fontSize: 12, color: "#bbb", fontWeight: "600" }}>
-                {libLoading ? "Loading…" : `${libTotal} recipe${libTotal !== 1 ? "s" : ""}`}
-              </Text>
-            </View>
+                {/* Active filter summary chips */}
+                {(libGoal || libMeal || libSort !== "default" || libMaxTime > 0 || libMinProtein > 0 || libDifficulty) && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 20, gap: 6, paddingBottom: 10 }}>
+                    {libGoal      && <TouchableOpacity onPress={() => setLibGoal("")}       style={s.activeChip}><Text style={s.activeChipText}>{libGoal} ✕</Text></TouchableOpacity>}
+                    {libMeal      && <TouchableOpacity onPress={() => setLibMeal("")}       style={s.activeChip}><Text style={s.activeChipText}>{libMeal} ✕</Text></TouchableOpacity>}
+                    {libSort !== "default" && <TouchableOpacity onPress={() => setLibSort("default")} style={s.activeChip}><Text style={s.activeChipText}>Sort: {libSort} ✕</Text></TouchableOpacity>}
+                    {libMaxTime > 0   && <TouchableOpacity onPress={() => setLibMaxTime(0)}     style={s.activeChip}><Text style={s.activeChipText}>Under {libMaxTime}m ✕</Text></TouchableOpacity>}
+                    {libMinProtein > 0 && <TouchableOpacity onPress={() => setLibMinProtein(0)}  style={s.activeChip}><Text style={s.activeChipText}>{libMinProtein}g+ protein ✕</Text></TouchableOpacity>}
+                    {libDifficulty && <TouchableOpacity onPress={() => setLibDifficulty("")}  style={s.activeChip}><Text style={s.activeChipText}>{libDifficulty} ✕</Text></TouchableOpacity>}
+                  </ScrollView>
+                )}
 
-            <View style={{ paddingHorizontal: 20, gap: 10 }}>
-            {libLoading ? (
-              <View style={{ gap: 12 }}>
-                {[1,2,3,4].map((_, i) => (
-                  <View key={i} style={rc.card}>
-                    {/* skeleton header */}
-                    <View style={[rc.header, { backgroundColor: "#1a1a1a", gap: 10 }]}>
-                      <View style={{ flexDirection: "row", gap: 6 }}>
-                        <View style={[s.skeleton, { height: 20, width: 70, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.07)" }]} />
-                        <View style={[s.skeleton, { height: 20, width: 50, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.05)" }]} />
-                      </View>
-                      <View style={[s.skeleton, { height: 18, width: "80%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.1)" }]} />
-                      <View style={[s.skeleton, { height: 14, width: "55%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.07)" }]} />
-                    </View>
-                    {/* skeleton footer */}
-                    <View style={[rc.footer, { backgroundColor: "#f4f2ed" }]}>
-                      {[1,2,3,4].map((_, j) => (
-                        <View key={j} style={[rc.stat, j < 3 && rc.statBorder, { gap: 4 }]}>
-                          <View style={[s.skeleton, { height: 13, width: 40, borderRadius: 4 }]} />
-                          <View style={[s.skeleton, { height: 9, width: 30, borderRadius: 3 }]} />
+                {/* Results count */}
+                <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+                  <Text style={{ fontSize: 12, color: "#bbb", fontWeight: "600" }}>
+                    {libLoading ? "Loading…" : `${libTotal} recipe${libTotal !== 1 ? "s" : ""}`}
+                  </Text>
+                </View>
+
+                <View style={{ paddingHorizontal: 20, gap: 10 }}>
+                  {libLoading ? (
+                    <View style={{ gap: 12 }}>
+                      {[1,2,3,4].map((_, i) => (
+                        <View key={i} style={rc.card}>
+                          <View style={[rc.header, { backgroundColor: "#1a1a1a", gap: 10 }]}>
+                            <View style={{ flexDirection: "row", gap: 6 }}>
+                              <View style={[s.skeleton, { height: 20, width: 70, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.07)" }]} />
+                              <View style={[s.skeleton, { height: 20, width: 50, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.05)" }]} />
+                            </View>
+                            <View style={[s.skeleton, { height: 18, width: "80%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.1)" }]} />
+                            <View style={[s.skeleton, { height: 14, width: "55%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.07)" }]} />
+                          </View>
+                          <View style={[rc.footer, { backgroundColor: "#f4f2ed" }]}>
+                            {[1,2,3,4].map((_, j) => (
+                              <View key={j} style={[rc.stat, j < 3 && rc.statBorder, { gap: 4 }]}>
+                                <View style={[s.skeleton, { height: 13, width: 40, borderRadius: 4 }]} />
+                                <View style={[s.skeleton, { height: 9, width: 30, borderRadius: 3 }]} />
+                              </View>
+                            ))}
+                          </View>
                         </View>
                       ))}
                     </View>
-                  </View>
-                ))}
-              </View>
-            ) : libRecipes.length === 0 ? (
-              <View style={[s.card, { alignItems: "center", padding: 40 }]}>
-                <Text style={s.emptyTitle}>No recipes found</Text>
-                <Text style={s.emptyDesc}>Try adjusting your filters.</Text>
-              </View>
-            ) : (
-              <View style={{ gap: 12 }}>
-                {libRecipes.map((r, i) => (
-                  <RecipeCard key={r._id || i} recipe={r} index={i}
-                    onPress={() => setSelected2(r)}
-                    isSaved={checkSaved(r)}
-                    onSave={() => toggleSave(r)}
-                  />
-                ))}
-              </View>
-            )}
+                  ) : libRecipes.length === 0 ? (
+                    <View style={[s.card, { alignItems: "center", padding: 40 }]}>
+                      <Text style={s.emptyTitle}>No recipes found</Text>
+                      <Text style={s.emptyDesc}>Try adjusting your filters.</Text>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 12 }}>
+                      {libRecipes.map((r, i) => (
+                        <RecipeCard key={r._id || i} recipe={r} index={i}
+                          onPress={() => setSelected2(r)}
+                          isSaved={checkSaved(r)}
+                          onSave={() => toggleSave(r)}
+                        />
+                      ))}
+                    </View>
+                  )}
 
-            {/* Numbered page buttons */}
-            {libPages > 1 && (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 4 }}>
-                {Array.from({ length: libPages }, (_, i) => i + 1).map((pg) => (
-                  <TouchableOpacity
-                    key={pg}
-                    onPress={() => fetchLibrary(pg)}
-                    style={[s.pageNumBtn, libPage === pg && s.pageNumBtnActive]}
-                  >
-                    <Text style={[s.pageNumBtnText, libPage === pg && s.pageNumBtnTextActive]}>{pg}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            </View>
-          </ScrollView>
-        )}
-
-        {/* ─── Saved Tab ─── */}
-        {!isShowingDetail && mainTab === "saved" && (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 120, gap: 12 }}
-          >
-            {savedRecipes.length === 0 ? (
-              <View style={s.savedEmpty}>
-                <View style={s.savedEmptyIcon}>
-                  <BookmarkIcon filled={false} size={32} />
+                  {/* Numbered page buttons */}
+                  {libPages > 1 && (
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 4 }}>
+                      {Array.from({ length: libPages }, (_, i) => i + 1).map((pg) => (
+                        <TouchableOpacity
+                          key={pg}
+                          onPress={() => fetchLibrary(pg)}
+                          style={[s.pageNumBtn, libPage === pg && s.pageNumBtnActive]}
+                        >
+                          <Text style={[s.pageNumBtnText, libPage === pg && s.pageNumBtnTextActive]}>{pg}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-                <Text style={s.savedEmptyTitle}>No saved recipes yet</Text>
-                <Text style={s.savedEmptyDesc}>
-                  Tap the bookmark on any recipe card to save it here for quick access.
-                </Text>
-                <TouchableOpacity onPress={() => setMainTab("all")} style={s.savedEmptyBtn}>
-                  <Text style={s.savedEmptyBtnText}>Browse All Recipes</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: "#bbb", fontWeight: "600" }}>
-                    {savedRecipes.length} saved recipe{savedRecipes.length !== 1 ? "s" : ""}
-                  </Text>
-                  <TouchableOpacity onPress={async () => {
-                    setSavedRecipes([]);
-                    await AsyncStorage.setItem("saved_recipes", "[]");
-                    if (token) {
-                      fetch(`${BASE_URL}/api/recipes/saved-recipes`, {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${token}` },
-                      }).catch(() => {});
-                    }
-                  }}>
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "rgba(244,63,94,0.8)" }}>Clear all</Text>
-                  </TouchableOpacity>
-                </View>
-                {savedRecipes.map((r, i) => (
-                  <RecipeCard key={recipeKey(r) || i} recipe={r} index={i}
-                    onPress={() => setSelected2(r)}
-                    isSaved={true}
-                    onSave={() => toggleSave(r)}
-                  />
-                ))}
               </>
+            )}
+
+            {/* ════ SAVED sub-tab ════ */}
+            {allSubTab === "saved" && (
+              <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 12 }}>
+                {savedRecipes.length === 0 ? (
+                  <View style={s.savedEmpty}>
+                    <View style={s.savedEmptyIcon}>
+                      <BookmarkIcon filled={false} size={32} />
+                    </View>
+                    <Text style={s.savedEmptyTitle}>No saved recipes yet</Text>
+                    <Text style={s.savedEmptyDesc}>
+                      Tap the bookmark on any recipe card to save it here for quick access.
+                    </Text>
+                    <TouchableOpacity onPress={() => setAllSubTab("all")} style={s.savedEmptyBtn}>
+                      <Text style={s.savedEmptyBtnText}>Browse All Recipes</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <Text style={{ fontSize: 12, color: "#bbb", fontWeight: "600" }}>
+                        {savedRecipes.length} saved recipe{savedRecipes.length !== 1 ? "s" : ""}
+                      </Text>
+                      <TouchableOpacity onPress={async () => {
+                        setSavedRecipes([]);
+                        await AsyncStorage.setItem("saved_recipes", "[]");
+                        if (token) {
+                          fetch(`${BASE_URL}/api/recipes/saved-recipes`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                          }).catch(() => {});
+                        }
+                      }}>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: "rgba(244,63,94,0.8)" }}>Clear all</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {savedRecipes.map((r, i) => (
+                      <RecipeCard key={recipeKey(r) || i} recipe={r} index={i}
+                        onPress={() => setSelected2(r)}
+                        isSaved={true}
+                        onSave={() => toggleSave(r)}
+                      />
+                    ))}
+                  </>
+                )}
+              </View>
             )}
           </ScrollView>
         )}
@@ -1438,6 +1467,33 @@ libDot: { fontSize: 10, color: "#ccc" },
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
   savedTabBadge: { minWidth: 16, height: 16, borderRadius: 99, backgroundColor: "#e8380d", alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
   savedTabBadgeText: { fontSize: 9, fontWeight: "800", color: "#fff" },
+  subToggleRow: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 4,
+    backgroundColor: "#f0ede8",
+    borderRadius: 14,
+    padding: 3,
+    gap: 3,
+  },
+  subToggleBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  subToggleBtnActive: {
+    backgroundColor: "#1a1a1a",
+    shadowColor: "#000",
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  subToggleText: { fontSize: 13, fontWeight: "700", color: "#aaa" },
+  subToggleTextActive: { color: "#fff" },
   actionBtnSaved: { borderColor: "rgba(232,56,13,0.3)", backgroundColor: "rgba(232,56,13,0.05)" },
   detailSaveBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",

@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { saveToken } from "../src/auth/storage";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
@@ -57,6 +58,9 @@ export default function Register() {
       if (!res.ok) { alert(data.error || "Registration failed"); return; }
 
       await saveToken(data.token);
+      // Mirror login.jsx — write to AsyncStorage so all hooks (useAuth, useSubscription) can read the session
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
       const introRes  = await fetch("https://yourpocketgym.com/api/user-intro", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },

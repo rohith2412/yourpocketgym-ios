@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.rohith.com.yourpocketgym",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to analyze your food for calorie tracking.",

@@ -87,7 +87,7 @@ export function usePurchase() {
           },
           body: JSON.stringify({
             receiptData: purchase.transactionReceipt,
-            bundleId: "com.pocketgym.app", // Match your app bundle ID
+            bundleId: "com.rohith.com.yourpocketgym",
             transactionId: purchase.transactionId,
           }),
         }

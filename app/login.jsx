@@ -60,6 +60,13 @@ export default function Login() {
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user",  JSON.stringify(data.user));
 
+      // Clear any stale subscription cache from a previous user on this device
+      const allKeys = await AsyncStorage.getAllKeys();
+      const staleKeys = allKeys.filter(
+        (k) => k.startsWith("subscriptionStatus_") || k.startsWith("subscriptionStatusTime_")
+      );
+      if (staleKeys.length > 0) await AsyncStorage.multiRemove(staleKeys);
+
       if (!data.user.hasIntro) router.replace("/startersIntro");
       else                     router.replace("/tracking");
     } catch {

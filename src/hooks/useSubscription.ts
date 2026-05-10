@@ -27,9 +27,15 @@ export function useSubscription() {
         return;
       }
 
+      // Scope cache key to user so different accounts don't share cached status
+      const user = await AsyncStorage.getItem("user");
+      const userId = user ? (JSON.parse(user).sub ?? JSON.parse(user).id ?? "anon") : "anon";
+      const CACHE_KEY      = `subscriptionStatus_${userId}`;
+      const CACHE_TIME_KEY = `subscriptionStatusTime_${userId}`;
+
       // Try to get cached status first (5 minute cache)
-      const cachedData = await AsyncStorage.getItem("subscriptionStatus");
-      const cacheTime = await AsyncStorage.getItem("subscriptionStatusTime");
+      const cachedData = await AsyncStorage.getItem(CACHE_KEY);
+      const cacheTime  = await AsyncStorage.getItem(CACHE_TIME_KEY);
       const now = Date.now();
 
       if (cachedData && cacheTime) {
@@ -67,9 +73,9 @@ export function useSubscription() {
       setIsPremium(data.isPremium);
       setError(null);
 
-      // Cache the response
-      await AsyncStorage.setItem("subscriptionStatus", JSON.stringify(data));
-      await AsyncStorage.setItem("subscriptionStatusTime", now.toString());
+      // Cache the response (scoped to this user)
+      await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      await AsyncStorage.setItem(CACHE_TIME_KEY, now.toString());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setError(message);
@@ -82,9 +88,12 @@ export function useSubscription() {
 
   // Refresh subscription status (call after purchase)
   const refreshSubscriptionStatus = async () => {
-    // Clear cache before refreshing
-    await AsyncStorage.removeItem("subscriptionStatus");
-    await AsyncStorage.removeItem("subscriptionStatusTime");
+    // Clear all subscription caches (covers any user ID prefix)
+    const keys = await AsyncStorage.getAllKeys();
+    const subKeys = keys.filter(
+      (k) => k.startsWith("subscriptionStatus_") || k.startsWith("subscriptionStatusTime_")
+    );
+    if (subKeys.length > 0) await AsyncStorage.multiRemove(subKeys);
     await checkSubscriptionStatus();
   };
 
