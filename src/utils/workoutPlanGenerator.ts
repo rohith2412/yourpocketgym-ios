@@ -329,11 +329,19 @@ function pickExercises(
   const injuryLower = injuries.toLowerCase();
   const focusLower  = focusAreas.toLowerCase();
 
-  // Count how many exercises we can fit given session length
-  // Rough estimate: compound ~4 min/set, isolation ~3 min/set, warm-up 5 min
-  const timePerEx  = 4;
-  const warmup     = 5;
-  const maxExCount = Math.max(3, Math.floor((sessionLength - warmup) / timePerEx));
+  // Realistic time per exercise:
+  //   3-4 sets × (45s work + 60-120s rest) + 30s transition ≈ 7-10 min each
+  // Strength: longer rest → 10 min/ex | Hypertrophy: 8 min | Fat loss/endurance: 6 min
+  const minPerEx = goal.includes("strength") ? 10 : goal.includes("fat") || goal.includes("ndurance") ? 6 : 8;
+  const warmup   = 8;  // warm-up + cool-down buffer
+  const rawCount = Math.floor((sessionLength - warmup) / minPerEx);
+  // Hard caps by session length — no one does 13 exercises in 60 min
+  const hardCap  = sessionLength <= 30 ? 4
+                 : sessionLength <= 45 ? 5
+                 : sessionLength <= 60 ? 7
+                 : sessionLength <= 75 ? 8
+                 : 10;
+  const maxExCount = Math.max(3, Math.min(hardCap, rawCount));
 
   const results: ExerciseEntry[] = [];
 
@@ -378,12 +386,15 @@ function pickExercises(
 // ─── Time estimator ───────────────────────────────────────────────────────────
 
 function estimateTime(exercises: ExerciseEntry[], goal: string): number {
-  const setsPerEx = goal === "Improve strength" ? 4.5 : 3;
-  const restSec   = goal === "Improve strength" ? 150 : goal === "Build muscle" ? 75 : 40;
-  const setDurSec = 45; // avg time under tension per set
-  const warmup    = 5;
-  const total     = exercises.length * setsPerEx * ((setDurSec + restSec) / 60) + warmup;
-  return Math.round(Math.max(20, Math.min(90, total)));
+  // Per exercise: sets × (work + rest) + transition
+  const sets      = goal === "Improve strength" ? 4.5 : 3;
+  const workSec   = 45;
+  const restSec   = goal === "Improve strength" ? 150 : goal === "Build muscle" ? 90 : 45;
+  const transSec  = 30;
+  const warmup    = 8;
+  const perEx     = sets * (workSec + restSec) / 60 + transSec / 60;
+  const total     = exercises.length * perEx + warmup;
+  return Math.round(Math.max(20, Math.min(95, total)));
 }
 
 // ─── Plan metadata ────────────────────────────────────────────────────────────
