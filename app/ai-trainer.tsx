@@ -111,33 +111,75 @@ function muscleColor(mg = "") {
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
 function exerciseImage(mg = "", name = "") {
-  const g = mg.toLowerCase();
   const n = name.toLowerCase();
-  if (n.includes("bench") || n.includes("chest press") || n.includes("fly"))
-    return "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("squat") || n.includes("leg press") || n.includes("lunge"))
-    return "https://images.unsplash.com/photo-1434682881908-b43d0467b798?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("deadlift") || n.includes("row") || n.includes("pull"))
-    return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("curl") || n.includes("bicep"))
-    return "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("tricep") || n.includes("pushdown") || n.includes("dip"))
-    return "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("shoulder") || n.includes("lateral") || n.includes("overhead"))
-    return "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80";
-  if (n.includes("plank") || n.includes("crunch") || n.includes("ab"))
-    return "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("chest"))   return "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("back"))    return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("shoulder")) return "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("arm") || g.includes("bicep")) return "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("tricep"))  return "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80";
+  const g = mg.toLowerCase();
+
+  // ── specific exercise name matching (most accurate) ──
+  if (n.includes("bench press") || n.includes("chest press"))
+    return "https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("incline") && (n.includes("press") || n.includes("dumbbell")))
+    return "https://images.pexels.com/photos/4162449/pexels-photo-4162449.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("fly") || n.includes("flye") || n.includes("cable cross"))
+    return "https://images.pexels.com/photos/4162487/pexels-photo-4162487.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("squat"))
+    return "https://images.pexels.com/photos/4162438/pexels-photo-4162438.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("lunge"))
+    return "https://images.pexels.com/photos/4162507/pexels-photo-4162507.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("leg press"))
+    return "https://images.pexels.com/photos/3838389/pexels-photo-3838389.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("leg curl") || n.includes("hamstring"))
+    return "https://images.pexels.com/photos/3838390/pexels-photo-3838390.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("deadlift"))
+    return "https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("pull-up") || n.includes("pullup") || n.includes("chin-up") || n.includes("chin up") || n.includes("pull up"))
+    return "https://images.pexels.com/photos/3837781/pexels-photo-3837781.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("row"))
+    return "https://images.pexels.com/photos/4162511/pexels-photo-4162511.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("lat pulldown"))
+    return "https://images.pexels.com/photos/3837778/pexels-photo-3837778.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("overhead press") || n.includes("shoulder press") || n.includes("military press"))
+    return "https://images.pexels.com/photos/3837774/pexels-photo-3837774.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("lateral raise") || n.includes("side raise"))
+    return "https://images.pexels.com/photos/4162514/pexels-photo-4162514.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("front raise"))
+    return "https://images.pexels.com/photos/4162503/pexels-photo-4162503.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("bicep curl") || n.includes("barbell curl") || n.includes("dumbbell curl"))
+    return "https://images.pexels.com/photos/3838391/pexels-photo-3838391.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("hammer curl"))
+    return "https://images.pexels.com/photos/4162501/pexels-photo-4162501.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("tricep") || n.includes("pushdown") || n.includes("skull"))
+    return "https://images.pexels.com/photos/3838385/pexels-photo-3838385.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("dip"))
+    return "https://images.pexels.com/photos/3838386/pexels-photo-3838386.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("plank"))
+    return "https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("crunch") || n.includes("sit-up") || n.includes("situp"))
+    return "https://images.pexels.com/photos/3823207/pexels-photo-3823207.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("hip thrust") || n.includes("glute bridge"))
+    return "https://images.pexels.com/photos/3823208/pexels-photo-3823208.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("calf raise"))
+    return "https://images.pexels.com/photos/4162498/pexels-photo-4162498.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("run") || n.includes("treadmill") || n.includes("jog"))
+    return "https://images.pexels.com/photos/3621955/pexels-photo-3621955.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (n.includes("push-up") || n.includes("pushup") || n.includes("push up"))
+    return "https://images.pexels.com/photos/3757376/pexels-photo-3757376.jpeg?auto=compress&cs=tinysrgb&w=400";
+
+  // ── muscle group fallback ──
+  if (g.includes("chest"))    return "https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("back"))     return "https://images.pexels.com/photos/4162511/pexels-photo-4162511.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("shoulder")) return "https://images.pexels.com/photos/3837774/pexels-photo-3837774.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("bicep") || (g.includes("arm") && !g.includes("tricep")))
+    return "https://images.pexels.com/photos/3838391/pexels-photo-3838391.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("tricep"))   return "https://images.pexels.com/photos/3838385/pexels-photo-3838385.jpeg?auto=compress&cs=tinysrgb&w=400";
   if (g.includes("leg") || g.includes("quad") || g.includes("hamstring"))
-    return "https://images.unsplash.com/photo-1434682881908-b43d0467b798?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("glute"))   return "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("core") || g.includes("ab")) return "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?auto=format&fit=crop&w=400&q=80";
-  if (g.includes("cardio"))  return "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=400&q=80";
-  return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
+    return "https://images.pexels.com/photos/4162438/pexels-photo-4162438.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("glute"))    return "https://images.pexels.com/photos/3823208/pexels-photo-3823208.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("core") || g.includes("ab"))
+    return "https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("cardio"))   return "https://images.pexels.com/photos/3621955/pexels-photo-3621955.jpeg?auto=compress&cs=tinysrgb&w=400";
+  if (g.includes("calf"))     return "https://images.pexels.com/photos/4162498/pexels-photo-4162498.jpeg?auto=compress&cs=tinysrgb&w=400";
+
+  return "https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400";
 }
 
 function difficultyColor(d = "") {
