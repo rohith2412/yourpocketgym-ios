@@ -153,8 +153,18 @@ function gymPoolFallback(mg: string, name: string): string {
   return `https://images.unsplash.com/photo-${pool[seed % pool.length]}?auto=format&fit=crop&w=400&q=80`;
 }
 
+// Normalize AI-generated names to match cache keys (handles plurals, spacing)
+// e.g. "Squats" → "squat", "Calf Raises" → "calf raise", "Pull-Ups" → "pull ups"
+function normalizeExKey(name: string): string {
+  let k = name.toLowerCase().trim().replace(/-/g, " ");
+  if (STATIC_EX_CACHE[k]) return k;
+  // strip trailing 's'  ("squats" → "squat", "calf raises" → "calf raise")
+  if (k.endsWith("s") && !k.endsWith("ss") && STATIC_EX_CACHE[k.slice(0, -1)]) return k.slice(0, -1);
+  return k;
+}
+
 async function resolveExerciseImage(name: string, mg: string): Promise<string> {
-  const key = name.toLowerCase().trim();
+  const key = normalizeExKey(name);
   // 1. Memory cache
   if (MEM_EX_CACHE[key]) return MEM_EX_CACHE[key];
   // 2. Static pre-fetched cache (90 common exercises)
@@ -812,10 +822,11 @@ function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => v
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 function ExerciseCard({ ex, index, checked, onToggle }: any) {
   const color = muscleColor(ex.muscleGroup);
-  // Show pool fallback instantly, upgrade to Pexels/cache once resolved
+  // Show best available instantly, upgrade async for unknowns
+  const normKey = normalizeExKey(ex.name || "");
   const [imgSrc, setImgSrc] = useState<string>(
-    STATIC_EX_CACHE[ex.name?.toLowerCase().trim()] ??
-    MEM_EX_CACHE[ex.name?.toLowerCase().trim()] ??
+    STATIC_EX_CACHE[normKey] ??
+    MEM_EX_CACHE[normKey] ??
     gymPoolFallback(ex.muscleGroup || "", ex.name || "")
   );
 
