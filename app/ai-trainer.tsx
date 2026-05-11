@@ -279,7 +279,7 @@ async function resolveExerciseImage(name: string, mg: string): Promise<string> {
   if (STATIC_EX_CACHE[key]) { MEM_EX_CACHE[key] = STATIC_EX_CACHE[key]; return STATIC_EX_CACHE[key]; }
   // 3. AsyncStorage (previously fetched unknowns)
   try {
-    const stored = await AsyncStorage.getItem(`exImg_${key}`);
+    const stored = await AsyncStorage.getItem(`exImg2_${key}`);
     if (stored) { MEM_EX_CACHE[key] = stored; return stored; }
   } catch {}
   // 4. Pexels live search
@@ -293,7 +293,7 @@ async function resolveExerciseImage(name: string, mg: string): Promise<string> {
       const url  = json?.photos?.[0]?.src?.large;
       if (url) {
         MEM_EX_CACHE[key] = url;
-        AsyncStorage.setItem(`exImg_${key}`, url).catch(() => {});
+        AsyncStorage.setItem(`exImg2_${key}`, url).catch(() => {});
         return url;
       }
     }
