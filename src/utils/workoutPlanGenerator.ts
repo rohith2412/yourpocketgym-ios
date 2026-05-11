@@ -425,10 +425,13 @@ const PROGRESSION_TIPS: Record<string, string[]> = {
 
 // ─── Main generator ───────────────────────────────────────────────────────────
 
+const ALL_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
 export function generateWorkoutPlan(profile: {
   goal: string;
   experience: string;
   daysPerWeek: string;
+  workoutDays?: string; // comma-separated e.g. "Monday,Wednesday,Friday"
   equipment: string;
   focusAreas: string;
   sessionLength: string;
@@ -441,6 +444,17 @@ export function generateWorkoutPlan(profile: {
   const focusAreas  = profile.focusAreas   || "";
   const injuries    = profile.injuries     || "";
   const sessionLen  = Math.max(20, parseInt(profile.sessionLength) || 45);
+
+  // Parse selected days — keep week order, fall back to Mon-onwards
+  const selectedDays: string[] = profile.workoutDays
+    ? ALL_DAYS.filter(d => profile.workoutDays!.split(",").map(s => s.trim()).includes(d)).slice(0, days)
+    : ALL_DAYS.slice(0, days);
+  // If not enough selected, pad with remaining days
+  if (selectedDays.length < days) {
+    ALL_DAYS.filter(d => !selectedDays.includes(d)).slice(0, days - selectedDays.length)
+      .forEach(d => selectedDays.push(d));
+    selectedDays.sort((a, b) => ALL_DAYS.indexOf(a) - ALL_DAYS.indexOf(b));
+  }
 
   const allowedEquip = getEquipmentTags(equipment);
   const split        = getSplit(days, goal);
@@ -464,20 +478,17 @@ export function generateWorkoutPlan(profile: {
       };
     });
 
-    const estTime = estimateTime(exercises, goal);
-
     return {
-      day:           ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][i] || "Monday",
+      day:           selectedDays[i],          // use the user's chosen day
       label:         s.label,
       focus:         s.focus,
-      estimatedTime: estTime,
+      estimatedTime: estimateTime(exercises, goal),
       exercises:     planExercises,
     };
   });
 
-  // Pad remaining days as rest days
-  const allDayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const restDays: PlanDay[] = allDayNames.slice(days).map(d => ({
+  // Fill remaining days of the week as rest days
+  const restDays: PlanDay[] = ALL_DAYS.filter(d => !selectedDays.includes(d)).map(d => ({
     day:           d,
     label:         "Rest Day",
     focus:         "Recovery",

@@ -37,18 +37,36 @@ type GymProfile = {
   goal: string;
   experience: string;
   daysPerWeek: string;
+  workoutDays: string; // comma-separated e.g. "Monday,Wednesday,Friday"
   equipment: string;
   focusAreas: string;
   sessionLength: string;
   injuries: string;
 };
 
+const WEEK_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const WEEK_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+// Default day selection for a given count (sensible spread)
+function defaultDays(count: number): string[] {
+  const defaults: Record<number, string[]> = {
+    1: ["Monday"],
+    2: ["Monday","Thursday"],
+    3: ["Monday","Wednesday","Friday"],
+    4: ["Monday","Tuesday","Thursday","Friday"],
+    5: ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+    6: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+    7: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+  };
+  return defaults[count] || defaults[4];
+}
+
 const EMPTY_PROFILE: GymProfile = {
   age: "", weight: "", weightUnit: "kg",
   height: "", heightUnit: "cm",
   goal: "", experience: "",
-  daysPerWeek: "4", equipment: "",
-  focusAreas: "", sessionLength: "45", injuries: "",
+  daysPerWeek: "4", workoutDays: defaultDays(4).join(","),
+  equipment: "", focusAreas: "", sessionLength: "45", injuries: "",
 };
 
 const GOALS      = ["Build muscle", "Lose fat", "Improve strength", "General fitness", "Endurance"];
@@ -1351,12 +1369,50 @@ function EditPrefsSheet({ visible, initial, onSave, onClose }: any) {
         <Text style={ep.sectionLabel}>DAYS PER WEEK</Text>
         <View style={ep.card}>
           {DAYS_OPTS.map((d, i) => (
-            <TouchableOpacity key={d} onPress={() => set("daysPerWeek", d)}
+            <TouchableOpacity key={d} onPress={() => {
+              set("daysPerWeek", d);
+              // Auto-update selected days to sensible defaults for this count
+              const current = local.workoutDays ? local.workoutDays.split(",").map(s => s.trim()).filter(Boolean) : [];
+              const count = parseInt(d);
+              if (current.length !== count) set("workoutDays", defaultDays(count).join(","));
+            }}
               style={[ep.row, i < DAYS_OPTS.length - 1 && ep.rowDivider]}>
               <Text style={ep.rowTitle}>{d} days</Text>
               {local.daysPerWeek === d && <Text style={ep.check}>✓</Text>}
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Which days */}
+        <Text style={ep.sectionLabel}>WORKOUT DAYS</Text>
+        <Text style={ep.sectionSub}>Select exactly {local.daysPerWeek} days</Text>
+        <View style={ep.dayGrid}>
+          {WEEK_DAYS.map((day, i) => {
+            const selected = (local.workoutDays || "").split(",").map(s => s.trim()).includes(day);
+            const count    = parseInt(local.daysPerWeek) || 4;
+            const selCount = (local.workoutDays || "").split(",").filter(s => s.trim()).length;
+            const canAdd   = selCount < count;
+            return (
+              <TouchableOpacity
+                key={day}
+                onPress={() => {
+                  const arr = (local.workoutDays || "").split(",").map(s => s.trim()).filter(Boolean);
+                  if (selected) {
+                    set("workoutDays", arr.filter(d => d !== day).join(","));
+                  } else if (canAdd) {
+                    // Insert in week order
+                    const ordered = WEEK_DAYS.filter(d => [...arr, day].includes(d));
+                    set("workoutDays", ordered.join(","));
+                  }
+                }}
+                style={[ep.dayChip, selected && ep.dayChipActive, !selected && !canAdd && ep.dayChipDisabled]}
+              >
+                <Text style={[ep.dayChipText, selected && ep.dayChipTextActive]}>
+                  {WEEK_ABBR[i]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Session length */}
@@ -1408,7 +1464,8 @@ const ep = StyleSheet.create({
   navTitle:   { fontSize: 17, fontWeight: "700", color: "#000", letterSpacing: -0.3 },
   navSave:    { fontSize: 17, fontWeight: "600", color: "#e8380d", textAlign: "right" },
   scroll:     { flex: 1, backgroundColor: "#f2f2f7" },
-  sectionLabel: { fontSize: 13, color: "#6c6c70", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 28, marginBottom: 8, marginHorizontal: 20 },
+  sectionLabel: { fontSize: 13, color: "#6c6c70", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 28, marginBottom: 4, marginHorizontal: 20 },
+  sectionSub:  { fontSize: 13, color: "#aaa", marginBottom: 10, marginHorizontal: 20 },
   card:       { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, overflow: "hidden" },
   row:        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, minHeight: 54 },
   rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#c6c6c8" },
@@ -1416,6 +1473,12 @@ const ep = StyleSheet.create({
   rowSub:     { fontSize: 13, color: "#8e8e93", marginTop: 2 },
   check:      { fontSize: 18, color: "#e8380d", fontWeight: "700", marginLeft: 8 },
   textInput:  { paddingHorizontal: 16, paddingVertical: 14, fontSize: 17, color: "#000", minHeight: 100, textAlignVertical: "top" },
+  dayGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10, marginHorizontal: 16, marginBottom: 4 },
+  dayChip:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#e5e5e5" },
+  dayChipActive:   { backgroundColor: "#e8380d", borderColor: "#e8380d" },
+  dayChipDisabled: { opacity: 0.35 },
+  dayChipText:     { fontSize: 12, fontWeight: "600", color: "#555" },
+  dayChipTextActive: { color: "#fff" },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -1507,6 +1570,7 @@ export default function AITrainerScreen() {
         goal:          p.goal,
         experience:    p.experience,
         daysPerWeek:   p.daysPerWeek,
+        workoutDays:   p.workoutDays,
         equipment:     p.equipment,
         focusAreas:    p.focusAreas,
         sessionLength: p.sessionLength,
@@ -1534,6 +1598,7 @@ export default function AITrainerScreen() {
         goal:          data.goal,
         experience:    data.experience,
         daysPerWeek:   data.daysPerWeek,
+        workoutDays:   data.workoutDays,
         equipment:     data.equipment,
         focusAreas:    data.focusAreas,
         sessionLength: data.sessionLength,
