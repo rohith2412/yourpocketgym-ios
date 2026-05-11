@@ -335,12 +335,10 @@ function pickExercises(
   const minPerEx = goal.includes("strength") ? 10 : goal.includes("fat") || goal.includes("ndurance") ? 6 : 8;
   const warmup   = 8;  // warm-up + cool-down buffer
   const rawCount = Math.floor((sessionLength - warmup) / minPerEx);
-  // Hard caps by session length — no one does 13 exercises in 60 min
-  const hardCap  = sessionLength <= 30 ? 4
-                 : sessionLength <= 45 ? 5
-                 : sessionLength <= 60 ? 7
-                 : sessionLength <= 75 ? 8
-                 : 10;
+  // Hard caps — keep it realistic, max 6 even at 90 min
+  const hardCap  = sessionLength <= 30 ? 3
+                 : sessionLength <= 45 ? 4
+                 : 6;
   const maxExCount = Math.max(3, Math.min(hardCap, rawCount));
 
   const results: ExerciseEntry[] = [];
