@@ -110,76 +110,90 @@ function muscleColor(mg = "") {
   };
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
-function exerciseImage(mg = "", name = "") {
-  const n = name.toLowerCase();
+// ── Exercise image system (mirrors MealPlanView FoodImage) ────────────────────
+// 1. Memory cache         — instant on repeat views
+// 2. AsyncStorage cache   — persisted across sessions
+// 3. Wger API search      — searches free exercise DB by name, gets real photo
+// 4. Verified Unsplash pool by muscle group — guaranteed real gym photos
+
+const EX_IMG_CACHE: Record<string, string> = {};
+
+// Verified Unsplash IDs — confirmed gym/exercise photos
+const GYM_POOL: Record<string, string[]> = {
+  chest:     ["1517836357463-d25dfeac3438","1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61"],
+  back:      ["1526506118085-60ce8714f8c5","1532029837206-abbe2b7620e3","1598971639058-a4565b8c2fe7"],
+  shoulders: ["1541534741688-6078c6bfb5c5","1534438327276-14e5300c3a48","1526506118085-60ce8714f8c5"],
+  arms:      ["1581009146145-b5ef050c2e1e","1583454110551-21f2fa2afe61","1540497077202-7c8a3999166f"],
+  legs:      ["1541534741688-6078c6bfb5c5","1599058917212-d750089bc07e","1526506118085-60ce8714f8c5"],
+  glutes:    ["1599058917212-d750089bc07e","1541534741688-6078c6bfb5c5","1583454110551-21f2fa2afe61"],
+  core:      ["1571019613454-1cb2f99b2d8b","1571019614242-c5c5dee9f50b","1534438327276-14e5300c3a48"],
+  cardio:    ["1476480862126-209bfaa8edc8","1571019613454-1cb2f99b2d8b","1534438327276-14e5300c3a48"],
+  general:   ["1526506118085-60ce8714f8c5","1583454110551-21f2fa2afe61","1571019614242-c5c5dee9f50b","1517836357463-d25dfeac3438","1581009146145-b5ef050c2e1e"],
+};
+
+function gymPoolFallback(mg: string, name: string): string {
   const g = mg.toLowerCase();
+  const key = g.includes("chest") ? "chest"
+    : g.includes("back") ? "back"
+    : g.includes("shoulder") ? "shoulders"
+    : g.includes("arm") || g.includes("bicep") || g.includes("tricep") ? "arms"
+    : g.includes("leg") || g.includes("quad") || g.includes("hamstring") || g.includes("calf") ? "legs"
+    : g.includes("glute") ? "glutes"
+    : g.includes("core") || g.includes("ab") ? "core"
+    : g.includes("cardio") ? "cardio"
+    : "general";
+  const pool = GYM_POOL[key];
+  const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return `https://images.unsplash.com/photo-${pool[seed % pool.length]}?auto=format&fit=crop&w=400&q=80`;
+}
 
-  // ── specific exercise name matching (most accurate) ──
-  if (n.includes("bench press") || n.includes("chest press"))
-    return "https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("incline") && (n.includes("press") || n.includes("dumbbell")))
-    return "https://images.pexels.com/photos/4162449/pexels-photo-4162449.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("fly") || n.includes("flye") || n.includes("cable cross"))
-    return "https://images.pexels.com/photos/4162487/pexels-photo-4162487.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("squat"))
-    return "https://images.pexels.com/photos/4162438/pexels-photo-4162438.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("lunge"))
-    return "https://images.pexels.com/photos/4162507/pexels-photo-4162507.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("leg press"))
-    return "https://images.pexels.com/photos/3838389/pexels-photo-3838389.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("leg curl") || n.includes("hamstring"))
-    return "https://images.pexels.com/photos/3838390/pexels-photo-3838390.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("deadlift"))
-    return "https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("pull-up") || n.includes("pullup") || n.includes("chin-up") || n.includes("chin up") || n.includes("pull up"))
-    return "https://images.pexels.com/photos/3837781/pexels-photo-3837781.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("row"))
-    return "https://images.pexels.com/photos/4162511/pexels-photo-4162511.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("lat pulldown"))
-    return "https://images.pexels.com/photos/3837778/pexels-photo-3837778.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("overhead press") || n.includes("shoulder press") || n.includes("military press"))
-    return "https://images.pexels.com/photos/3837774/pexels-photo-3837774.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("lateral raise") || n.includes("side raise"))
-    return "https://images.pexels.com/photos/4162514/pexels-photo-4162514.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("front raise"))
-    return "https://images.pexels.com/photos/4162503/pexels-photo-4162503.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("bicep curl") || n.includes("barbell curl") || n.includes("dumbbell curl"))
-    return "https://images.pexels.com/photos/3838391/pexels-photo-3838391.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("hammer curl"))
-    return "https://images.pexels.com/photos/4162501/pexels-photo-4162501.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("tricep") || n.includes("pushdown") || n.includes("skull"))
-    return "https://images.pexels.com/photos/3838385/pexels-photo-3838385.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("dip"))
-    return "https://images.pexels.com/photos/3838386/pexels-photo-3838386.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("plank"))
-    return "https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("crunch") || n.includes("sit-up") || n.includes("situp"))
-    return "https://images.pexels.com/photos/3823207/pexels-photo-3823207.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("hip thrust") || n.includes("glute bridge"))
-    return "https://images.pexels.com/photos/3823208/pexels-photo-3823208.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("calf raise"))
-    return "https://images.pexels.com/photos/4162498/pexels-photo-4162498.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("run") || n.includes("treadmill") || n.includes("jog"))
-    return "https://images.pexels.com/photos/3621955/pexels-photo-3621955.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (n.includes("push-up") || n.includes("pushup") || n.includes("push up"))
-    return "https://images.pexels.com/photos/3757376/pexels-photo-3757376.jpeg?auto=compress&cs=tinysrgb&w=400";
+async function searchWger(name: string): Promise<string | null> {
+  try {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    // Step 1: search for exercise by name
+    const res = await fetch(
+      `https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(name)}&language=english&format=json`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const baseId = json?.suggestions?.[0]?.data?.base_id;
+    if (!baseId) return null;
 
-  // ── muscle group fallback ──
-  if (g.includes("chest"))    return "https://images.pexels.com/photos/3837757/pexels-photo-3837757.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("back"))     return "https://images.pexels.com/photos/4162511/pexels-photo-4162511.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("shoulder")) return "https://images.pexels.com/photos/3837774/pexels-photo-3837774.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("bicep") || (g.includes("arm") && !g.includes("tricep")))
-    return "https://images.pexels.com/photos/3838391/pexels-photo-3838391.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("tricep"))   return "https://images.pexels.com/photos/3838385/pexels-photo-3838385.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("leg") || g.includes("quad") || g.includes("hamstring"))
-    return "https://images.pexels.com/photos/4162438/pexels-photo-4162438.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("glute"))    return "https://images.pexels.com/photos/3823208/pexels-photo-3823208.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("core") || g.includes("ab"))
-    return "https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("cardio"))   return "https://images.pexels.com/photos/3621955/pexels-photo-3621955.jpeg?auto=compress&cs=tinysrgb&w=400";
-  if (g.includes("calf"))     return "https://images.pexels.com/photos/4162498/pexels-photo-4162498.jpeg?auto=compress&cs=tinysrgb&w=400";
+    // Step 2: get images for that exercise
+    const ctrl2  = new AbortController();
+    const timer2 = setTimeout(() => ctrl2.abort(), 4000);
+    const imgRes = await fetch(
+      `https://wger.de/api/v2/exerciseimage/?format=json&exercise_base=${baseId}&limit=1`,
+      { signal: ctrl2.signal }
+    );
+    clearTimeout(timer2);
+    if (!imgRes.ok) return null;
+    const imgJson = await imgRes.json();
+    const path = imgJson?.results?.[0]?.image;
+    if (!path) return null;
+    return path.startsWith("http") ? path : `https://wger.de${path}`;
+  } catch {
+    return null;
+  }
+}
 
-  return "https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400";
+async function resolveExerciseImage(name: string, mg: string): Promise<string> {
+  const cacheKey = name.toLowerCase().replace(/\s+/g, "_");
+  if (EX_IMG_CACHE[cacheKey]) return EX_IMG_CACHE[cacheKey];
+
+  try {
+    const stored = await AsyncStorage.getItem(`exImg_${cacheKey}`);
+    if (stored) { EX_IMG_CACHE[cacheKey] = stored; return stored; }
+  } catch {}
+
+  const wger = await searchWger(name);
+  const url  = wger ?? gymPoolFallback(mg, name);
+  EX_IMG_CACHE[cacheKey] = url;
+  AsyncStorage.setItem(`exImg_${cacheKey}`, url).catch(() => {});
+  return url;
 }
 
 function difficultyColor(d = "") {
@@ -808,13 +822,25 @@ function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => v
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 function ExerciseCard({ ex, index, checked, onToggle }: any) {
-  const color = muscleColor(ex.muscleGroup);
-  const img   = exerciseImage(ex.muscleGroup, ex.name);
+  const color    = muscleColor(ex.muscleGroup);
+  const fallback = gymPoolFallback(ex.muscleGroup || "", ex.name || "");
+  const [imgSrc, setImgSrc] = useState<string>(
+    EX_IMG_CACHE[ex.name?.toLowerCase().replace(/\s+/g, "_")] ?? fallback
+  );
+
+  useEffect(() => {
+    let alive = true;
+    resolveExerciseImage(ex.name || "", ex.muscleGroup || "").then(url => {
+      if (alive && url !== imgSrc) setImgSrc(url);
+    });
+    return () => { alive = false; };
+  }, [ex.name, ex.muscleGroup]);
+
   return (
     <Pressable onPress={onToggle} style={[ec.card, checked && ec.cardDone]}>
       {/* Thumbnail */}
       <View style={ec.thumbWrap}>
-        <Image source={img} style={ec.thumb} contentFit="cover" cachePolicy="memory-disk" transition={300} />
+        <Image source={imgSrc} style={ec.thumb} contentFit="cover" cachePolicy="memory-disk" transition={300} />
         {checked && <View style={ec.thumbDim} />}
       </View>
 
