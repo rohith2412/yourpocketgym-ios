@@ -1526,9 +1526,28 @@ export default function AITrainerScreen() {
 
   const handleProfileSave = useCallback(async (data: any) => {
     await saveProfile(data);
-    const newPlan = await generatePlan(data);
-    if (newPlan) prefetchPlanImages(newPlan);
-  }, [saveProfile]);
+    // Call generator directly — avoids stale closure on generatePlan
+    setPlanLoad(true);
+    setPlanError(null);
+    try {
+      const generated = generateWorkoutPlan({
+        goal:          data.goal,
+        experience:    data.experience,
+        daysPerWeek:   data.daysPerWeek,
+        equipment:     data.equipment,
+        focusAreas:    data.focusAreas,
+        sessionLength: data.sessionLength,
+        injuries:      data.injuries,
+      }) as WorkoutPlan;
+      setPlan(generated);
+      prefetchPlanImages(generated);
+      if (planKey) AsyncStorage.setItem(planKey, JSON.stringify(generated)).catch(() => {});
+    } catch (e: any) {
+      setPlanError(e.message);
+    } finally {
+      setPlanLoad(false);
+    }
+  }, [saveProfile, planKey]);
 
   const savePlan = useCallback(async () => {
     if (!plan || saving) return;
