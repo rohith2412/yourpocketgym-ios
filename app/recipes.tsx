@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-///* Right: food image */} LibraryCard progress
+///* Right: food image */} LibraryCard progress skip
 const BASE_URL = "https://yourpocketgym.com";
 //e.g.
 const GOALS = [
@@ -852,7 +852,7 @@ export default function useA() {
 
         {/* ─── Meal Plan Tab ─── */}
         {!isShowingDetail && mainTab === "mealplan" && (
-          <MealPlanView enabled={isPremium} />
+          <MealPlanView enabled={true} />
         )}
 
         {/* ─── All Recipes Tab (includes Saved sub-section) ─── */}

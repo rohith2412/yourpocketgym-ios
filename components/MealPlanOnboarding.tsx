@@ -147,12 +147,12 @@ export default function MealPlanOnboarding({ onComplete, onSkip }: Props) {
             <Text style={s.navBackText}>←</Text>
           </Pressable>
         ) : (
-          <View style={{ width: 40 }} />
+          <Pressable onPress={onSkip} style={s.navBack}>
+            <Text style={s.navCloseText}>✕</Text>
+          </Pressable>
         )}
         <ProgressDots step={step} />
-        <Pressable onPress={onSkip} style={s.navSkip}>
-          <Text style={s.navSkipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 40 }} />
       </View>
 
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -433,6 +433,7 @@ const s = StyleSheet.create({
   },
   navBack: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   navBackText: { fontSize: 22, color: "#0e0e0e" },
+  navCloseText: { fontSize: 18, color: "rgba(0,0,0,0.3)" },
   navSkip: { paddingVertical: 8, paddingHorizontal: 4 },
   navSkipText: { fontSize: 14, color: "rgba(0,0,0,0.3)", fontWeight: "500" },
 

@@ -1,11 +1,14 @@
 import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle } from "react-native-svg";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -68,8 +72,10 @@ const QUICK_PROMPTS = [
 const PROFILE_KEY    = "@gym_profile";
 const PLAN_KEY       = "@ai_workout_plan";
 const DONE_KEY       = (d: string) => `@workout_done/${d}`;
-const DAY_NAMES      = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const DAY_ABBRS      = ["M","T","W","T","F","S","S"];
+const EX_KEY         = (d: string, uid: string) => `@ex_done/${d}/${uid}`;
+// Sun-indexed to match the calendar display (Sun on left)
+const DAY_NAMES      = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_ABBRS      = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toLocalISO(date = new Date()) {
@@ -77,18 +83,20 @@ function toLocalISO(date = new Date()) {
 }
 function getWeekDates() {
   const today = new Date();
-  const dow = today.getDay();
-  const mon = new Date(today);
-  mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const sun = new Date(today);
+  sun.setDate(today.getDate() - today.getDay()); // back to Sunday
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon); d.setDate(mon.getDate() + i); return toLocalISO(d);
+    const d = new Date(sun); d.setDate(sun.getDate() + i); return toLocalISO(d);
   });
 }
 function getPlanDayForDate(plan: any, date: string) {
   if (!plan?.days) return null;
-  const dow = new Date(date + "T12:00:00").getDay(); // 0=Sun
-  const name = DAY_NAMES[dow === 0 ? 6 : dow - 1];
-  return plan.days.find((d: any) => d.day?.toLowerCase() === name.toLowerCase()) ?? null;
+  const dow  = new Date(date + "T12:00:00").getDay();
+  const name = DAY_NAMES[dow].toLowerCase();
+  return plan.days.find((d: any) => {
+    const n = d.day?.toLowerCase() ?? "";
+    return n === name || name.startsWith(n) || n.startsWith(name.slice(0, 3));
+  }) ?? null;
 }
 function getGreeting() {
   const h = new Date().getHours();
@@ -96,9 +104,9 @@ function getGreeting() {
 }
 function muscleColor(mg = "") {
   const map: Record<string,string> = {
-    chest:"#7c3aed", back:"#6366f1", shoulders:"#f59e0b",
+    chest:"#e8380d", back:"#e8380d", shoulders:"#f59e0b",
     arms:"#ec4899", legs:"#22c55e", core:"#14b8a6",
-    glutes:"#8b5cf6", cardio:"#ef4444",
+    glutes:"#e8380d", cardio:"#ef4444",
   };
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
@@ -184,14 +192,15 @@ function Chip({ label, active, onPress }: any) {
 
 // ─── Profile Intro (step-by-step wizard) ─────────────────────────────────────
 const TOTAL_STEPS = 8;
-const STEP_PROGRESS = [12, 25, 37, 50, 62, 75, 87, 100];
+const PI_W = Dimensions.get("window").width;
+const PI_CARD_W = (PI_W - 52) / 2;
 
 const GOAL_OPTIONS = [
-  { val: "Build muscle",      sub: "Build mass and size"         },
-  { val: "Lose fat",          sub: "Burn calories, slim down"    },
-  { val: "Improve strength",  sub: "Lift heavier, get stronger"  },
-  { val: "General fitness",   sub: "Stay active and healthy"     },
-  { val: "Endurance",         sub: "Cardio and stamina"          },
+  { val: "Build muscle",     sub: "Build mass and size",        image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=800&q=80" },
+  { val: "Lose fat",         sub: "Burn calories, slim down",   image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80" },
+  { val: "Improve strength", sub: "Lift heavier, get stronger", image: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=800&q=80" },
+  { val: "General fitness",  sub: "Stay active and healthy",    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80" },
+  { val: "Endurance",        sub: "Cardio and stamina",         image: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80" },
 ];
 const EXP_OPTIONS = [
   { val: "Beginner",     sub: "Under 1 year"  },
@@ -207,17 +216,40 @@ const EQUIP_OPTIONS = [
   { val: "Home gym",         sub: "Mixed home setup"            },
 ];
 
+function PiDots({ step }: { step: number }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 6 }}>
+      {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+        <View key={i} style={[pi.dot, i < step && pi.dotActive]} />
+      ))}
+    </View>
+  );
+}
+
 function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any) {
   const [step, setStep]   = useState(1);
   const [local, setLocal] = useState<GymProfile>({ ...EMPTY_PROFILE, ...initial });
+  const fadeAnim          = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (visible) { setStep(1); setLocal({ ...EMPTY_PROFILE, ...initial }); }
   }, [visible, initial]);
 
   const set = (key: keyof GymProfile, val: any) => setLocal(prev => ({ ...prev, [key]: val }));
-  const next = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
-  const back = () => { if (step === 1 && isEdit) onClose?.(); else setStep(s => Math.max(s - 1, 1)); };
+
+  const animateStep = (fn: () => void) => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start();
+    setTimeout(fn, 100);
+  };
+
+  const next = () => animateStep(() => setStep(s => Math.min(s + 1, TOTAL_STEPS)));
+  const back = () => {
+    if (step === 1) { if (isEdit) onClose?.(); }
+    else animateStep(() => setStep(s => Math.max(s - 1, 1)));
+  };
 
   const toggleFocus = (val: string) => {
     const arr = local.focusAreas.split(",").map(s => s.trim()).filter(Boolean);
@@ -226,7 +258,7 @@ function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any
   };
   const hasFocus = (val: string) => local.focusAreas.split(",").map(s => s.trim()).includes(val);
 
-  const DAY_LABELS = ["M","T","W","T","F","S","S"];
+  const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const [selDays, setSelDays] = useState<number[]>([]);
   const toggleDay = (i: number) => {
     const upd = selDays.includes(i) ? selDays.filter(d => d !== i) : [...selDays, i];
@@ -241,247 +273,297 @@ function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any
 
   if (!visible) return null;
 
-  const progressWidth = `${STEP_PROGRESS[step - 1]}%`;
+  const canNext = step === 1 ? !!local.goal
+    : step === 2 ? !!local.experience
+    : step === 6 ? !!local.equipment
+    : step === 7 ? selDays.length > 0
+    : true;
+
+  const STEP_TITLES: [string, string][] = [
+    ["What's your main", "goal?"],
+    ["Your experience", "level?"],
+    ["How old", "are you?"],
+    ["Your current", "weight?"],
+    ["How", "tall are you?"],
+    ["What equipment", "do you have?"],
+    ["Training days", "per week?"],
+    ["Session", "length?"],
+  ];
+  const STEP_SUBS = [
+    "Your plan adapts completely to what you're working towards.",
+    "We'll calibrate the difficulty and progression for you.",
+    "Age helps us tailor your recovery and rep ranges.",
+    "We use this to set your baseline fitness metrics.",
+    "Height rounds out your body composition profile.",
+    "Your plan uses only the gear you have access to.",
+    "Pick the days that work best for your schedule.",
+    "We'll keep every workout within your time limit.",
+  ];
+  const [titleLine1, titleLine2] = STEP_TITLES[step - 1];
+  const stepSub = STEP_SUBS[step - 1];
 
   return (
     <Modal visible animationType="slide" transparent={false} onRequestClose={isEdit ? onClose : undefined}>
       <StatusBar barStyle="dark-content" />
       <View style={pi.root}>
-        <LinearGradient
-          colors={["rgba(232,56,13,0.45)","rgba(232,56,13,0.18)","rgba(232,56,13,0.05)","transparent"]}
-          start={{ x: 1, y: 0 }} end={{ x: 0.3, y: 0.5 }}
-          style={pi.glow} pointerEvents="none"
-        />
-        <ScrollView contentContainerStyle={pi.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={pi.card}>
-            {/* Progress bar */}
-            <View style={pi.progressTrack}>
-              <View style={[pi.progressFill, { width: progressWidth }]} />
+
+        {/* ── Nav bar ── */}
+        <View style={pi.nav}>
+          {(step > 1 || isEdit) ? (
+            <Pressable onPress={back} style={pi.navBack}>
+              <Text style={pi.navBackText}>{step === 1 && isEdit ? "✕" : "←"}</Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
+          <PiDots step={step} />
+          <Pressable onPress={isEdit ? onClose : () => { onSave(local); onClose?.(); }} style={pi.navSkip}>
+            <Text style={pi.navSkipText}>{isEdit ? "Cancel" : "Skip"}</Text>
+          </Pressable>
+        </View>
+
+        {/* ── Animated content ── */}
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+
+          {/* Step 1: Goal — image cards */}
+          {step === 1 && (
+            <View style={{ flex: 1, paddingHorizontal: 20 }}>
+              <View style={pi.headWrap}>
+                <Text style={pi.eyebrow}>STEP 1 OF {TOTAL_STEPS}</Text>
+                <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+                <Text style={pi.bigSub}>{stepSub}</Text>
+              </View>
+              <ScrollView contentContainerStyle={pi.goalGrid} showsVerticalScrollIndicator={false}>
+                {GOAL_OPTIONS.map(g => {
+                  const active = local.goal === g.val;
+                  return (
+                    <Pressable key={g.val} onPress={() => set("goal", g.val)} style={[pi.goalCard, active && pi.goalCardActive]}>
+                      <Image source={g.image} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={300} />
+                      <LinearGradient colors={["transparent", "rgba(0,0,0,0.65)"]} style={StyleSheet.absoluteFill} />
+                      {active && (
+                        <View style={pi.goalCheck}>
+                          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800" }}>✓</Text>
+                        </View>
+                      )}
+                      <View style={pi.goalCardContent}>
+                        <Text style={pi.goalLabel}>{g.val}</Text>
+                        <Text style={pi.goalSub}>{g.sub}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
+          )}
 
-            {/* Step 1 — Goal */}
-            {step === 1 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 1 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>What's your main goal?</Text>
-                <View style={pi.optionGrid}>
-                  {GOAL_OPTIONS.map(o => (
-                    <Pressable key={o.val} onPress={() => set("goal", o.val)} style={[pi.optionBtn, local.goal === o.val && pi.optionSelected]}>
-                      <Text style={[pi.optionLabel, local.goal === o.val && pi.optionLabelSel]}>{o.val}</Text>
-                      <Text style={pi.optionSub}>{o.sub}</Text>
+          {/* Step 2: Experience — chip cards */}
+          {step === 2 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 2 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.bigCardGrid}>
+                {EXP_OPTIONS.map(o => {
+                  const active = local.experience === o.val;
+                  return (
+                    <Pressable key={o.val} onPress={() => set("experience", o.val)} style={[pi.bigChipCard, active && pi.bigChipCardActive]}>
+                      <Text style={[pi.bigChipLabel, active && pi.bigChipLabelActive]}>{o.val}</Text>
+                      <Text style={pi.bigChipSub}>{o.sub}</Text>
+                      {active && (
+                        <View style={pi.bigChipCheck}>
+                          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>✓</Text>
+                        </View>
+                      )}
                     </Pressable>
-                  ))}
+                  );
+                })}
+              </View>
+            </ScrollView>
+          )}
+
+          {/* Step 3: Age */}
+          {step === 3 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 3 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.numRow}>
+                <View>
+                  <Text style={pi.bigNum}>{local.age || "25"}</Text>
+                  <Text style={pi.numUnit}>years old</Text>
                 </View>
-                <View style={pi.navRow}>
-                  {isEdit
-                    ? <Pressable onPress={onClose} style={pi.btnBack}><Text style={pi.btnBackText}>Cancel</Text></Pressable>
-                    : <View />}
-                  <Pressable onPress={next} disabled={!local.goal} style={[pi.btnNext, !local.goal && pi.btnDisabled]}>
-                    <Text style={pi.btnNextText}>Continue</Text>
+                <View style={pi.stepperCol}>
+                  <Pressable onPress={() => set("age", String(Math.min(80, Number(local.age || 25) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
+                  <Pressable onPress={() => set("age", String(Math.max(13, Number(local.age || 25) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
+                </View>
+              </View>
+              <View style={pi.presetsRow}>
+                {[18,22,25,30,35,40,45,50].map(a => (
+                  <Pressable key={a} onPress={() => set("age", String(a))} style={[pi.presetBtn, local.age === String(a) && pi.presetBtnActive]}>
+                    <Text style={[pi.presetBtnText, local.age === String(a) && pi.presetBtnTextActive]}>{a}</Text>
                   </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+
+          {/* Step 4: Weight */}
+          {step === 4 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 4 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.numRow}>
+                <View>
+                  <Text style={pi.bigNum}>{local.weight || "75"}</Text>
+                  <Text style={pi.numUnit}>{local.weightUnit}</Text>
+                </View>
+                <View style={pi.stepperCol}>
+                  <Pressable onPress={() => set("weight", String(Math.min(300, Number(local.weight || 75) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
+                  <Pressable onPress={() => set("weight", String(Math.max(30, Number(local.weight || 75) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
                 </View>
               </View>
-            )}
-
-            {/* Step 2 — Experience */}
-            {step === 2 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 2 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>What's your experience level?</Text>
-                <View style={pi.optionGrid}>
-                  {EXP_OPTIONS.map(o => (
-                    <Pressable key={o.val} onPress={() => set("experience", o.val)} style={[pi.optionBtn, local.experience === o.val && pi.optionSelected]}>
-                      <Text style={[pi.optionLabel, local.experience === o.val && pi.optionLabelSel]}>{o.val}</Text>
-                      <Text style={pi.optionSub}>{o.sub}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} disabled={!local.experience} style={[pi.btnNext, !local.experience && pi.btnDisabled]}>
-                    <Text style={pi.btnNextText}>Continue</Text>
+              <View style={pi.presetsRow}>
+                {["kg","lbs"].map(u => (
+                  <Pressable key={u} onPress={() => set("weightUnit", u)} style={[pi.presetBtn, local.weightUnit === u && pi.presetBtnActive]}>
+                    <Text style={[pi.presetBtnText, local.weightUnit === u && pi.presetBtnTextActive]}>{u}</Text>
                   </Pressable>
-                </View>
+                ))}
               </View>
-            )}
-
-            {/* Step 3 — Age */}
-            {step === 3 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 3 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>How old are you?</Text>
-                <View style={pi.numRow}>
-                  <View>
-                    <Text style={pi.bigNum}>{local.age || "25"}</Text>
-                    <Text style={pi.numUnit}>years old</Text>
-                  </View>
-                  <View style={pi.stepperCol}>
-                    <Pressable onPress={() => set("age", String(Math.min(80, Number(local.age || 25) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
-                    <Pressable onPress={() => set("age", String(Math.max(13, Number(local.age || 25) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
-                  </View>
-                </View>
-                <View style={pi.presetsRow}>
-                  {[18,22,25,30,35,40,45,50].map(a => (
-                    <Pressable key={a} onPress={() => set("age", String(a))} style={[pi.presetBtn, local.age === String(a) && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, local.age === String(a) && pi.presetBtnTextActive]}>{a}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} style={pi.btnNext}><Text style={pi.btnNextText}>Continue</Text></Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* Step 4 — Weight */}
-            {step === 4 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 4 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>What's your current weight?</Text>
-                <View style={pi.numRow}>
-                  <View>
-                    <Text style={pi.bigNum}>{local.weight || "75"}</Text>
-                    <Text style={pi.numUnit}>{local.weightUnit}</Text>
-                  </View>
-                  <View style={pi.stepperCol}>
-                    <Pressable onPress={() => set("weight", String(Math.min(300, Number(local.weight || 75) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
-                    <Pressable onPress={() => set("weight", String(Math.max(30, Number(local.weight || 75) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
-                  </View>
-                </View>
-                <View style={pi.presetsRow}>
-                  {["kg","lbs"].map(u => (
-                    <Pressable key={u} onPress={() => set("weightUnit", u)} style={[pi.presetBtn, local.weightUnit === u && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, local.weightUnit === u && pi.presetBtnTextActive]}>{u}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.presetsRow}>
-                  {(local.weightUnit === "kg" ? [50,60,70,80,90,100,110] : [110,130,150,170,190,220]).map(w => (
-                    <Pressable key={w} onPress={() => set("weight", String(w))} style={[pi.presetBtn, local.weight === String(w) && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, local.weight === String(w) && pi.presetBtnTextActive]}>{w}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} style={pi.btnNext}><Text style={pi.btnNextText}>Continue</Text></Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* Step 5 — Height */}
-            {step === 5 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 5 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>How tall are you?</Text>
-                <View style={pi.numRow}>
-                  <View>
-                    <Text style={pi.bigNum}>{local.height || "175"}</Text>
-                    <Text style={pi.numUnit}>{local.heightUnit}</Text>
-                  </View>
-                  <View style={pi.stepperCol}>
-                    <Pressable onPress={() => set("height", String(Math.min(250, Number(local.height || 175) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
-                    <Pressable onPress={() => set("height", String(Math.max(100, Number(local.height || 175) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
-                  </View>
-                </View>
-                <View style={pi.presetsRow}>
-                  {["cm","ft"].map(u => (
-                    <Pressable key={u} onPress={() => set("heightUnit", u)} style={[pi.presetBtn, local.heightUnit === u && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, local.heightUnit === u && pi.presetBtnTextActive]}>{u}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.presetsRow}>
-                  {(local.heightUnit === "cm" ? [155,160,165,170,175,180,185,190] : [55,57,510,511,60,62,64]).map(h => (
-                    <Pressable key={h} onPress={() => set("height", String(h))} style={[pi.presetBtn, local.height === String(h) && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, local.height === String(h) && pi.presetBtnTextActive]}>{h}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} style={pi.btnNext}><Text style={pi.btnNextText}>Continue</Text></Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* Step 6 — Equipment */}
-            {step === 6 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 6 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>What equipment do you have?</Text>
-                <View style={pi.optionGrid}>
-                  {EQUIP_OPTIONS.map(o => (
-                    <Pressable key={o.val} onPress={() => set("equipment", o.val)} style={[pi.optionBtn, local.equipment === o.val && pi.optionSelected]}>
-                      <Text style={[pi.optionLabel, local.equipment === o.val && pi.optionLabelSel]}>{o.val}</Text>
-                      <Text style={pi.optionSub}>{o.sub}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} disabled={!local.equipment} style={[pi.btnNext, !local.equipment && pi.btnDisabled]}>
-                    <Text style={pi.btnNextText}>Continue</Text>
+              <View style={pi.presetsRow}>
+                {(local.weightUnit === "kg" ? [50,60,70,80,90,100,110] : [110,130,150,170,190,220]).map(w => (
+                  <Pressable key={w} onPress={() => set("weight", String(w))} style={[pi.presetBtn, local.weight === String(w) && pi.presetBtnActive]}>
+                    <Text style={[pi.presetBtnText, local.weight === String(w) && pi.presetBtnTextActive]}>{w}</Text>
                   </Pressable>
-                </View>
+                ))}
               </View>
-            )}
+            </ScrollView>
+          )}
 
-            {/* Step 7 — Training days */}
-            {step === 7 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 7 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>How many days per week can you train?</Text>
-                <View style={pi.daysGrid}>
-                  {DAY_LABELS.map((d, i) => (
-                    <Pressable key={i} onPress={() => toggleDay(i)} style={[pi.dayBtn, selDays.includes(i) && pi.daySelected]}>
-                      <Text style={[pi.dayBtnText, selDays.includes(i) && pi.dayBtnTextSel]}>{d}</Text>
-                    </Pressable>
-                  ))}
+          {/* Step 5: Height */}
+          {step === 5 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 5 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.numRow}>
+                <View>
+                  <Text style={pi.bigNum}>{local.height || "175"}</Text>
+                  <Text style={pi.numUnit}>{local.heightUnit}</Text>
                 </View>
-                <Text style={pi.daysHint}>
-                  {selDays.length > 0 ? `${selDays.length} day${selDays.length > 1 ? "s" : ""} selected` : "Tap to select your training days"}
-                </Text>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={next} disabled={selDays.length === 0} style={[pi.btnNext, selDays.length === 0 && pi.btnDisabled]}>
-                    <Text style={pi.btnNextText}>Continue</Text>
-                  </Pressable>
+                <View style={pi.stepperCol}>
+                  <Pressable onPress={() => set("height", String(Math.min(250, Number(local.height || 175) + 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>+</Text></Pressable>
+                  <Pressable onPress={() => set("height", String(Math.max(100, Number(local.height || 175) - 1)))} style={pi.stepperBtn}><Text style={pi.stepperBtnText}>−</Text></Pressable>
                 </View>
               </View>
-            )}
+              <View style={pi.presetsRow}>
+                {["cm","ft"].map(u => (
+                  <Pressable key={u} onPress={() => set("heightUnit", u)} style={[pi.presetBtn, local.heightUnit === u && pi.presetBtnActive]}>
+                    <Text style={[pi.presetBtnText, local.heightUnit === u && pi.presetBtnTextActive]}>{u}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={pi.presetsRow}>
+                {(local.heightUnit === "cm" ? [155,160,165,170,175,180,185,190] : [55,57,510,511,60,62,64]).map(h => (
+                  <Pressable key={h} onPress={() => set("height", String(h))} style={[pi.presetBtn, local.height === String(h) && pi.presetBtnActive]}>
+                    <Text style={[pi.presetBtnText, local.height === String(h) && pi.presetBtnTextActive]}>{h}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          )}
 
-            {/* Step 8 — Session length + focus (last step) */}
-            {step === 8 && (
-              <View style={pi.stepWrap}>
-                <Text style={pi.stepLabel}>Step 8 of {TOTAL_STEPS}</Text>
-                <Text style={pi.question}>How long are your sessions?</Text>
-                <View style={pi.optionGrid}>
-                  {SESSION_LENGTHS.map(l => (
-                    <Pressable key={l} onPress={() => set("sessionLength", l)} style={[pi.optionBtn, local.sessionLength === l && pi.optionSelected]}>
-                      <Text style={[pi.optionLabel, local.sessionLength === l && pi.optionLabelSel]}>{l} min</Text>
+          {/* Step 6: Equipment — chip cards */}
+          {step === 6 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 6 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.bigCardGrid}>
+                {EQUIP_OPTIONS.map(o => {
+                  const active = local.equipment === o.val;
+                  return (
+                    <Pressable key={o.val} onPress={() => set("equipment", o.val)} style={[pi.bigChipCard, active && pi.bigChipCardActive]}>
+                      <Text style={[pi.bigChipLabel, active && pi.bigChipLabelActive]}>{o.val}</Text>
+                      <Text style={pi.bigChipSub}>{o.sub}</Text>
+                      {active && (
+                        <View style={pi.bigChipCheck}>
+                          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>✓</Text>
+                        </View>
+                      )}
                     </Pressable>
-                  ))}
-                </View>
-                <Text style={[pi.stepLabel, { marginBottom: 10 }]}>Focus areas (optional)</Text>
-                <View style={pi.presetsRow}>
-                  {FOCUS_OPTIONS.map(f => (
-                    <Pressable key={f} onPress={() => toggleFocus(f)} style={[pi.presetBtn, hasFocus(f) && pi.presetBtnActive]}>
-                      <Text style={[pi.presetBtnText, hasFocus(f) && pi.presetBtnTextActive]}>{f}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={pi.navRow}>
-                  <Pressable onPress={back} style={pi.btnBack}><Text style={pi.btnBackText}>Back</Text></Pressable>
-                  <Pressable onPress={finish} style={pi.btnNext}>
-                    <Text style={pi.btnNextText}>Let's go →</Text>
-                  </Pressable>
-                </View>
+                  );
+                })}
               </View>
-            )}
-          </View>
-        </ScrollView>
+            </ScrollView>
+          )}
+
+          {/* Step 7: Training days */}
+          {step === 7 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false}>
+              <Text style={pi.eyebrow}>STEP 7 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.daysGrid}>
+                {DAY_LABELS.map((d, i) => (
+                  <Pressable key={i} onPress={() => toggleDay(i)} style={[pi.dayBtn, selDays.includes(i) && pi.daySelected]}>
+                    <Text style={[pi.dayBtnText, selDays.includes(i) && pi.dayBtnTextSel]}>{d}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={pi.daysHint}>
+                {selDays.length > 0 ? `${selDays.length} day${selDays.length > 1 ? "s" : ""} selected` : "Tap to select your training days"}
+              </Text>
+            </ScrollView>
+          )}
+
+          {/* Step 8: Session length + focus areas */}
+          {step === 8 && (
+            <ScrollView contentContainerStyle={pi.scrollStep} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={pi.eyebrow}>STEP 8 OF {TOTAL_STEPS}</Text>
+              <Text style={pi.bigTitle}>{titleLine1}{"\n"}<Text style={pi.accent}>{titleLine2}</Text></Text>
+              <Text style={pi.bigSub}>{stepSub}</Text>
+              <View style={pi.bigCardGrid}>
+                {SESSION_LENGTHS.map(l => {
+                  const active = local.sessionLength === l;
+                  return (
+                    <Pressable key={l} onPress={() => set("sessionLength", l)} style={[pi.bigChipCard, active && pi.bigChipCardActive]}>
+                      <Text style={[pi.bigChipLabel, active && pi.bigChipLabelActive]}>{l} min</Text>
+                      {active && (
+                        <View style={pi.bigChipCheck}>
+                          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>✓</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={pi.sectionLabel}>FOCUS AREAS (OPTIONAL)</Text>
+              <View style={pi.focusRow}>
+                {FOCUS_OPTIONS.map(f => (
+                  <Pressable key={f} onPress={() => toggleFocus(f)} style={[pi.focusChip, hasFocus(f) && pi.focusChipActive]}>
+                    <Text style={[pi.focusChipText, hasFocus(f) && pi.focusChipTextActive]}>{f}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+
+        </Animated.View>
+
+        {/* ── Footer CTA ── */}
+        <View style={pi.footer}>
+          <Pressable
+            onPress={step === TOTAL_STEPS ? finish : next}
+            disabled={!canNext}
+            style={({ pressed }) => [pi.nextBtn, !canNext && { opacity: 0.3 }, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={pi.nextBtnText}>
+              {step === TOTAL_STEPS ? "Build My Plan →" : "Continue"}
+            </Text>
+          </Pressable>
+        </View>
+
       </View>
     </Modal>
   );
@@ -545,83 +627,121 @@ function ProfileCard({ profile, onEdit }: { profile: GymProfile; onEdit: () => v
 }
 
 // ─── Week Calendar ────────────────────────────────────────────────────────────
-function WeekCalendar({ selDate, onSelect, completions, planDays }: any) {
-  const dates   = getWeekDates();
+function ProgressRing({ progress, size = 36, color = "#e8380d" }: { progress: number; size?: number; color?: string }) {
+  const sw = 3, r = (size - sw) / 2, circ = 2 * Math.PI * r, cx = size / 2;
+  return (
+    <Svg width={size} height={size} style={{ position: "absolute" }}>
+      <Circle cx={cx} cy={cx} r={r} stroke="rgba(0,0,0,0.06)" strokeWidth={sw} fill="none" />
+      <Circle cx={cx} cy={cx} r={r} stroke={color} strokeWidth={sw} fill="none"
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - Math.min(Math.max(progress, 0), 1))}
+        strokeLinecap="round" rotation={-90} origin={`${cx},${cx}`} />
+    </Svg>
+  );
+}
+
+function WeekCalendar({ selDate, onSelect, completions, exProgress, planDays }: any) {
+  const dates    = getWeekDates();
   const todayISO = toLocalISO();
+  const selIdx   = dates.indexOf(selDate);
+
+  const [colWidth, setColWidth] = useState(0);
+  const pillX    = useRef(new Animated.Value(0)).current;
+  const pillOpac = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (colWidth === 0) return;
+    Animated.parallel([
+      Animated.spring(pillX, { toValue: selIdx * colWidth, useNativeDriver: true, damping: 18, stiffness: 260, mass: 0.75 }),
+      Animated.timing(pillOpac, { toValue: 1, duration: 120, useNativeDriver: true }),
+    ]).start();
+  }, [selIdx, colWidth]);
 
   return (
-    <View style={wc.card}>
-      <View style={wc.row}>
-        {dates.map((date, i) => {
-          const isSel    = date === selDate;
-          const isToday  = date === todayISO;
-          const done     = completions[date];
-          const planDay  = planDays?.find((d: any) => d.day?.toLowerCase() === DAY_NAMES[i]?.toLowerCase());
-          const hasWork  = planDay && !planDay.restDay;
-          const isRest   = planDay?.restDay;
+    <View style={wc.container}
+      onLayout={(e) => {
+        const cw = e.nativeEvent.layout.width / 7;
+        setColWidth(cw);
+        pillX.setValue(selIdx * cw);
+        pillOpac.setValue(1);
+      }}>
 
-          let dotColor = "#e0ddd6";
-          if (hasWork)  dotColor = done ? "#22c55e" : "#e8380d";
-          else if (isRest) dotColor = "#e0ddd6";
+      {/* Sliding orange pill */}
+      {colWidth > 0 && (
+        <Animated.View pointerEvents="none"
+          style={[wc.pill, { width: colWidth - 6, opacity: pillOpac, transform: [{ translateX: Animated.add(pillX, 3) }] }]} />
+      )}
 
-          return (
-            <Pressable key={date} onPress={() => onSelect(date)} style={wc.dayCol}>
-              <View style={[wc.bubble, isSel && wc.bubbleSel, isToday && !isSel && wc.bubbleToday]}>
-                <Text style={[wc.abbr, isSel && wc.abbrSel, isToday && !isSel && wc.abbrToday]}>
-                  {DAY_ABBRS[i]}
+      {dates.map((date, i) => {
+        const isSel   = date === selDate;
+        const isToday = date === todayISO;
+        const done    = !!completions[date];
+        const dayName = DAY_NAMES[i].toLowerCase();
+        const planDay = planDays?.find((d: any) => {
+          const n = d.day?.toLowerCase() ?? "";
+          return n === dayName || dayName.startsWith(n) || n.startsWith(dayName.slice(0, 3));
+        });
+        const hasWork  = planDay && !planDay.restDay;
+        const num      = new Date(date + "T12:00:00").getDate();
+        const exProg   = (exProgress?.[date] || 0) as number;
+        const fullyDone = done || exProg >= 1;
+
+        return (
+          <Pressable key={date} onPress={() => onSelect(date)} style={wc.col}>
+            <Text style={[wc.abbr, isSel && wc.abbrSel]}>{DAY_ABBRS[i]}</Text>
+            <View style={wc.circleWrap}>
+              {/* Partial progress ring — grows as exercises are ticked */}
+              {hasWork && exProg > 0 && !fullyDone && (
+                <ProgressRing
+                  progress={exProg}
+                  size={36}
+                  color={isSel ? "rgba(255,255,255,0.85)" : "#e8380d"}
+                />
+              )}
+              <View style={[wc.circle, hasWork && fullyDone && !isSel && wc.circleDone]}>
+                <Text style={[wc.num, isSel && wc.numSel, hasWork && fullyDone && wc.numDone]}>
+                  {hasWork && fullyDone ? "✓" : num}
                 </Text>
               </View>
-              <View style={[wc.dot, { backgroundColor: dotColor }]} />
-            </Pressable>
-          );
-        })}
-      </View>
+              {/* Planned workout dot — only when no progress and not selected */}
+              {hasWork && !fullyDone && exProg === 0 && !isSel && <View style={wc.workoutDot} />}
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
-function ExerciseCard({ ex, index }: any) {
-  const [open, setOpen] = useState(false);
+function ExerciseCard({ ex, index, checked, onToggle }: any) {
   const color = muscleColor(ex.muscleGroup);
   return (
-    <Pressable onPress={() => setOpen(o => !o)} style={s.exerciseCard}>
+    <Pressable onPress={onToggle} style={[s.exerciseCard, checked && s.exerciseCardDone]}>
+      <View style={[s.exerciseAccent, { backgroundColor: checked ? "#e8380d" : color }]} />
       <View style={s.exerciseRow}>
-        <View style={[s.exNum, open && s.exNumOpen]}>
-          <Text style={[s.exNumText, open && { color: "#fff" }]}>{index + 1}</Text>
+        <View style={[s.exNum, checked && s.exNumChecked]}>
+          <Text style={[s.exNumText, checked && s.exNumTextChecked]}>
+            {checked ? "✓" : index + 1}
+          </Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={s.exName} numberOfLines={1}>{ex.name}</Text>
+          <Text style={[s.exName, checked && s.exNameChecked]} numberOfLines={1}>{ex.name}</Text>
           <Text style={s.exMuscle}>{ex.muscleGroup}</Text>
         </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={s.exSets}>{ex.sets} × {ex.reps}</Text>
-          <Text style={s.exRest}>rest {ex.rest}</Text>
+        <View style={{ alignItems: "flex-end", gap: 3 }}>
+          <Text style={s.exSets}>{ex.sets} sets</Text>
+          <Text style={s.exRest}>{ex.reps} reps</Text>
         </View>
-        <View style={[s.dot, { backgroundColor: color }]} />
       </View>
-      {open && (
-        <View style={s.exDetail}>
-          {ex.tempo && (
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 6, alignItems: "center" }}>
-              <Text style={s.tempoLabel}>Tempo</Text>
-              <View style={s.tempoBadge}><Text style={s.tempoBadgeText}>{ex.tempo}</Text></View>
-            </View>
-          )}
-          {ex.notes && <Text style={s.exNotes}>{ex.notes}</Text>}
-        </View>
-      )}
     </Pressable>
   );
 }
 
 // ─── Day Card ─────────────────────────────────────────────────────────────────
-function DayCard({ day, defaultOpen = false }: any) {
-  const [open, setOpen] = useState(defaultOpen);
-
+function DayCard({ day, checkedArr, onToggleEx }: any) {
   if (day.restDay) {
     return (
-      <View style={[s.card, { flexDirection: "row", alignItems: "center", gap: 14, padding: 18 }]}>
+      <View style={[s.dayCard, { flexDirection: "row", alignItems: "center", gap: 14, padding: 18 }]}>
         <Text style={{ fontSize: 28 }}>🛌</Text>
         <View>
           <Text style={{ fontSize: 16, fontWeight: "700", color: "#1a1a1a" }}>Rest Day</Text>
@@ -633,43 +753,34 @@ function DayCard({ day, defaultOpen = false }: any) {
 
   return (
     <View style={s.dayCard}>
-      <Pressable onPress={() => setOpen(o => !o)} style={s.dayCardHeader}>
-        <View style={[s.dayBox, open && s.dayBoxOpen]}>
-          <Text style={[s.dayBoxLabel, open && { color: "rgba(255,255,255,0.5)" }]}>
+      <View style={s.dayCardHeader}>
+        <View style={s.dayBoxOpen}>
+          <Text style={[s.dayBoxLabel, { color: "rgba(255,255,255,0.5)" }]}>
             {day.day?.slice(0, 3).toUpperCase()}
           </Text>
-          <Text style={[s.dayBoxNum, open && { color: "#fff" }]}>{day.exercises?.length ?? 0}</Text>
+          <Text style={[s.dayBoxNum, { color: "#fff" }]}>{day.exercises?.length ?? 0}</Text>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.dayLabel}>{day.label}</Text>
-          <Text style={s.dayMeta}>{day.exercises?.length} exercises · {day.estimatedTime}min</Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={s.focusBadge}><Text style={s.focusBadgeText}>{day.focus}</Text></View>
-          <Text style={[s.chevron, open && { transform: [{ rotate: "90deg" }] }]}>›</Text>
-        </View>
-      </Pressable>
-      {open && (
-        <View style={s.dayBody}>
-          {day.warmup && (
-            <View style={s.warmupBox}>
-              <Text style={s.warmupLabel}>Warmup</Text>
-              <Text style={s.warmupText}>{day.warmup}</Text>
-            </View>
-          )}
-          <View style={{ gap: 6, marginBottom: 10 }}>
-            {day.exercises?.map((ex: any, i: number) => (
-              <ExerciseCard key={i} ex={ex} index={i} />
-            ))}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+            <Text style={s.dayMeta}>{day.exercises?.length} moves · {day.estimatedTime}min</Text>
+            <View style={s.focusBadge}><Text style={s.focusBadgeText}>{day.focus}</Text></View>
           </View>
-          {day.cooldown && (
-            <View style={s.cooldownBox}>
-              <Text style={s.cooldownLabel}>Cooldown</Text>
-              <Text style={s.cooldownText}>{day.cooldown}</Text>
-            </View>
-          )}
         </View>
-      )}
+      </View>
+      <View style={s.dayBody}>
+        <View style={{ gap: 10 }}>
+          {day.exercises?.map((ex: any, i: number) => (
+            <ExerciseCard
+              key={i}
+              ex={ex}
+              index={i}
+              checked={checkedArr?.[i] || false}
+              onToggle={() => onToggleEx?.(i)}
+            />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -783,7 +894,7 @@ function PlanView({ plan, onBack, onRegen, onSave, isSaved, saving, isLoading }:
               <Text style={s.tipSectionTitle}>Progression</Text>
               {plan.progressionTips.map((t: string, i: number) => (
                 <View key={i} style={s.tipRow}>
-                  <View style={[s.tipNum, { backgroundColor: "rgba(99,102,241,0.1)" }]}><Text style={[s.tipNumText, { color: "#6366f1" }]}>{i+1}</Text></View>
+                  <View style={[s.tipNum, { backgroundColor: "rgba(232,56,13,0.1)" }]}><Text style={[s.tipNumText, { color: "#e8380d" }]}>{i+1}</Text></View>
                   <Text style={s.tipText}>{t}</Text>
                 </View>
               ))}
@@ -874,6 +985,165 @@ function ChatView({ profile, token }: any) {
   );
 }
 
+// ─── Edit Preferences Sheet ───────────────────────────────────────────────────
+function EditPrefsSheet({ visible, initial, onSave, onClose }: any) {
+  const [local, setLocal] = useState<GymProfile>({ ...EMPTY_PROFILE, ...initial });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (visible) setLocal({ ...EMPTY_PROFILE, ...initial });
+  }, [visible]);
+
+  const set = (key: keyof GymProfile, val: any) => setLocal(prev => ({ ...prev, [key]: val }));
+
+  const toggleFocus = (val: string) => {
+    const arr = local.focusAreas.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const upd = arr.includes(val) ? arr.filter((v: string) => v !== val) : [...arr, val];
+    set("focusAreas", upd.join(", "));
+  };
+  const hasFocus = (val: string) => local.focusAreas.split(",").map((s: string) => s.trim()).includes(val);
+
+  async function save() {
+    setSaving(true);
+    await onSave(local);
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Nav bar */}
+      <View style={ep.navBar}>
+        <TouchableOpacity onPress={onClose} style={ep.navSide}>
+          <Text style={ep.navCancel}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={ep.navTitle}>Training Preferences</Text>
+        <TouchableOpacity onPress={save} disabled={saving} style={ep.navSide}>
+          <Text style={[ep.navSave, saving && { opacity: 0.4 }]}>{saving ? "Saving…" : "Save"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={ep.scroll} contentContainerStyle={{ paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+        {/* Goal */}
+        <Text style={ep.sectionLabel}>GOAL</Text>
+        <View style={ep.card}>
+          {GOAL_OPTIONS.map(({ val, sub }, i) => (
+            <TouchableOpacity key={val} onPress={() => set("goal", val)}
+              style={[ep.row, i < GOAL_OPTIONS.length - 1 && ep.rowDivider]}>
+              <View style={{ flex: 1 }}>
+                <Text style={ep.rowTitle}>{val}</Text>
+                {sub ? <Text style={ep.rowSub}>{sub}</Text> : null}
+              </View>
+              {local.goal === val && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Experience */}
+        <Text style={ep.sectionLabel}>EXPERIENCE</Text>
+        <View style={ep.card}>
+          {EXP_OPTIONS.map(({ val, sub }, i) => (
+            <TouchableOpacity key={val} onPress={() => set("experience", val)}
+              style={[ep.row, i < EXP_OPTIONS.length - 1 && ep.rowDivider]}>
+              <View style={{ flex: 1 }}>
+                <Text style={ep.rowTitle}>{val}</Text>
+                {sub ? <Text style={ep.rowSub}>{sub}</Text> : null}
+              </View>
+              {local.experience === val && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Equipment */}
+        <Text style={ep.sectionLabel}>EQUIPMENT</Text>
+        <View style={ep.card}>
+          {EQUIP_OPTIONS.map(({ val, sub }, i) => (
+            <TouchableOpacity key={val} onPress={() => set("equipment", val)}
+              style={[ep.row, i < EQUIP_OPTIONS.length - 1 && ep.rowDivider]}>
+              <View style={{ flex: 1 }}>
+                <Text style={ep.rowTitle}>{val}</Text>
+                {sub ? <Text style={ep.rowSub}>{sub}</Text> : null}
+              </View>
+              {local.equipment === val && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Days per week */}
+        <Text style={ep.sectionLabel}>DAYS PER WEEK</Text>
+        <View style={ep.card}>
+          {DAYS_OPTS.map((d, i) => (
+            <TouchableOpacity key={d} onPress={() => set("daysPerWeek", d)}
+              style={[ep.row, i < DAYS_OPTS.length - 1 && ep.rowDivider]}>
+              <Text style={ep.rowTitle}>{d} days</Text>
+              {local.daysPerWeek === d && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Session length */}
+        <Text style={ep.sectionLabel}>SESSION LENGTH</Text>
+        <View style={ep.card}>
+          {SESSION_LENGTHS.map((l, i) => (
+            <TouchableOpacity key={l} onPress={() => set("sessionLength", l)}
+              style={[ep.row, i < SESSION_LENGTHS.length - 1 && ep.rowDivider]}>
+              <Text style={ep.rowTitle}>{l} min</Text>
+              {local.sessionLength === l && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Focus areas (multi-select) */}
+        <Text style={ep.sectionLabel}>FOCUS AREAS</Text>
+        <View style={ep.card}>
+          {FOCUS_OPTIONS.map((f, i) => (
+            <TouchableOpacity key={f} onPress={() => toggleFocus(f)}
+              style={[ep.row, i < FOCUS_OPTIONS.length - 1 && ep.rowDivider]}>
+              <Text style={ep.rowTitle}>{f}</Text>
+              {hasFocus(f) && <Text style={ep.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Injuries */}
+        <Text style={ep.sectionLabel}>INJURIES OR LIMITATIONS</Text>
+        <View style={ep.card}>
+          <TextInput
+            value={local.injuries}
+            onChangeText={v => set("injuries", v)}
+            placeholder="e.g. bad knees, lower back pain…"
+            placeholderTextColor="#c7c7cc"
+            multiline
+            style={ep.textInput}
+          />
+        </View>
+
+      </ScrollView>
+    </Modal>
+  );
+}
+
+const ep = StyleSheet.create({
+  navBar:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", paddingHorizontal: 16, paddingTop: Platform.OS === "ios" ? 58 : 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#c6c6c8" },
+  navSide:    { minWidth: 72 },
+  navCancel:  { fontSize: 17, color: "#8e8e93" },
+  navTitle:   { fontSize: 17, fontWeight: "700", color: "#000", letterSpacing: -0.3 },
+  navSave:    { fontSize: 17, fontWeight: "600", color: "#e8380d", textAlign: "right" },
+  scroll:     { flex: 1, backgroundColor: "#f2f2f7" },
+  sectionLabel: { fontSize: 13, color: "#6c6c70", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 28, marginBottom: 8, marginHorizontal: 20 },
+  card:       { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, overflow: "hidden" },
+  row:        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, minHeight: 54 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#c6c6c8" },
+  rowTitle:   { fontSize: 17, color: "#000", flex: 1 },
+  rowSub:     { fontSize: 13, color: "#8e8e93", marginTop: 2 },
+  check:      { fontSize: 18, color: "#e8380d", fontWeight: "700", marginLeft: 8 },
+  textInput:  { paddingHorizontal: 16, paddingVertical: 14, fontSize: 17, color: "#000", minHeight: 100, textAlignVertical: "top" },
+});
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AITrainerScreen() {
   const router = useRouter();
@@ -892,7 +1162,8 @@ export default function AITrainerScreen() {
   const [saving,    setSaving]    = useState(false);
   const [savedId,   setSavedId]   = useState<string | null>(null);
   const [selDate,   setSelDate]   = useState(toLocalISO());
-  const [completions, setCompletions] = useState<Record<string, boolean>>({});
+  const [completions,  setCompletions]  = useState<Record<string, boolean>>({});
+  const [exChecked,    setExChecked]    = useState<Record<string, boolean[]>>({});
 
   const token = session?.user?.token || "";
 
@@ -931,8 +1202,25 @@ export default function AITrainerScreen() {
     }).catch(() => setCompletions({}));
   }, [userId]);
 
-  async function generatePlan() {
-    if (!session || !profile) return;
+  // Load per-exercise checks for the whole week
+  useEffect(() => {
+    if (!userId) { setExChecked({}); return; }
+    const dates = getWeekDates();
+    AsyncStorage.multiGet(dates.map(d => EX_KEY(d, userId))).then(pairs => {
+      const map: Record<string, boolean[]> = {};
+      pairs.forEach(([k, v]) => {
+        if (v) {
+          const date = k.replace(`@ex_done/`, "").replace(`/${userId}`, "");
+          try { map[date] = JSON.parse(v); } catch {}
+        }
+      });
+      setExChecked(map);
+    }).catch(() => setExChecked({}));
+  }, [userId]);
+
+  async function generatePlan(profileOverride?: any) {
+    const p = profileOverride || profile;
+    if (!session || !p) return;
     setPlanLoad(true);
     setPlanError(null);
     try {
@@ -942,13 +1230,13 @@ export default function AITrainerScreen() {
         body: JSON.stringify({
           type: "plan",
           extra: {
-            equipment: profile.equipment,
-            focusAreas: profile.focusAreas,
-            sessionLength: profile.sessionLength,
-            injuries: profile.injuries,
-            goal: profile.goal,
-            experience: profile.experience,
-            daysPerWeek: profile.daysPerWeek,
+            equipment: p.equipment,
+            focusAreas: p.focusAreas,
+            sessionLength: p.sessionLength,
+            injuries: p.injuries,
+            goal: p.goal,
+            experience: p.experience,
+            daysPerWeek: p.daysPerWeek,
           },
         }),
       });
@@ -961,6 +1249,11 @@ export default function AITrainerScreen() {
     } finally {
       setPlanLoad(false);
     }
+  }
+
+  async function handleProfileSave(data: any) {
+    await saveProfile(data);
+    generatePlan(data); // fire in background — main screen shows skeleton
   }
 
   async function savePlan() {
@@ -990,6 +1283,16 @@ export default function AITrainerScreen() {
     }
   }
 
+  async function toggleExercise(date: string, idx: number) {
+    if (!userId) return;
+    const total   = planDay?.exercises?.length || 0;
+    const current = exChecked[date] || Array(total).fill(false);
+    const updated = [...current];
+    updated[idx]  = !updated[idx];
+    await AsyncStorage.setItem(EX_KEY(date, userId), JSON.stringify(updated)).catch(() => {});
+    setExChecked(p => ({ ...p, [date]: updated }));
+  }
+
   if (!ready || (userId && !profileLoaded)) return null;
   if (ready && !session) return null;
 
@@ -997,6 +1300,18 @@ export default function AITrainerScreen() {
   const planDay    = plan ? getPlanDayForDate(plan, selDate) : null;
   const isToday    = selDate === toLocalISO();
   const isDone     = completions[selDate];
+
+  // Compute exercise progress ratio (0–1) for each date in the week
+  const exProgress: Record<string, number> = {};
+  if (plan) {
+    getWeekDates().forEach(date => {
+      const pd = getPlanDayForDate(plan, date);
+      if (pd && !pd.restDay && pd.exercises?.length > 0) {
+        const checks = exChecked[date] || [];
+        exProgress[date] = checks.filter(Boolean).length / pd.exercises.length;
+      }
+    });
+  }
 
   return (
     <SafeAreaView style={s.screen} edges={["top"]}>
@@ -1026,36 +1341,17 @@ export default function AITrainerScreen() {
         {mainTab === "plan" && !showPlan && (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 12, paddingBottom: 40, gap: 12 }}>
 
-            {/* Profile card or setup CTA */}
-            {profile ? (
-              <ProfileCard profile={profile} onEdit={() => setShowProfileEdit(true)} />
-            ) : (
-              <Pressable onPress={() => setShowProfileEdit(true)} style={s.setupCard}>
-                <Text style={s.setupTitle}>Set up your gym profile</Text>
-                <Text style={s.setupDesc}>Tell us your goal, experience and equipment to get a personalised plan.</Text>
-                <View style={s.setupBtn}><Text style={s.setupBtnText}>Get started →</Text></View>
-              </Pressable>
-            )}
-
             {/* Week calendar - only if we have a plan */}
             {plan && (
               <WeekCalendar
                 selDate={selDate}
                 onSelect={setSelDate}
                 completions={completions}
+                exProgress={exProgress}
                 planDays={plan.days}
               />
             )}
 
-            {/* Plan header card */}
-            {plan && !planLoad && (
-              <PlanHeaderCard
-                plan={plan}
-                onViewFull={() => setShowPlan(true)}
-                onRegen={generatePlan}
-                isLoading={planLoad}
-              />
-            )}
 
             {/* Error */}
             {planError && (
@@ -1076,19 +1372,15 @@ export default function AITrainerScreen() {
                   {isToday ? "Today's workout" : new Date(selDate+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}
                 </Text>
                 {planDay ? (
-                  <>
-                    <DayCard day={planDay} defaultOpen={!planDay.restDay} />
-                    {isToday && !planDay.restDay && (
-                      <Pressable
-                        onPress={() => toggleComplete(selDate)}
-                        style={[s.completeBtn, isDone && s.completeBtnDone]}
-                      >
-                        <Text style={s.completeBtnText}>{isDone ? "✓ Workout completed" : "Mark as complete"}</Text>
-                      </Pressable>
-                    )}
-                  </>
+                  <DayCard
+                    day={planDay}
+                    isDone={isDone}
+                    onToggle={() => toggleComplete(selDate)}
+                    checkedArr={exChecked[selDate] || []}
+                    onToggleEx={(i: number) => toggleExercise(selDate, i)}
+                  />
                 ) : (
-                  <View style={[s.card, { alignItems: "center", padding: 24 }]}>
+                  <View style={[s.dayCard, { alignItems: "center", padding: 24 }]}>
                     <Text style={s.emptyTitle}>No workout for this day</Text>
                   </View>
                 )}
@@ -1099,6 +1391,19 @@ export default function AITrainerScreen() {
             {!plan && profile && !planLoad && (
               <Pressable onPress={generatePlan} disabled={planLoad} style={s.generateBtn}>
                 <Text style={s.generateBtnText}>Generate my workout plan</Text>
+              </Pressable>
+            )}
+
+            {/* Mark complete + Edit prefs — same level, same width */}
+            {plan && !planLoad && planDay && !planDay.restDay && (
+              <Pressable onPress={() => toggleComplete(selDate)} style={[s.completeBtn, isDone && s.completeBtnDone]}>
+                <Text style={s.completeBtnText}>{isDone ? "✓  Done!" : "Mark as Complete"}</Text>
+              </Pressable>
+            )}
+
+            {profile && !planLoad && (
+              <Pressable onPress={() => setShowProfileEdit(true)} style={s.editPrefsBtn}>
+                <Text style={s.editPrefsBtnText}>Edit preferences</Text>
               </Pressable>
             )}
           </ScrollView>
@@ -1123,12 +1428,20 @@ export default function AITrainerScreen() {
         )}
       </View>
 
-      {/* Profile setup / edit wizard */}
+      {/* First-time profile wizard */}
       <ProfileIntro
-        visible={showProfileEdit || (profileLoaded && !profile && mainTab === "plan")}
+        visible={profileLoaded && !profile && mainTab === "plan"}
+        initial={EMPTY_PROFILE}
+        isEdit={false}
+        onSave={handleProfileSave}
+        onClose={() => {}}
+      />
+
+      {/* Edit preferences bottom sheet */}
+      <EditPrefsSheet
+        visible={showProfileEdit}
         initial={profile || EMPTY_PROFILE}
-        isEdit={!!profile}
-        onSave={saveProfile}
+        onSave={handleProfileSave}
         onClose={() => setShowProfileEdit(false)}
       />
     </SafeAreaView>
@@ -1156,9 +1469,11 @@ const s = StyleSheet.create({
   setupBtnText: { fontSize: 14, fontWeight: "700", color: "#fff" },
   generateBtn: { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   generateBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  completeBtn: { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
-  completeBtnDone: { backgroundColor: "#22c55e" },
-  completeBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  editPrefsBtn: { borderWidth: 1.5, borderColor: "#e8e5de", borderRadius: 20, paddingVertical: 14, alignItems: "center", backgroundColor: "#fff" },
+  editPrefsBtnText: { fontSize: 14, fontWeight: "600", color: "#888" },
+  completeBtn: { backgroundColor: "#1a1a1a", borderRadius: 20, paddingVertical: 16, alignItems: "center" },
+  completeBtnDone: { backgroundColor: "#e8380d" },
+  completeBtnText: { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.2 },
   errorBox:    { backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#ef4444" },
   errorText:   { fontSize: 13, color: "#ef4444", fontWeight: "600" },
   card:        { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", padding: 18 },
@@ -1187,45 +1502,50 @@ const s = StyleSheet.create({
   segBtnText:   { fontSize: 13, fontWeight: "600", color: "#aaa" },
   segBtnTextActive: { color: "#1a1a1a", fontWeight: "700" },
   // Day card
-  dayCard:      { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", overflow: "hidden" },
-  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
-  dayBox:       { width: 46, height: 46, borderRadius: 13, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
-  dayBoxOpen:   { backgroundColor: "#1a1a1a" },
-  dayBoxLabel:  { fontSize: 8, fontWeight: "800", color: "#bbb", letterSpacing: 0.5 },
-  dayBoxNum:    { fontSize: 18, fontWeight: "800", color: "#1a1a1a" },
-  dayLabel:     { fontSize: 15, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.3 },
-  dayMeta:      { fontSize: 12, color: "#aaa", marginTop: 2 },
-  focusBadge:   { backgroundColor: "rgba(124,58,237,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
-  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#7c3aed" },
+  dayCard:      { backgroundColor: "#fff", borderRadius: 28, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 4, overflow: "hidden" },
+  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 14, padding: 20, backgroundColor: "#fff" },
+  dayBox:       { width: 54, height: 54, borderRadius: 18, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
+  dayBoxOpen:   { width: 54, height: 54, borderRadius: 18, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" },
+  dayBoxLabel:  { fontSize: 9, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 0.8 },
+  dayBoxNum:    { fontSize: 20, fontWeight: "800", color: "#fff" },
+  dayLabel:     { fontSize: 16, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.4 },
+  dayMeta:      { fontSize: 12, color: "#aaa", marginTop: 3, fontWeight: "500" },
+  focusBadge:   { backgroundColor: "rgba(232,56,13,0.08)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 },
+  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#e8380d" },
   chevron:      { fontSize: 20, color: "#ccc" },
-  dayBody:      { borderTopWidth: 1, borderTopColor: "#f0ede8", padding: 14 },
-  warmupBox:    { backgroundColor: "#fafaf8", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#ece9e3" },
-  warmupLabel:  { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#7c3aed", marginBottom: 4 },
+  dayBody:      { backgroundColor: "#f7f6f3", padding: 16, gap: 0 },
+  warmupBox:    { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#ece9e3" },
+  warmupLabel:  { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
   warmupText:   { fontSize: 13, color: "#666", lineHeight: 19 },
-  cooldownBox:  { backgroundColor: "#fafaf8", borderRadius: 12, padding: 12, marginTop: 4, borderWidth: 1, borderColor: "#ece9e3" },
-  cooldownLabel: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#6366f1", marginBottom: 4 },
+  cooldownBox:  { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginTop: 4, borderWidth: 1, borderColor: "#ece9e3" },
+  cooldownLabel: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
   cooldownText: { fontSize: 13, color: "#666", lineHeight: 19 },
   // Exercise card
-  exerciseCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 14, overflow: "hidden" },
-  exerciseRow:  { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
-  exNum:        { width: 32, height: 32, borderRadius: 9, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
-  exNumOpen:    { backgroundColor: "#1a1a1a" },
-  exNumText:    { fontSize: 13, fontWeight: "800", color: "#aaa" },
-  exName:       { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  exMuscle:     { fontSize: 11, color: "#aaa", marginTop: 1 },
-  exSets:       { fontSize: 13, fontWeight: "800", color: "#1a1a1a" },
-  exRest:       { fontSize: 11, color: "#bbb" },
-  dot:          { width: 8, height: 8, borderRadius: 4 },
+  exerciseCard:      { backgroundColor: "#fff", borderRadius: 18, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1, flexDirection: "row" },
+  exerciseCardDone:  { opacity: 0.55 },
+  exerciseAccent:    { width: 4, backgroundColor: "#e8380d" },
+  exerciseRow:       { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  exNum:             { width: 36, height: 36, borderRadius: 12, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
+  exNumChecked:      { backgroundColor: "#e8380d" },
+  exNumOpen:         { backgroundColor: "#1a1a1a" },
+  exNumText:         { fontSize: 13, fontWeight: "800", color: "#999" },
+  exNumTextChecked:  { color: "#fff", fontWeight: "900" },
+  exName:            { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
+  exNameChecked:     { textDecorationLine: "line-through", color: "#aaa" },
+  exMuscle:          { fontSize: 11, color: "#bbb", marginTop: 2, fontWeight: "500" },
+  exSets:            { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  exRest:            { fontSize: 11, color: "#aaa", fontWeight: "500" },
+  dot:          { width: 7, height: 7, borderRadius: 4 },
   exDetail:     { borderTopWidth: 1, borderTopColor: "#f4f2ed", padding: 12, backgroundColor: "#fafaf8" },
   tempoLabel:   { fontSize: 10, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
   tempoBadge:   { backgroundColor: "rgba(124,58,237,0.08)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#7c3aed" },
+  tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#e8380d" },
   exNotes:      { fontSize: 13, color: "#666", lineHeight: 20 },
   // Tips
   tipSectionTitle: { fontSize: 14, fontWeight: "800", color: "#1a1a1a", marginBottom: 12 },
   tipRow:       { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 10 },
   tipNum:       { width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(124,58,237,0.08)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  tipNumText:   { fontSize: 11, fontWeight: "800", color: "#7c3aed" },
+  tipNumText:   { fontSize: 11, fontWeight: "800", color: "#e8380d" },
   tipText:      { fontSize: 14, color: "#555", lineHeight: 21, flex: 1 },
   eyebrow:      { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 10 },
   // Chat
@@ -1264,16 +1584,19 @@ const pc = StyleSheet.create({
 
 // ─── Week Calendar Styles ─────────────────────────────────────────────────────
 const wc = StyleSheet.create({
-  card:       { backgroundColor: "#fff", borderRadius: 22, borderWidth: 1, borderColor: "#e8e5de", overflow: "hidden" },
-  row:        { flexDirection: "row", justifyContent: "space-around", paddingVertical: 14, paddingHorizontal: 8 },
-  dayCol:     { alignItems: "center", gap: 6 },
-  bubble:     { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  bubbleSel:  { backgroundColor: "#1a1a1a" },
-  bubbleToday: { backgroundColor: "#f4f2ed" },
-  abbr:       { fontSize: 13, fontWeight: "700", color: "#aaa" },
-  abbrSel:    { color: "#fff" },
-  abbrToday:  { color: "#1a1a1a" },
-  dot:        { width: 6, height: 6, borderRadius: 3 },
+  container:  { flexDirection: "row", backgroundColor: "#fff", borderRadius: 28, paddingVertical: 14, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden" },
+  pill:       { position: "absolute", top: 7, bottom: 7, borderRadius: 20, backgroundColor: "#e8380d" },
+  col:        { flex: 1, alignItems: "center", gap: 6, paddingVertical: 2, zIndex: 1 },
+  abbr:       { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.3)", letterSpacing: 0.2 },
+  abbrSel:    { color: "#fff", fontWeight: "800" },
+  circleWrap: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  circle:     { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  num:        { fontSize: 13, fontWeight: "700", color: "#0e0e0e" },
+  numSel:     { color: "#fff" },
+  circleDone: { backgroundColor: "#e8380d" },
+  numDone:    { fontSize: 14, fontWeight: "900", color: "#fff" },
+  workoutDot: { position: "absolute", bottom: -1, width: 6, height: 6, borderRadius: 3, backgroundColor: "#e8380d" },
+  todayDot:   { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
 });
 
 // ─── Chip Styles ──────────────────────────────────────────────────────────────
@@ -1284,44 +1607,79 @@ const p = StyleSheet.create({
   chipTextActive: { color: "#fff" },
 });
 
-// ─── Profile Intro Wizard Styles (matches startersIntro.jsx) ─────────────────
+// ─── Profile Intro Wizard Styles (matches MealPlanOnboarding) ────────────────
 const pi = StyleSheet.create({
-  root:             { flex: 1, backgroundColor: "#fafaf8" },
-  glow:             { position: "absolute", top: -120, right: -120, width: 600, height: 600, borderRadius: 300 },
-  scroll:           { flexGrow: 1, justifyContent: "center", padding: 20, paddingTop: Platform.OS === "ios" ? 60 : 20 },
-  card:             { backgroundColor: "#fff", borderRadius: 24, padding: 28, minHeight: 520, shadowColor: "#000", shadowOpacity: 0.07, shadowRadius: 24, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
-  progressTrack:    { height: 2, backgroundColor: "#e8e6e0", borderRadius: 99, marginBottom: 32 },
-  progressFill:     { height: 2, backgroundColor: "#e8380d", borderRadius: 99 },
-  stepWrap:         { flex: 1, gap: 4 },
-  stepLabel:        { fontSize: 11, fontWeight: "500", letterSpacing: 1, textTransform: "uppercase", color: "#999", marginBottom: 8 },
-  question:         { fontSize: 26, fontWeight: "700", color: "#1a1a1a", lineHeight: 32, letterSpacing: -0.5, marginBottom: 24 },
-  optionGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
-  optionBtn:        { flex: 1, minWidth: "28%", backgroundColor: "#f7f6f2", borderWidth: 1.5, borderColor: "#e8e6e0", borderRadius: 14, padding: 14, gap: 5 },
-  optionSelected:   { borderColor: "#e8380d", backgroundColor: "#fff", shadowColor: "#e8380d", shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
-  optionLabel:      { fontSize: 13, fontWeight: "500", color: "#1a1a1a" },
-  optionLabelSel:   { fontWeight: "700" },
-  optionSub:        { fontSize: 11, color: "#999" },
-  numRow:           { flexDirection: "row", alignItems: "center", gap: 20, marginBottom: 20 },
-  bigNum:           { fontSize: 64, fontWeight: "800", color: "#1a1a1a", letterSpacing: -2, lineHeight: 72 },
-  numUnit:          { fontSize: 14, color: "#999", marginTop: 4 },
-  stepperCol:       { gap: 8 },
-  stepperBtn:       { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2", alignItems: "center", justifyContent: "center" },
-  stepperBtnText:   { fontSize: 20, color: "#1a1a1a", fontWeight: "300", lineHeight: 24 },
-  presetsRow:       { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
-  presetBtn:        { borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2" },
-  presetBtnActive:  { backgroundColor: "#e8380d", borderColor: "#e8380d" },
-  presetBtnText:    { fontSize: 13, color: "#999", fontWeight: "500" },
+  root: { flex: 1, backgroundColor: "#ffffff" },
+
+  // Nav
+  nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12 },
+  navBack: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  navBackText: { fontSize: 22, color: "#0e0e0e" },
+  navSkip: { paddingVertical: 8, paddingHorizontal: 4 },
+  navSkipText: { fontSize: 14, color: "rgba(0,0,0,0.3)", fontWeight: "500" },
+
+  // Progress dots
+  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: "#e8e5de" },
+  dotActive: { backgroundColor: "#0e0e0e" },
+
+  // Typography
+  eyebrow: { fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 12 },
+  bigTitle: { fontSize: 46, fontWeight: "900", color: "#0e0e0e", letterSpacing: -2, lineHeight: 50, marginBottom: 12 },
+  accent: { color: "#e8380d" },
+  bigSub: { fontSize: 15, color: "rgba(0,0,0,0.38)", lineHeight: 22, marginBottom: 24 },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 28, marginBottom: 12 },
+
+  headWrap: { paddingTop: 4 },
+  scrollStep: { paddingHorizontal: 20, paddingBottom: 40 },
+
+  // Goal image cards (step 1)
+  goalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingTop: 4, paddingBottom: 20 },
+  goalCard: { width: PI_CARD_W, height: 185, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end", borderWidth: 2, borderColor: "transparent" },
+  goalCardActive: { borderColor: "#0e0e0e" },
+  goalCheck: { position: "absolute", top: 12, right: 12, width: 26, height: 26, borderRadius: 13, backgroundColor: "#0e0e0e", alignItems: "center", justifyContent: "center" },
+  goalCardContent: { padding: 14 },
+  goalLabel: { fontSize: 16, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
+  goalSub: { fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 },
+
+  // Chip cards (experience, equipment, session length)
+  bigCardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  bigChipCard: { width: PI_CARD_W, backgroundColor: "#f7f7f5", borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: "transparent", gap: 4 },
+  bigChipCardActive: { borderColor: "#0e0e0e", backgroundColor: "#fff" },
+  bigChipLabel: { fontSize: 16, fontWeight: "700", color: "rgba(0,0,0,0.5)" },
+  bigChipLabelActive: { color: "#0e0e0e" },
+  bigChipSub: { fontSize: 12, color: "rgba(0,0,0,0.3)" },
+  bigChipCheck: { position: "absolute", top: 12, right: 12, width: 22, height: 22, borderRadius: 11, backgroundColor: "#0e0e0e", alignItems: "center", justifyContent: "center" },
+
+  // Numeric stepper (age, weight, height)
+  numRow: { flexDirection: "row", alignItems: "center", gap: 20, marginBottom: 20 },
+  bigNum: { fontSize: 64, fontWeight: "800", color: "#0e0e0e", letterSpacing: -2, lineHeight: 72 },
+  numUnit: { fontSize: 14, color: "rgba(0,0,0,0.3)", marginTop: 4 },
+  stepperCol: { gap: 8 },
+  stepperBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5", alignItems: "center", justifyContent: "center" },
+  stepperBtnText: { fontSize: 22, color: "#0e0e0e", fontWeight: "300", lineHeight: 26 },
+  presetsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
+  presetBtn: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5" },
+  presetBtnActive: { backgroundColor: "#0e0e0e", borderColor: "#0e0e0e" },
+  presetBtnText: { fontSize: 13, color: "rgba(0,0,0,0.4)", fontWeight: "600" },
   presetBtnTextActive: { color: "#fff" },
-  daysGrid:         { flexDirection: "row", gap: 6, marginBottom: 12 },
-  dayBtn:           { flex: 1, borderWidth: 1.5, borderColor: "#e8e6e0", backgroundColor: "#f7f6f2", borderRadius: 10, paddingVertical: 12, alignItems: "center" },
-  daySelected:      { backgroundColor: "#e8380d", borderColor: "#e8380d" },
-  dayBtnText:       { fontSize: 13, fontWeight: "500", color: "#999" },
-  dayBtnTextSel:    { color: "#fff" },
-  daysHint:         { fontSize: 13, color: "#aaa", marginBottom: 8 },
-  navRow:           { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, gap: 10 },
-  btnBack:          { borderWidth: 1.5, borderColor: "#e8e6e0", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18 },
-  btnBackText:      { fontSize: 14, color: "#999" },
-  btnNext:          { flex: 1, maxWidth: 200, backgroundColor: "#e8380d", borderRadius: 10, paddingVertical: 13, alignItems: "center" },
-  btnDisabled:      { opacity: 0.3 },
-  btnNextText:      { fontSize: 14, fontWeight: "600", color: "#fff" },
+
+  // Day selector (step 7)
+  daysGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  dayBtn: { flex: 1, minWidth: 42, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5", borderRadius: 14, paddingVertical: 14, alignItems: "center" },
+  daySelected: { backgroundColor: "#0e0e0e", borderColor: "#0e0e0e" },
+  dayBtnText: { fontSize: 12, fontWeight: "600", color: "rgba(0,0,0,0.4)" },
+  dayBtnTextSel: { color: "#fff" },
+  daysHint: { fontSize: 14, color: "rgba(0,0,0,0.3)", marginBottom: 8 },
+
+  // Focus area chips (step 8)
+  focusRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  focusChip: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 24, backgroundColor: "#f4f4f2", borderWidth: 1.5, borderColor: "transparent" },
+  focusChipActive: { borderColor: "#0e0e0e", backgroundColor: "#fff" },
+  focusChipText: { fontSize: 14, fontWeight: "600", color: "rgba(0,0,0,0.5)" },
+  focusChipTextActive: { color: "#0e0e0e" },
+
+  // Footer CTA
+  footer: { padding: 20, paddingBottom: 44 },
+  nextBtn: { backgroundColor: "#0e0e0e", borderRadius: 18, paddingVertical: 20, alignItems: "center" },
+  nextBtnText: { fontSize: 17, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
 });
