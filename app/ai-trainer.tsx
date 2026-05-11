@@ -831,7 +831,7 @@ function ExerciseCard({ ex, index, checked, onToggle }: any) {
     <Pressable onPress={onToggle} style={[ec.card, checked && ec.cardDone]}>
       {/* Thumbnail */}
       <View style={ec.thumbWrap}>
-        <Image source={imgSrc} style={ec.thumb} contentFit="cover" cachePolicy="memory-disk" transition={300} />
+        <Image source={imgSrc} style={ec.thumb} contentFit="cover" contentPosition="top" cachePolicy="memory-disk" transition={300} />
         {checked && <View style={ec.thumbDim} />}
       </View>
 
@@ -1704,8 +1704,8 @@ const ec = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden",
   },
   cardDone:   { backgroundColor: "#fafaf8", borderColor: "rgba(0,0,0,0.03)" },
-  thumbWrap:  { width: 88, height: 96, alignSelf: "center", borderRadius: 20, overflow: "hidden", marginLeft: 14 },
-  thumb:      { width: 88, height: 96 },
+  thumbWrap:  { width: 100, height: 78, alignSelf: "center", borderRadius: 16, overflow: "hidden", marginLeft: 14 },
+  thumb:      { width: 100, height: 78 },
   thumbDim:   { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.45)" },
   inner:      { flex: 1, paddingLeft: 14, gap: 6 },
   topRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
