@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import exerciseImageCache from "../src/data/exerciseImageCache.json";
 import {
   ActivityIndicator,
@@ -111,12 +111,12 @@ function muscleColor(mg = "") {
   };
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
-// ── Exercise image pool ───────────────────────────────────────────────────────
 // ── Exercise image system ─────────────────────────────────────────────────────
-// 1. Static cache  (exerciseImageCache.json — 90 exercises pre-fetched at build time)
-// 2. AsyncStorage  (exercises the AI generates that aren't in the static cache)
-// 3. Pexels live   (fetches + stores for any unknown exercise)
-// 4. Unsplash pool (offline / guaranteed fallback)
+// 1. Static cache  (exerciseImageCache.json — 223 exercises pre-fetched at build time)
+// 2. Memory cache  (MEM_EX_CACHE — avoids redundant AsyncStorage reads)
+// 3. AsyncStorage  (any unknown exercise fetched once, persisted)
+// 4. Pexels live   (live search for truly novel exercises)
+// 5. Unsplash pool (offline / guaranteed fallback by muscle group)
 
 const PEXELS_KEY = "9wKlnJZqB3zs3UCuJ3Ky8Xl8asoyQZSwC4Waab2M52VqYI7uEFkTGo96";
 const STATIC_EX_CACHE = exerciseImageCache as Record<string, string>;
@@ -153,14 +153,122 @@ function gymPoolFallback(mg: string, name: string): string {
   return `https://images.unsplash.com/photo-${pool[seed % pool.length]}?auto=format&fit=crop&w=400&q=80`;
 }
 
-// Normalize AI-generated names to match cache keys (handles plurals, spacing)
-// e.g. "Squats" → "squat", "Calf Raises" → "calf raise", "Pull-Ups" → "pull ups"
+// Common aliases the AI uses that differ from our cache keys
+const EX_ALIASES: Record<string, string> = {
+  // abbreviations
+  "rdl":                       "romanian deadlift",
+  "ohp":                       "overhead press",
+  "cgbp":                      "close grip bench press",
+  "db curl":                   "dumbbell curl",
+  "bb curl":                   "barbell curl",
+  "db press":                  "dumbbell bench press",
+  "db row":                    "dumbbell row",
+  "bb row":                    "barbell row",
+  "db fly":                    "dumbbell fly",
+  "db flye":                   "dumbbell fly",
+  "cable flye":                "cable fly",
+  "pec fly":                   "pec deck",
+  // common AI rewordings
+  "bent over barbell row":     "barbell row",
+  "barbell bent over row":     "barbell row",
+  "standing overhead press":   "overhead press",
+  "standing barbell press":    "overhead press",
+  "barbell overhead press":    "overhead press",
+  "barbell military press":    "military press",
+  "seated barbell press":      "military press",
+  "incline press":             "incline bench press",
+  "flat bench press":          "bench press",
+  "flat barbell bench press":  "bench press",
+  "barbell bench press":       "bench press",
+  "dumbbell flyes":            "dumbbell fly",
+  "dumbbell flies":            "dumbbell fly",
+  "triceps pushdown":          "tricep pushdown",
+  "triceps dip":               "tricep dip",
+  "triceps kickback":          "tricep kickback",
+  "triceps extension":         "overhead tricep extension",
+  "overhead triceps extension":"overhead tricep extension",
+  "lat pull down":             "lat pulldown",
+  "lat pull-down":             "lat pulldown",
+  "pulldown":                  "lat pulldown",
+  "cable pulldown":            "lat pulldown",
+  "barbell deadlift":          "deadlift",
+  "conventional deadlift":     "deadlift",
+  "romanian deadlifts":        "romanian deadlift",
+  "hip extension":             "hyperextension",
+  "back raises":               "hyperextension",
+  "good mornings":             "good morning",
+  "barbell squat":             "squat",
+  "bodyweight squat":          "squat",
+  "air squat":                 "squat",
+  "leg extensions":            "leg extension",
+  "leg curls":                 "leg curl",
+  "calf raises":               "calf raise",
+  "standing calf raises":      "standing calf raise",
+  "seated calf raises":        "seated calf raise",
+  "walking lunges":            "walking lunge",
+  "reverse lunges":            "reverse lunge",
+  "lateral raises":            "lateral raise",
+  "front raises":              "front raise",
+  "upright rows":              "upright row",
+  "face pulls":                "face pull",
+  "pull ups":                  "pull up",
+  "chin ups":                  "chin up",
+  "push ups":                  "push up",
+  "dumbbell rows":             "dumbbell row",
+  "hammer curls":              "hammer curl",
+  "bicep curl":                "dumbbell curl",
+  "bicep curls":               "dumbbell curl",
+  "biceps curl":               "dumbbell curl",
+  "glute bridges":             "glute bridge",
+  "hip thrusts":               "hip thrust",
+  "russian twists":            "russian twist",
+  "mountain climbers":         "mountain climber",
+  "leg raises":                "leg raise",
+  "sit ups":                   "sit up",
+  "crunches":                  "crunch",
+  "planks":                    "plank",
+  "burpees":                   "burpee",
+  "lunges":                    "lunge",
+  "squats":                    "squat",
+  "deadlifts":                 "deadlift",
+  "shrugs":                    "shrugs", // already in cache as "shrugs"
+  "dips":                      "dips",   // already in cache as "dips"
+};
+
+// Normalize AI-generated names → cache key
+// Handles: aliases, hyphens, plurals, abbreviations
 function normalizeExKey(name: string): string {
-  let k = name.toLowerCase().trim().replace(/-/g, " ");
+  let k = name.toLowerCase().trim()
+    .replace(/-/g, " ")          // "Pull-Up" → "pull up"
+    .replace(/\s+/g, " ")        // collapse extra spaces
+    .replace(/[()]/g, "")        // strip parens
+    .trim();
+
+  // 1. Exact match
   if (STATIC_EX_CACHE[k]) return k;
-  // strip trailing 's'  ("squats" → "squat", "calf raises" → "calf raise")
-  if (k.endsWith("s") && !k.endsWith("ss") && STATIC_EX_CACHE[k.slice(0, -1)]) return k.slice(0, -1);
+  // 2. Alias map
+  if (EX_ALIASES[k]) return EX_ALIASES[k];
+  // 3. Strip trailing 's' for plurals ("squats" → "squat", "calf raises" → "calf raise")
+  if (k.endsWith("s") && !k.endsWith("ss")) {
+    const singular = k.slice(0, -1);
+    if (STATIC_EX_CACHE[singular] || EX_ALIASES[singular]) return EX_ALIASES[singular] ?? singular;
+  }
+  // 4. Strip trailing 'es' ("crunches" → "crunch")
+  if (k.endsWith("es")) {
+    const stem = k.slice(0, -2);
+    if (STATIC_EX_CACHE[stem]) return stem;
+  }
   return k;
+}
+
+// Warm the memory cache for all exercises in a plan — call once on plan load
+function prefetchPlanImages(plan: any) {
+  if (!plan?.days) return;
+  plan.days.forEach((day: any) => {
+    day.exercises?.forEach((ex: any) => {
+      if (ex?.name) resolveExerciseImage(ex.name, ex.muscleGroup || "");
+    });
+  });
 }
 
 async function resolveExerciseImage(name: string, mg: string): Promise<string> {
@@ -201,6 +309,34 @@ function difficultyColor(d = "") {
 function difficultyBg(d = "") {
   return ({ Beginner:"rgba(34,197,94,0.1)", Intermediate:"rgba(245,158,11,0.1)", Advanced:"rgba(239,68,68,0.1)" } as any)[d] || "rgba(0,0,0,0.06)";
 }
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+type Exercise = {
+  name: string;
+  muscleGroup: string;
+  sets: string | number;
+  reps: string;
+  rest?: string;
+  notes?: string;
+};
+type WorkoutDay = {
+  day: string;
+  label: string;
+  focus: string;
+  estimatedTime: number;
+  restDay?: boolean;
+  exercises: Exercise[];
+};
+type WorkoutPlan = {
+  planTitle: string;
+  planSummary: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  weeklyVolume: string;
+  days: WorkoutDay[];
+  weeklyGoals?: string[];
+  nutritionTips?: string[];
+  progressionTips?: string[];
+};
 
 // ─── Auth Hook ────────────────────────────────────────────────────────────────
 function useAuth() {
@@ -724,7 +860,7 @@ function ProgressRing({ progress, size = 36, color = "#e8380d" }: { progress: nu
   );
 }
 
-function WeekCalendar({ selDate, onSelect, completions, exProgress, planDays }: any) {
+const WeekCalendar = React.memo(function WeekCalendar({ selDate, onSelect, completions, exProgress, planDays }: any) {
   const dates    = getWeekDates();
   const todayISO = toLocalISO();
   const selIdx   = dates.indexOf(selDate);
@@ -795,10 +931,10 @@ function WeekCalendar({ selDate, onSelect, completions, exProgress, planDays }: 
       })}
     </View>
   );
-}
+});
 
 // ─── Exercise Checkbox (animated, matches MealPlanView) ───────────────────────
-function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+const ExCheckbox = React.memo(function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   const anim = useRef(new Animated.Value(checked ? 1 : 0)).current;
   useEffect(() => {
     Animated.spring(anim, { toValue: checked ? 1 : 0, useNativeDriver: false, damping: 12, mass: 0.6, stiffness: 220 }).start();
@@ -817,10 +953,11 @@ function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => v
       </Animated.View>
     </Pressable>
   );
-}
+});
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
-function ExerciseCard({ ex, index, checked, onToggle }: any) {
+type ExerciseCardProps = { ex: Exercise; index: number; checked: boolean; onToggle: () => void };
+const ExerciseCard = React.memo(function ExerciseCard({ ex, index, checked, onToggle }: ExerciseCardProps) {
   const color = muscleColor(ex.muscleGroup);
   // Show best available instantly, upgrade async for unknowns
   const normKey = normalizeExKey(ex.name || "");
@@ -872,10 +1009,11 @@ function ExerciseCard({ ex, index, checked, onToggle }: any) {
       </View>
     </Pressable>
   );
-}
+});
 
 // ─── Day Card ─────────────────────────────────────────────────────────────────
-function DayCard({ day, checkedArr, onToggleEx }: any) {
+type DayCardProps = { day: WorkoutDay; checkedArr: boolean[]; onToggleEx: (i: number) => void | Promise<void>; isDone?: boolean; onToggle?: () => void | Promise<void>; };
+const DayCard = React.memo(function DayCard({ day, checkedArr, onToggleEx }: DayCardProps) {
   if (day.restDay) {
     return (
       <View style={[s.dayCard, { flexDirection: "row", alignItems: "center", gap: 14, padding: 18 }]}>
@@ -905,23 +1043,23 @@ function DayCard({ day, checkedArr, onToggleEx }: any) {
       </View>
       <View style={s.dayBody}>
         <View style={{ gap: 12 }}>
-          {day.exercises?.map((ex: any, i: number) => (
+          {day.exercises?.map((ex: Exercise, i: number) => (
             <ExerciseCard
-              key={i}
+              key={`${ex.name}-${i}`}
               ex={ex}
               index={i}
               checked={checkedArr?.[i] || false}
-              onToggle={() => onToggleEx?.(i)}
+              onToggle={() => onToggleEx(i)}
             />
           ))}
         </View>
       </View>
     </View>
   );
-}
+});
 
 // ─── Plan Header Card ─────────────────────────────────────────────────────────
-function PlanHeaderCard({ plan, onViewFull, onRegen, isLoading }: any) {
+const PlanHeaderCard = React.memo(function PlanHeaderCard({ plan, onViewFull, onRegen, isLoading }: any) {
   return (
     <View style={s.planHeader}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -949,10 +1087,10 @@ function PlanHeaderCard({ plan, onViewFull, onRegen, isLoading }: any) {
       </View>
     </View>
   );
-}
+});
 
 // ─── Full Plan View ───────────────────────────────────────────────────────────
-function PlanView({ plan, onBack, onRegen, onSave, isSaved, saving, isLoading }: any) {
+const PlanView = React.memo(function PlanView({ plan, onBack, onRegen, onSave, isSaved, saving, isLoading }: any) {
   const [tab, setTab] = useState("schedule");
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 40 }}>
@@ -996,7 +1134,7 @@ function PlanView({ plan, onBack, onRegen, onSave, isSaved, saving, isLoading }:
 
       {tab === "schedule" && (
         <View style={{ gap: 8 }}>
-          {plan.days?.map((day: any, i: number) => <DayCard key={i} day={day} />)}
+          {plan.days?.map((day: any, i: number) => <DayCard key={i} day={day} checkedArr={[]} onToggleEx={() => {}} />)}
         </View>
       )}
 
@@ -1039,7 +1177,7 @@ function PlanView({ plan, onBack, onRegen, onSave, isSaved, saving, isLoading }:
       )}
     </ScrollView>
   );
-}
+});
 
 // ─── Chat View ────────────────────────────────────────────────────────────────
 function ChatView({ profile, token }: any) {
@@ -1312,11 +1450,15 @@ export default function AITrainerScreen() {
     if (ready && !session) router.replace("/login");
   }, [ready]);
 
-  // Load cached plan — re-run when userId changes (account switch)
+  // Load cached plan — re-run when userId changes; prefetch images immediately
   useEffect(() => {
     if (!planKey) { setPlan(null); return; }
     AsyncStorage.getItem(planKey).then(raw => {
-      if (raw) try { setPlan(JSON.parse(raw)); } catch { setPlan(null); }
+      if (raw) try {
+        const parsed = JSON.parse(raw);
+        setPlan(parsed);
+        prefetchPlanImages(parsed); // warm image cache in background
+      } catch { setPlan(null); }
       else setPlan(null);
     }).catch(() => setPlan(null));
   }, [planKey]);
@@ -1353,9 +1495,9 @@ export default function AITrainerScreen() {
     }).catch(() => setExChecked({}));
   }, [userId]);
 
-  async function generatePlan(profileOverride?: any) {
+  async function generatePlan(profileOverride?: any): Promise<WorkoutPlan | null> {
     const p = profileOverride || profile;
-    if (!session || !p) return;
+    if (!session || !p) return null;
     setPlanLoad(true);
     setPlanError(null);
     try {
@@ -1378,20 +1520,24 @@ export default function AITrainerScreen() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed");
       setPlan(json.data);
+      prefetchPlanImages(json.data); // warm image cache immediately
       if (planKey) await AsyncStorage.setItem(planKey, JSON.stringify(json.data)).catch(() => {});
+      return json.data as WorkoutPlan;
     } catch (e: any) {
       setPlanError(e.message);
+      return null;
     } finally {
       setPlanLoad(false);
     }
   }
 
-  async function handleProfileSave(data: any) {
+  const handleProfileSave = useCallback(async (data: any) => {
     await saveProfile(data);
-    generatePlan(data); // fire in background — main screen shows skeleton
-  }
+    const newPlan = await generatePlan(data);
+    if (newPlan) prefetchPlanImages(newPlan);
+  }, [saveProfile]);
 
-  async function savePlan() {
+  const savePlan = useCallback(async () => {
     if (!plan || saving) return;
     setSaving(true);
     try {
@@ -1403,9 +1549,9 @@ export default function AITrainerScreen() {
       const json = await res.json();
       if (json.success) setSavedId(json.data._id);
     } catch {} finally { setSaving(false); }
-  }
+  }, [plan, saving, token]);
 
-  async function toggleComplete(date: string) {
+  const toggleComplete = useCallback(async (date: string) => {
     const key    = doneKey(date);
     const isDone = completions[date];
     if (!key) return;
@@ -1416,37 +1562,41 @@ export default function AITrainerScreen() {
       await AsyncStorage.setItem(key, "1").catch(() => {});
       setCompletions(p => ({ ...p, [date]: true }));
     }
-  }
+  }, [completions, doneKey]);
 
-  async function toggleExercise(date: string, idx: number) {
+  const toggleExercise = useCallback(async (date: string, idx: number) => {
     if (!userId) return;
-    const total   = planDay?.exercises?.length || 0;
+    const dayExercises = plan ? getPlanDayForDate(plan, date)?.exercises : [];
+    const total   = dayExercises?.length || 0;
     const current = exChecked[date] || Array(total).fill(false);
     const updated = [...current];
     updated[idx]  = !updated[idx];
     await AsyncStorage.setItem(EX_KEY(date, userId), JSON.stringify(updated)).catch(() => {});
     setExChecked(p => ({ ...p, [date]: updated }));
-  }
+  }, [userId, plan, exChecked]);
 
-  if (!ready || (userId && !profileLoaded)) return null;
-  if (ready && !session) return null;
-
-  const firstName  = userName || session?.user?.name?.split(" ")[0] || "Athlete";
-  const planDay    = plan ? getPlanDayForDate(plan, selDate) : null;
-  const isToday    = selDate === toLocalISO();
+  // Derived values — all memoized so child components only re-render on real changes
+  const firstName  = useMemo(() => userName || session?.user?.name?.split(" ")[0] || "Athlete", [userName, session]);
+  const planDay    = useMemo(() => plan ? getPlanDayForDate(plan, selDate) : null, [plan, selDate]);
+  const isToday    = useMemo(() => selDate === toLocalISO(), [selDate]);
   const isDone     = completions[selDate];
-
-  // Compute exercise progress ratio (0–1) for each date in the week
-  const exProgress: Record<string, number> = {};
-  if (plan) {
+  const exProgress = useMemo<Record<string, number>>(() => {
+    if (!plan) return {};
+    const result: Record<string, number> = {};
     getWeekDates().forEach(date => {
       const pd = getPlanDayForDate(plan, date);
       if (pd && !pd.restDay && pd.exercises?.length > 0) {
         const checks = exChecked[date] || [];
-        exProgress[date] = checks.filter(Boolean).length / pd.exercises.length;
+        result[date] = checks.filter(Boolean).length / pd.exercises.length;
       }
     });
-  }
+    return result;
+  }, [plan, exChecked]);
+  const checkedArr = useMemo(() => exChecked[selDate] || [], [exChecked, selDate]);
+  const onToggleEx = useCallback((idx: number) => toggleExercise(selDate, idx), [selDate, toggleExercise]);
+
+  if (!ready || (userId && !profileLoaded)) return null;
+  if (ready && !session) return null;
 
   return (
     <SafeAreaView style={s.screen} edges={["top"]}>
@@ -1511,8 +1661,8 @@ export default function AITrainerScreen() {
                     day={planDay}
                     isDone={isDone}
                     onToggle={() => toggleComplete(selDate)}
-                    checkedArr={exChecked[selDate] || []}
-                    onToggleEx={(i: number) => toggleExercise(selDate, i)}
+                    checkedArr={checkedArr}
+                    onToggleEx={onToggleEx}
                   />
                 ) : (
                   <View style={[s.dayCard, { alignItems: "center", padding: 24 }]}>
