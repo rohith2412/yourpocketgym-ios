@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import exerciseImageCache from "../src/data/exerciseImageCache.json";
+import { generateWorkoutPlan } from "../src/utils/workoutPlanGenerator";
 import {
   ActivityIndicator,
   Animated,
@@ -1497,32 +1498,24 @@ export default function AITrainerScreen() {
 
   async function generatePlan(profileOverride?: any): Promise<WorkoutPlan | null> {
     const p = profileOverride || profile;
-    if (!session || !p) return null;
+    if (!p) return null;
     setPlanLoad(true);
     setPlanError(null);
     try {
-      const res  = await fetch(`${BASE_URL}/api/ai-trainer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          type: "plan",
-          extra: {
-            equipment: p.equipment,
-            focusAreas: p.focusAreas,
-            sessionLength: p.sessionLength,
-            injuries: p.injuries,
-            goal: p.goal,
-            experience: p.experience,
-            daysPerWeek: p.daysPerWeek,
-          },
-        }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Failed");
-      setPlan(json.data);
-      prefetchPlanImages(json.data); // warm image cache immediately
-      if (planKey) await AsyncStorage.setItem(planKey, JSON.stringify(json.data)).catch(() => {});
-      return json.data as WorkoutPlan;
+      // Generate entirely on-device — no API cost, works offline
+      const generated = generateWorkoutPlan({
+        goal:          p.goal,
+        experience:    p.experience,
+        daysPerWeek:   p.daysPerWeek,
+        equipment:     p.equipment,
+        focusAreas:    p.focusAreas,
+        sessionLength: p.sessionLength,
+        injuries:      p.injuries,
+      }) as WorkoutPlan;
+      setPlan(generated);
+      prefetchPlanImages(generated);
+      if (planKey) await AsyncStorage.setItem(planKey, JSON.stringify(generated)).catch(() => {});
+      return generated;
     } catch (e: any) {
       setPlanError(e.message);
       return null;
