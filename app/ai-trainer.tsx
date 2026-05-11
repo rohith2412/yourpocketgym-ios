@@ -732,6 +732,9 @@ function ExerciseCard({ ex, index, checked, onToggle }: any) {
           <Text style={s.exSets}>{ex.sets} sets</Text>
           <Text style={s.exRest}>{ex.reps} reps</Text>
         </View>
+        <View style={[s.exCheckbox, checked && s.exCheckboxDone]}>
+          {checked && <Text style={s.exCheckboxTick}>✓</Text>}
+        </View>
       </View>
     </Pressable>
   );
@@ -1535,6 +1538,9 @@ const s = StyleSheet.create({
   exMuscle:          { fontSize: 11, color: "#bbb", marginTop: 2, fontWeight: "500" },
   exSets:            { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
   exRest:            { fontSize: 11, color: "#aaa", fontWeight: "500" },
+  exCheckbox:        { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: "#ddd", alignItems: "center", justifyContent: "center", marginLeft: 8 },
+  exCheckboxDone:    { backgroundColor: "#e8380d", borderColor: "#e8380d" },
+  exCheckboxTick:    { fontSize: 12, fontWeight: "900", color: "#fff" },
   dot:          { width: 7, height: 7, borderRadius: 4 },
   exDetail:     { borderTopWidth: 1, borderTopColor: "#f4f2ed", padding: 12, backgroundColor: "#fafaf8" },
   tempoLabel:   { fontSize: 10, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
