@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -110,6 +110,36 @@ function muscleColor(mg = "") {
   };
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
+function exerciseImage(mg = "", name = "") {
+  const g = mg.toLowerCase();
+  const n = name.toLowerCase();
+  if (n.includes("bench") || n.includes("chest press") || n.includes("fly"))
+    return "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("squat") || n.includes("leg press") || n.includes("lunge"))
+    return "https://images.unsplash.com/photo-1434682881908-b43d0467b798?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("deadlift") || n.includes("row") || n.includes("pull"))
+    return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("curl") || n.includes("bicep"))
+    return "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("tricep") || n.includes("pushdown") || n.includes("dip"))
+    return "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("shoulder") || n.includes("lateral") || n.includes("overhead"))
+    return "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80";
+  if (n.includes("plank") || n.includes("crunch") || n.includes("ab"))
+    return "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("chest"))   return "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("back"))    return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("shoulder")) return "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("arm") || g.includes("bicep")) return "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("tricep"))  return "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("leg") || g.includes("quad") || g.includes("hamstring"))
+    return "https://images.unsplash.com/photo-1434682881908-b43d0467b798?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("glute"))   return "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("core") || g.includes("ab")) return "https://images.unsplash.com/photo-1600881333168-2ef49b341f30?auto=format&fit=crop&w=400&q=80";
+  if (g.includes("cardio"))  return "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=400&q=80";
+  return "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=400&q=80";
+}
+
 function difficultyColor(d = "") {
   return ({ Beginner:"#22c55e", Intermediate:"#f59e0b", Advanced:"#ef4444" } as any)[d] || "#aaa";
 }
@@ -712,28 +742,62 @@ function WeekCalendar({ selDate, onSelect, completions, exProgress, planDays }: 
   );
 }
 
+// ─── Exercise Checkbox (animated, matches MealPlanView) ───────────────────────
+function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
+  const anim = useRef(new Animated.Value(checked ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.spring(anim, { toValue: checked ? 1 : 0, useNativeDriver: false, damping: 12, mass: 0.6, stiffness: 220 }).start();
+  }, [checked]);
+  const scale  = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1.25, 1] });
+  const bg     = anim.interpolate({ inputRange: [0, 1], outputRange: ["#ffffff", "#e8380d"] });
+  const border = anim.interpolate({ inputRange: [0, 1], outputRange: ["rgba(0,0,0,0.18)", "#e8380d"] });
+  return (
+    <Pressable onPress={onToggle} hitSlop={10}>
+      <Animated.View style={{ width: 26, height: 26, borderRadius: 8, borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: bg, borderColor: border }}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Svg width={13} height={13} viewBox="0 0 14 14">
+            <Path d="M2.5 7 L5.5 10 L11.5 4" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </Svg>
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 function ExerciseCard({ ex, index, checked, onToggle }: any) {
   const color = muscleColor(ex.muscleGroup);
+  const img   = exerciseImage(ex.muscleGroup, ex.name);
   return (
-    <Pressable onPress={onToggle} style={[s.exerciseCard, checked && s.exerciseCardDone]}>
-      <View style={[s.exerciseAccent, { backgroundColor: checked ? "#e8380d" : color }]} />
-      <View style={s.exerciseRow}>
-        <View style={[s.exNum, checked && s.exNumChecked]}>
-          <Text style={[s.exNumText, checked && s.exNumTextChecked]}>
-            {checked ? "✓" : index + 1}
-          </Text>
+    <Pressable onPress={onToggle} style={[ec.card, checked && ec.cardDone]}>
+      {/* Thumbnail */}
+      <View style={ec.thumbWrap}>
+        <Image source={img} style={ec.thumb} contentFit="cover" cachePolicy="memory-disk" transition={300} />
+        {checked && <View style={ec.thumbDim} />}
+      </View>
+
+      <View style={ec.inner}>
+        {/* Top row: muscle badge + checkbox */}
+        <View style={ec.topRow}>
+          <View style={[ec.badge, { backgroundColor: `${color}18` }]}>
+            <Text style={[ec.badgeText, { color }]}>{(ex.muscleGroup || "").toUpperCase()}</Text>
+          </View>
+          <ExCheckbox checked={checked} onToggle={onToggle} />
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[s.exName, checked && s.exNameChecked]} numberOfLines={1}>{ex.name}</Text>
-          <Text style={s.exMuscle}>{ex.muscleGroup}</Text>
-        </View>
-        <View style={{ alignItems: "flex-end", gap: 3 }}>
-          <Text style={s.exSets}>{ex.sets} sets</Text>
-          <Text style={s.exRest}>{ex.reps} reps</Text>
-        </View>
-        <View style={[s.exCheckbox, checked && s.exCheckboxDone]}>
-          {checked && <Text style={s.exCheckboxTick}>✓</Text>}
+
+        {/* Exercise name */}
+        <Text style={[ec.name, checked && ec.nameDone]} numberOfLines={2}>{ex.name}</Text>
+
+        {/* Sets / reps pills */}
+        <View style={ec.macroRow}>
+          <View style={ec.setPillAccent}>
+            <Text style={ec.setValAccent}>{ex.sets}</Text>
+            <Text style={ec.macroLbl}>sets</Text>
+          </View>
+          <View style={ec.repPill}>
+            <Text style={ec.repVal}>{ex.reps}</Text>
+            <Text style={ec.macroLbl}>reps</Text>
+          </View>
         </View>
       </View>
     </Pressable>
@@ -772,7 +836,7 @@ function DayCard({ day, checkedArr, onToggleEx }: any) {
         </View>
       </View>
       <View style={s.dayBody}>
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: 12 }}>
           {day.exercises?.map((ex: any, i: number) => (
             <ExerciseCard
               key={i}
@@ -1524,23 +1588,6 @@ const s = StyleSheet.create({
   cooldownLabel: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
   cooldownText: { fontSize: 13, color: "#666", lineHeight: 19 },
   // Exercise card
-  exerciseCard:      { backgroundColor: "#fff", borderRadius: 18, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1, flexDirection: "row" },
-  exerciseCardDone:  { opacity: 0.55 },
-  exerciseAccent:    { width: 4, backgroundColor: "#e8380d" },
-  exerciseRow:       { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  exNum:             { width: 36, height: 36, borderRadius: 12, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
-  exNumChecked:      { backgroundColor: "#e8380d" },
-  exNumOpen:         { backgroundColor: "#1a1a1a" },
-  exNumText:         { fontSize: 13, fontWeight: "800", color: "#999" },
-  exNumTextChecked:  { color: "#fff", fontWeight: "900" },
-  exName:            { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  exNameChecked:     { textDecorationLine: "line-through", color: "#aaa" },
-  exMuscle:          { fontSize: 11, color: "#bbb", marginTop: 2, fontWeight: "500" },
-  exSets:            { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  exRest:            { fontSize: 11, color: "#aaa", fontWeight: "500" },
-  exCheckbox:        { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: "#ddd", alignItems: "center", justifyContent: "center", marginLeft: 8 },
-  exCheckboxDone:    { backgroundColor: "#e8380d", borderColor: "#e8380d" },
-  exCheckboxTick:    { fontSize: 12, fontWeight: "900", color: "#fff" },
   dot:          { width: 7, height: 7, borderRadius: 4 },
   exDetail:     { borderTopWidth: 1, borderTopColor: "#f4f2ed", padding: 12, backgroundColor: "#fafaf8" },
   tempoLabel:   { fontSize: 10, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
@@ -1586,6 +1633,35 @@ const pc = StyleSheet.create({
   tagText:     { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
   focusLabel:  { fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: "600" },
   focusText:   { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: "600" },
+});
+
+// ─── Exercise Card Styles (matches MealPlanView MealCard) ────────────────────
+const ORANGE = "#e8380d";
+const ec = StyleSheet.create({
+  card: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#fff", borderRadius: 28,
+    paddingRight: 16, paddingVertical: 14,
+    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden",
+  },
+  cardDone:   { backgroundColor: "#fafaf8", borderColor: "rgba(0,0,0,0.03)" },
+  thumbWrap:  { width: 88, height: 96, alignSelf: "center", borderRadius: 20, overflow: "hidden", marginLeft: 14 },
+  thumb:      { width: 88, height: 96 },
+  thumbDim:   { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.45)" },
+  inner:      { flex: 1, paddingLeft: 14, gap: 6 },
+  topRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeText:  { fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
+  name:       { fontSize: 16, fontWeight: "700", color: "#0e0e0e", lineHeight: 21, letterSpacing: -0.3 },
+  nameDone:   { color: "rgba(0,0,0,0.28)", textDecorationLine: "line-through" },
+  macroRow:   { flexDirection: "row", alignItems: "center", gap: 6 },
+  setPillAccent: { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: `${ORANGE}18`, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  setValAccent:  { fontSize: 11, fontWeight: "800", color: ORANGE },
+  repPill:    { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  repVal:     { fontSize: 11, fontWeight: "700", color: "#0e0e0e" },
+  macroLbl:   { fontSize: 9, fontWeight: "500", color: "rgba(0,0,0,0.32)" },
 });
 
 // ─── Week Calendar Styles ─────────────────────────────────────────────────────
