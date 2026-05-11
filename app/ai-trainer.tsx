@@ -1672,12 +1672,6 @@ export default function AITrainerScreen() {
               </Pressable>
             )}
 
-            {/* Mark complete + Edit prefs — same level, same width */}
-            {plan && !planLoad && planDay && !planDay.restDay && (
-              <Pressable onPress={() => toggleComplete(selDate)} style={[s.completeBtn, isDone && s.completeBtnDone]}>
-                <Text style={s.completeBtnText}>{isDone ? "✓  Done!" : "Mark as Complete"}</Text>
-              </Pressable>
-            )}
 
             {profile && !planLoad && (
               <Pressable onPress={() => setShowProfileEdit(true)} style={s.editPrefsBtn}>
