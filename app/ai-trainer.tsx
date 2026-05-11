@@ -821,18 +821,16 @@ function DayCard({ day, checkedArr, onToggleEx }: any) {
   return (
     <View style={s.dayCard}>
       <View style={s.dayCardHeader}>
-        <View style={s.dayBoxOpen}>
-          <Text style={[s.dayBoxLabel, { color: "rgba(255,255,255,0.5)" }]}>
-            {day.day?.slice(0, 3).toUpperCase()}
-          </Text>
-          <Text style={[s.dayBoxNum, { color: "#fff" }]}>{day.exercises?.length ?? 0}</Text>
-        </View>
         <View style={{ flex: 1 }}>
           <Text style={s.dayLabel}>{day.label}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
             <Text style={s.dayMeta}>{day.exercises?.length} moves · {day.estimatedTime}min</Text>
             <View style={s.focusBadge}><Text style={s.focusBadgeText}>{day.focus}</Text></View>
           </View>
+        </View>
+        <View style={s.dayBoxOpen}>
+          <Text style={s.dayBoxLabel}>{day.day?.slice(0, 3).toUpperCase()}</Text>
+          <Text style={s.dayBoxNum}>{day.exercises?.length ?? 0}</Text>
         </View>
       </View>
       <View style={s.dayBody}>
@@ -1402,7 +1400,7 @@ export default function AITrainerScreen() {
       </View>
 
       {/* Body */}
-      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+      <View style={{ flex: 1, paddingHorizontal: 12 }}>
 
         {/* ── PLAN TAB ── */}
         {mainTab === "plan" && !showPlan && (
@@ -1570,17 +1568,17 @@ const s = StyleSheet.create({
   segBtnTextActive: { color: "#1a1a1a", fontWeight: "700" },
   // Day card
   dayCard:      { backgroundColor: "#fff", borderRadius: 28, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 4, overflow: "hidden" },
-  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 14, padding: 20, backgroundColor: "#fff" },
-  dayBox:       { width: 54, height: 54, borderRadius: 18, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
-  dayBoxOpen:   { width: 54, height: 54, borderRadius: 18, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" },
-  dayBoxLabel:  { fontSize: 9, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 0.8 },
-  dayBoxNum:    { fontSize: 20, fontWeight: "800", color: "#fff" },
-  dayLabel:     { fontSize: 16, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.4 },
-  dayMeta:      { fontSize: 12, color: "#aaa", marginTop: 3, fontWeight: "500" },
-  focusBadge:   { backgroundColor: "rgba(232,56,13,0.08)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 },
-  focusBadgeText: { fontSize: 11, fontWeight: "700", color: "#e8380d" },
+  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#fff" },
+  dayBox:       { width: 42, height: 42, borderRadius: 13, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
+  dayBoxOpen:   { width: 42, height: 42, borderRadius: 13, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" },
+  dayBoxLabel:  { fontSize: 8, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 0.8 },
+  dayBoxNum:    { fontSize: 16, fontWeight: "800", color: "#fff" },
+  dayLabel:     { fontSize: 15, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.3 },
+  dayMeta:      { fontSize: 11, color: "#aaa", fontWeight: "500" },
+  focusBadge:   { backgroundColor: "rgba(232,56,13,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
+  focusBadgeText: { fontSize: 10, fontWeight: "700", color: "#e8380d" },
   chevron:      { fontSize: 20, color: "#ccc" },
-  dayBody:      { backgroundColor: "#f7f6f3", padding: 16, gap: 0 },
+  dayBody:      { backgroundColor: "#f7f6f3", padding: 10, gap: 0 },
   warmupBox:    { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#ece9e3" },
   warmupLabel:  { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
   warmupText:   { fontSize: 13, color: "#666", lineHeight: 19 },
