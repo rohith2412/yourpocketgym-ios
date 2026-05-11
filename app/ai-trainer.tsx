@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import exerciseImageCache from "../src/data/exerciseImageCache.json";
 import {
   ActivityIndicator,
   Animated,
@@ -111,12 +112,17 @@ function muscleColor(mg = "") {
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
 // ── Exercise image pool ───────────────────────────────────────────────────────
-// All IDs are verified working Unsplash gym photos (same ones used in
-// ProfileIntro goal cards — confirmed real gym/fitness images).
-//
-// Per-muscle-group pools give relevant images; exercise name hash gives
-// variety so no two exercises in the same session look identical.
+// ── Exercise image system ─────────────────────────────────────────────────────
+// 1. Static cache  (exerciseImageCache.json — 90 exercises pre-fetched at build time)
+// 2. AsyncStorage  (exercises the AI generates that aren't in the static cache)
+// 3. Pexels live   (fetches + stores for any unknown exercise)
+// 4. Unsplash pool (offline / guaranteed fallback)
 
+const PEXELS_KEY = "9wKlnJZqB3zs3UCuJ3Ky8Xl8asoyQZSwC4Waab2M52VqYI7uEFkTGo96";
+const STATIC_EX_CACHE = exerciseImageCache as Record<string, string>;
+const MEM_EX_CACHE: Record<string, string> = {};
+
+// Unsplash pool (verified real gym photos — same IDs as ProfileIntro goal cards)
 const GYM_POOL: Record<string, string[]> = {
   chest:     ["1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61","1526506118085-60ce8714f8c5"],
   back:      ["1526506118085-60ce8714f8c5","1583454110551-21f2fa2afe61","1571019614242-c5c5dee9f50b"],
@@ -132,7 +138,6 @@ const GYM_POOL_DEFAULT = [
   "1571019614242-c5c5dee9f50b","1571019613454-1cb2f99b2d8b",
   "1476480862126-209bfaa8edc8",
 ];
-
 function gymPoolFallback(mg: string, name: string): string {
   const g    = mg.toLowerCase();
   const pool = g.includes("chest") ? GYM_POOL.chest
@@ -144,9 +149,39 @@ function gymPoolFallback(mg: string, name: string): string {
     : g.includes("core") || g.includes("ab") ? GYM_POOL.core
     : g.includes("cardio") ? GYM_POOL.cardio
     : GYM_POOL_DEFAULT;
-  // Seed on name so each exercise consistently gets a unique image
   const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return `https://images.unsplash.com/photo-${pool[seed % pool.length]}?auto=format&fit=crop&w=400&q=80`;
+}
+
+async function resolveExerciseImage(name: string, mg: string): Promise<string> {
+  const key = name.toLowerCase().trim();
+  // 1. Memory cache
+  if (MEM_EX_CACHE[key]) return MEM_EX_CACHE[key];
+  // 2. Static pre-fetched cache (90 common exercises)
+  if (STATIC_EX_CACHE[key]) { MEM_EX_CACHE[key] = STATIC_EX_CACHE[key]; return STATIC_EX_CACHE[key]; }
+  // 3. AsyncStorage (previously fetched unknowns)
+  try {
+    const stored = await AsyncStorage.getItem(`exImg_${key}`);
+    if (stored) { MEM_EX_CACHE[key] = stored; return stored; }
+  } catch {}
+  // 4. Pexels live search
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(name + " exercise gym workout")}&per_page=5&orientation=landscape`,
+      { headers: { Authorization: PEXELS_KEY } }
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const url  = json?.photos?.[0]?.src?.large;
+      if (url) {
+        MEM_EX_CACHE[key] = url;
+        AsyncStorage.setItem(`exImg_${key}`, url).catch(() => {});
+        return url;
+      }
+    }
+  } catch {}
+  // 5. Unsplash pool fallback
+  return gymPoolFallback(mg, name);
 }
 
 
@@ -776,8 +811,21 @@ function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => v
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 function ExerciseCard({ ex, index, checked, onToggle }: any) {
-  const color  = muscleColor(ex.muscleGroup);
-  const imgSrc = gymPoolFallback(ex.muscleGroup || "", ex.name || "");
+  const color = muscleColor(ex.muscleGroup);
+  // Show pool fallback instantly, upgrade to Pexels/cache once resolved
+  const [imgSrc, setImgSrc] = useState<string>(
+    STATIC_EX_CACHE[ex.name?.toLowerCase().trim()] ??
+    MEM_EX_CACHE[ex.name?.toLowerCase().trim()] ??
+    gymPoolFallback(ex.muscleGroup || "", ex.name || "")
+  );
+
+  useEffect(() => {
+    let alive = true;
+    resolveExerciseImage(ex.name || "", ex.muscleGroup || "").then(url => {
+      if (alive && url !== imgSrc) setImgSrc(url);
+    });
+    return () => { alive = false; };
+  }, [ex.name, ex.muscleGroup]);
 
   return (
     <Pressable onPress={onToggle} style={[ec.card, checked && ec.cardDone]}>
