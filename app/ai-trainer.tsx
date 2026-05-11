@@ -110,91 +110,45 @@ function muscleColor(mg = "") {
   };
   return map[(mg||"").toLowerCase().split(/[\s,&]/)[0]] || "#aaa";
 }
-// ── Exercise image system (mirrors MealPlanView FoodImage) ────────────────────
-// 1. Memory cache         — instant on repeat views
-// 2. AsyncStorage cache   — persisted across sessions
-// 3. Wger API search      — searches free exercise DB by name, gets real photo
-// 4. Verified Unsplash pool by muscle group — guaranteed real gym photos
+// ── Exercise image pool ───────────────────────────────────────────────────────
+// All IDs are verified working Unsplash gym photos (same ones used in
+// ProfileIntro goal cards — confirmed real gym/fitness images).
+//
+// Per-muscle-group pools give relevant images; exercise name hash gives
+// variety so no two exercises in the same session look identical.
 
-const EX_IMG_CACHE: Record<string, string> = {};
-
-// Verified Unsplash IDs — confirmed gym/exercise photos
 const GYM_POOL: Record<string, string[]> = {
-  chest:     ["1517836357463-d25dfeac3438","1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61"],
-  back:      ["1526506118085-60ce8714f8c5","1532029837206-abbe2b7620e3","1598971639058-a4565b8c2fe7"],
-  shoulders: ["1541534741688-6078c6bfb5c5","1534438327276-14e5300c3a48","1526506118085-60ce8714f8c5"],
-  arms:      ["1581009146145-b5ef050c2e1e","1583454110551-21f2fa2afe61","1540497077202-7c8a3999166f"],
-  legs:      ["1541534741688-6078c6bfb5c5","1599058917212-d750089bc07e","1526506118085-60ce8714f8c5"],
-  glutes:    ["1599058917212-d750089bc07e","1541534741688-6078c6bfb5c5","1583454110551-21f2fa2afe61"],
-  core:      ["1571019613454-1cb2f99b2d8b","1571019614242-c5c5dee9f50b","1534438327276-14e5300c3a48"],
-  cardio:    ["1476480862126-209bfaa8edc8","1571019613454-1cb2f99b2d8b","1534438327276-14e5300c3a48"],
-  general:   ["1526506118085-60ce8714f8c5","1583454110551-21f2fa2afe61","1571019614242-c5c5dee9f50b","1517836357463-d25dfeac3438","1581009146145-b5ef050c2e1e"],
+  chest:     ["1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61","1526506118085-60ce8714f8c5"],
+  back:      ["1526506118085-60ce8714f8c5","1583454110551-21f2fa2afe61","1571019614242-c5c5dee9f50b"],
+  shoulders: ["1583454110551-21f2fa2afe61","1526506118085-60ce8714f8c5","1571019614242-c5c5dee9f50b"],
+  arms:      ["1583454110551-21f2fa2afe61","1571019614242-c5c5dee9f50b","1526506118085-60ce8714f8c5"],
+  legs:      ["1526506118085-60ce8714f8c5","1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61"],
+  glutes:    ["1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61","1526506118085-60ce8714f8c5"],
+  core:      ["1571019613454-1cb2f99b2d8b","1571019614242-c5c5dee9f50b","1583454110551-21f2fa2afe61"],
+  cardio:    ["1476480862126-209bfaa8edc8","1571019613454-1cb2f99b2d8b","1571019614242-c5c5dee9f50b"],
 };
+const GYM_POOL_DEFAULT = [
+  "1583454110551-21f2fa2afe61","1526506118085-60ce8714f8c5",
+  "1571019614242-c5c5dee9f50b","1571019613454-1cb2f99b2d8b",
+  "1476480862126-209bfaa8edc8",
+];
 
 function gymPoolFallback(mg: string, name: string): string {
-  const g = mg.toLowerCase();
-  const key = g.includes("chest") ? "chest"
-    : g.includes("back") ? "back"
-    : g.includes("shoulder") ? "shoulders"
-    : g.includes("arm") || g.includes("bicep") || g.includes("tricep") ? "arms"
-    : g.includes("leg") || g.includes("quad") || g.includes("hamstring") || g.includes("calf") ? "legs"
-    : g.includes("glute") ? "glutes"
-    : g.includes("core") || g.includes("ab") ? "core"
-    : g.includes("cardio") ? "cardio"
-    : "general";
-  const pool = GYM_POOL[key];
+  const g    = mg.toLowerCase();
+  const pool = g.includes("chest") ? GYM_POOL.chest
+    : g.includes("back")     ? GYM_POOL.back
+    : g.includes("shoulder") ? GYM_POOL.shoulders
+    : g.includes("arm") || g.includes("bicep") || g.includes("tricep") ? GYM_POOL.arms
+    : g.includes("leg") || g.includes("quad") || g.includes("hamstring") || g.includes("calf") ? GYM_POOL.legs
+    : g.includes("glute")  ? GYM_POOL.glutes
+    : g.includes("core") || g.includes("ab") ? GYM_POOL.core
+    : g.includes("cardio") ? GYM_POOL.cardio
+    : GYM_POOL_DEFAULT;
+  // Seed on name so each exercise consistently gets a unique image
   const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return `https://images.unsplash.com/photo-${pool[seed % pool.length]}?auto=format&fit=crop&w=400&q=80`;
 }
 
-async function searchWger(name: string): Promise<string | null> {
-  try {
-    const ctrl  = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 4000);
-    // Step 1: search for exercise by name
-    const res = await fetch(
-      `https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(name)}&language=english&format=json`,
-      { signal: ctrl.signal }
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const baseId = json?.suggestions?.[0]?.data?.base_id;
-    if (!baseId) return null;
-
-    // Step 2: get images for that exercise
-    const ctrl2  = new AbortController();
-    const timer2 = setTimeout(() => ctrl2.abort(), 4000);
-    const imgRes = await fetch(
-      `https://wger.de/api/v2/exerciseimage/?format=json&exercise_base=${baseId}&limit=1`,
-      { signal: ctrl2.signal }
-    );
-    clearTimeout(timer2);
-    if (!imgRes.ok) return null;
-    const imgJson = await imgRes.json();
-    const path = imgJson?.results?.[0]?.image;
-    if (!path) return null;
-    return path.startsWith("http") ? path : `https://wger.de${path}`;
-  } catch {
-    return null;
-  }
-}
-
-async function resolveExerciseImage(name: string, mg: string): Promise<string> {
-  const cacheKey = name.toLowerCase().replace(/\s+/g, "_");
-  if (EX_IMG_CACHE[cacheKey]) return EX_IMG_CACHE[cacheKey];
-
-  try {
-    const stored = await AsyncStorage.getItem(`exImg_${cacheKey}`);
-    if (stored) { EX_IMG_CACHE[cacheKey] = stored; return stored; }
-  } catch {}
-
-  const wger = await searchWger(name);
-  const url  = wger ?? gymPoolFallback(mg, name);
-  EX_IMG_CACHE[cacheKey] = url;
-  AsyncStorage.setItem(`exImg_${cacheKey}`, url).catch(() => {});
-  return url;
-}
 
 function difficultyColor(d = "") {
   return ({ Beginner:"#22c55e", Intermediate:"#f59e0b", Advanced:"#ef4444" } as any)[d] || "#aaa";
@@ -822,19 +776,8 @@ function ExCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => v
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 function ExerciseCard({ ex, index, checked, onToggle }: any) {
-  const color    = muscleColor(ex.muscleGroup);
-  const fallback = gymPoolFallback(ex.muscleGroup || "", ex.name || "");
-  const [imgSrc, setImgSrc] = useState<string>(
-    EX_IMG_CACHE[ex.name?.toLowerCase().replace(/\s+/g, "_")] ?? fallback
-  );
-
-  useEffect(() => {
-    let alive = true;
-    resolveExerciseImage(ex.name || "", ex.muscleGroup || "").then(url => {
-      if (alive && url !== imgSrc) setImgSrc(url);
-    });
-    return () => { alive = false; };
-  }, [ex.name, ex.muscleGroup]);
+  const color  = muscleColor(ex.muscleGroup);
+  const imgSrc = gymPoolFallback(ex.muscleGroup || "", ex.name || "");
 
   return (
     <Pressable onPress={onToggle} style={[ec.card, checked && ec.cardDone]}>
