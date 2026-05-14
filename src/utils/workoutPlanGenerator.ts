@@ -320,6 +320,7 @@ function pickExercises(
   injuries: string,
   sessionLength: number, // minutes
   seed: string,
+  goal: string,
 ): ExerciseEntry[] {
   const maxLevel = experience === "Beginner" ? "beginner"
     : experience === "Advanced" ? "advanced" : "intermediate";
@@ -474,6 +475,7 @@ export function generateWorkoutPlan(profile: {
       s.muscleGroups, allowedEquip, experience,
       focusAreas, injuries, sessionLen,
       seed + s.label + i,
+      goal,
     );
 
     const planExercises: PlanExercise[] = exercises.map(ex => {

@@ -18,8 +18,12 @@ import { usePurchase } from "@/src/hooks/usePurchase";
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
+// Set to false to bypass the paywall during development
+const PAYWALL_ENABLED = true;
+
 interface PremiumGateProps {
   isUserPremium: boolean;
+  subChecking?: boolean;   // while true → don't show paywall (status still resolving)
   children: React.ReactNode;
   featureName?: string;
 }
@@ -32,6 +36,7 @@ Image.prefetch(Image.resolveAssetSource(LOGO).uri).catch(() => {});
 
 export default function PremiumGate({
   isUserPremium,
+  subChecking = false,
   children,
   featureName = "Feature",
 }: PremiumGateProps) {
@@ -67,8 +72,18 @@ export default function PremiumGate({
       .catch((e) => console.error("Failed to get user:", e));
   }, []);
 
-  if (isUserPremium) {
+  // Paywall disabled (dev mode) or confirmed premium — show content
+  if (!PAYWALL_ENABLED || isUserPremium) {
     return <>{children}</>;
+  }
+
+  // Still checking subscription — show a neutral loader so no inner modals/intros fire
+  if (subChecking) {
+    return (
+      <View style={s.loadingScreen}>
+        <ActivityIndicator size="large" color="#e8380d" />
+      </View>
+    );
   }
 
   const handlePurchase = async () => {
@@ -99,9 +114,8 @@ export default function PremiumGate({
 
   return (
     <View style={s.root} pointerEvents="box-none">
-      <View style={s.contentLayer} pointerEvents="none">
-        {children}
-      </View>
+      {/* Never mount children when paywall is active — prevents inner modals
+          (MealPlanView onboarding, ProfileIntro, etc.) from firing */}
 
       <Animated.View
         style={[
@@ -242,9 +256,11 @@ const s = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
   },
-  contentLayer: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0,
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: "#fafaf8",
+    alignItems: "center",
+    justifyContent: "center",
   },
   overlay: {
     position: "absolute",

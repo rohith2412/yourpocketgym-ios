@@ -4,6 +4,7 @@
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
+import { useFocusEffect } from "expo-router";
 import React, {
   useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
@@ -38,7 +39,7 @@ function userScopedKeys(uid: string) {
 const ANON_KEYS = userScopedKeys("anon");
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const TODAY_STR = new Date().toISOString().split("T")[0];
+const TODAY_STR = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
 const ORANGE    = "#e8380d";
 const INK       = "#0e0e0e";
 const MUTED     = "rgba(0,0,0,0.35)";
@@ -535,6 +536,7 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
   }, [plan]);
 
   useEffect(() => { setSelectedIndex(defaultIndex); }, [defaultIndex]);
+  useFocusEffect(useCallback(() => { setSelectedIndex(defaultIndex); }, [defaultIndex]));
 
   // Step 1 — resolve user-scoped keys
   useEffect(() => {
@@ -557,8 +559,25 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
           AsyncStorage.getItem(keys.plan),
           AsyncStorage.getItem(keys.completed),
         ]);
-        setPreferences(rawPrefs ? JSON.parse(rawPrefs) : null);
-        setPlan(rawPlan ? JSON.parse(rawPlan) : null);
+        const parsedPrefs = rawPrefs ? JSON.parse(rawPrefs) : null;
+        const parsedPlan  = rawPlan  ? JSON.parse(rawPlan)  : null;
+        // Compute Monday of current week
+        const nowD = new Date();
+        const dow = nowD.getDay();
+        const mon = new Date(nowD);
+        mon.setDate(nowD.getDate() - (dow === 0 ? 6 : dow - 1));
+        mon.setHours(0, 0, 0, 0);
+        const mondayStr = `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,"0")}-${String(mon.getDate()).padStart(2,"0")}`;
+        // Regenerate if plan doesn't start from Monday of this week
+        const planStartsMonday = parsedPlan?.days?.[0]?.date === mondayStr;
+        const freshPlan = (!planStartsMonday && parsedPrefs)
+          ? generateMealPlan(parsedPrefs, "week")
+          : parsedPlan;
+        if (!planStartsMonday && parsedPrefs && keys) {
+          AsyncStorage.setItem(keys.plan, JSON.stringify(freshPlan)).catch(() => {});
+        }
+        setPreferences(parsedPrefs);
+        setPlan(freshPlan);
         setCompleted(rawDone ? JSON.parse(rawDone) : {});
         setShowOnboard(enabled && !rawPrefs);
       } finally { setLoading(false); }
@@ -979,7 +998,7 @@ const mo = StyleSheet.create({
 
 // Main
 const m = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: "#f7f7f5" },
+  root:        { flex: 1, backgroundColor: "#ffffff" },
   center:      { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   loadingText: { fontSize: 14, color: MUTED, fontWeight: "500" },
   listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120, gap: 12 },

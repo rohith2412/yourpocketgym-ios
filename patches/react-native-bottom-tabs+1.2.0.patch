@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-bottom-tabs/ios/TabView/NewTabView.swift b/node_modules/react-native-bottom-tabs/ios/TabView/NewTabView.swift
+index 22c52cd..3ad7411 100644
+--- a/node_modules/react-native-bottom-tabs/ios/TabView/NewTabView.swift
++++ b/node_modules/react-native-bottom-tabs/ios/TabView/NewTabView.swift
+@@ -43,6 +43,8 @@ struct NewTabView: AnyTabView {
+                 .ignoresSafeArea(.container, edges: .all)
+                 .tabAppear(using: context)
+                 .hideTabBar(props.tabBarHidden)
++                .toolbarBackground(Color.white, for: .tabBar)
++                .toolbarBackground(.visible, for: .tabBar)
+             } label: {
+               TabItem(
+                 title: tabData.title,

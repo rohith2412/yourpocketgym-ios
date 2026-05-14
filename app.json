@@ -53,10 +53,8 @@
       "@react-native-google-signin/google-signin",
       "expo-image-picker",
       "expo-secure-store",
-      "expo-web-browser"
-    ],
-    "ignoredNativeModules": [
-      "react-native-iap"
+      "expo-web-browser",
+      "react-native-bottom-tabs"
     ],
     "experiments": {
       "typedRoutes": true,

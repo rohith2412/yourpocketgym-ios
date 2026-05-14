@@ -69,29 +69,34 @@ const INGREDIENT_CATEGORIES = [
 ];
 
 function useAuth() {
-  const [token, setToken] = useState(null);
+  const [token, setToken]     = useState<string | null>(null);
   const [userName, setUserName] = useState("");
+  const [userId, setUserId]   = useState("");
   useEffect(() => {
     AsyncStorage.multiGet(["token", "user"]).then(([[, t], [, raw]]) => {
       if (t) setToken(t);
       if (raw) {
-        try { setUserName(JSON.parse(raw).name?.split(" ")[0] ?? ""); } catch {}
+        try {
+          const u = JSON.parse(raw);
+          setUserName(u.name?.split(" ")[0] ?? "");
+          setUserId(u.sub || u.uid || u.id || u._id || "");
+        } catch {}
       }
     });
   }, []);
-  return { token, userName };
+  return { token, userName, userId };
 }
 
-function fmt(n) { return Math.round(n ?? 0); }
-function totalTime(r) { return (r.prepTime || 0) + (r.cookTime || 0); }
-function goalMeta(key) { return GOALS.find((g) => g.key === key) || { color: "#aaa", bg: "#f4f2ed" }; }
+function fmt(n: number | undefined | null): number { return Math.round(n ?? 0); }
+function totalTime(r: any): number { return (r.prepTime || 0) + (r.cookTime || 0); }
+function goalMeta(key: string) { return GOALS.find((g) => g.key === key) || { color: "#aaa", bg: "#f4f2ed" }; }
 function recipeKey(r: any): string { return r._id || r.name || ""; }
 
-function Label({ children, style }) {
+function Label({ children, style }: { children: React.ReactNode; style?: any }) {
   return <Text style={[s.label, style]}>{children}</Text>;
 }
 
-function Chip({ label, selected, onPress }) {
+function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={[s.chip, selected && s.chipActive]}>
       <Text style={[s.chipText, selected && s.chipTextActive]}>{label}</Text>
@@ -99,8 +104,8 @@ function Chip({ label, selected, onPress }) {
   );
 }
 
-function MacroBar({ label, value, max, color, unit = "g" }) {
-  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+function MacroBar({ label, value, max, color, unit = "g" }: { label: string; value: number | undefined; max: number; color: string; unit?: string }) {
+  const pct = max > 0 ? Math.min(((value ?? 0) / max) * 100, 100) : 0;
   return (
     <View style={{ marginBottom: 8 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 3 }}>
@@ -123,7 +128,10 @@ function BookmarkIcon({ filled, size = 20 }: { filled: boolean; size?: number })
   );
 }
 
-function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onToggleSave }) {
+function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onToggleSave }: {
+  recipe: any; onBack: () => void; onRegenerate: () => void;
+  isGenerating: boolean; isSaved: boolean; onToggleSave: () => void;
+}) {
   const [tab, setTab] = useState("ingredients");
   const meta = goalMeta(recipe.goal);
 
@@ -194,7 +202,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
 
         {recipe.proteinSources?.length > 0 && (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-            {recipe.proteinSources.map((src, i) => (
+            {recipe.proteinSources.map((src: string, i: number) => (
               <View key={i} style={s.proteinTag}><Text style={s.proteinTagText}>{src}</Text></View>
             ))}
           </View>
@@ -211,7 +219,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
 
       {tab === "ingredients" && (
         <View style={s.card}>
-          {recipe.ingredients?.map((ing, i) => (
+          {recipe.ingredients?.map((ing: any, i: number) => (
             <View key={i} style={[s.ingRow, i < recipe.ingredients.length - 1 && s.ingRowBorder]}>
               <Text style={s.ingName}>{ing.item}</Text>
               <Text style={s.ingAmount}>{ing.amount}</Text>
@@ -222,7 +230,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
 
       {tab === "steps" && (
         <View style={{ gap: 8 }}>
-          {recipe.steps?.map((step, i) => (
+          {recipe.steps?.map((step: string, i: number) => (
             <View key={i} style={[s.card, { flexDirection: "row", gap: 12, alignItems: "flex-start" }]}>
               <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
               <Text style={s.stepText}>{step}</Text>
@@ -262,7 +270,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
   );
 }
 //
-function LibraryCard({ recipe, onPress }) {
+function LibraryCard({ recipe, onPress }: { recipe: any; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={s.libCard} activeOpacity={0.8}>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -442,7 +450,10 @@ function RecipeCard({ recipe, onPress, onSave, isSaved = false, index = 0 }: {
   );
 }
 
-function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, onClose }) {
+function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, onClose }: {
+  visible: boolean; libGoal: string; libMeal: string;
+  onGoalChange: (v: string) => void; onMealChange: (v: string) => void; onClose: () => void;
+}) {
   return (
     <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
       <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={onClose} />
@@ -477,51 +488,54 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
   );
 }
 
-export default function useA() {
-  const { token, userName } = useAuth();
-  const { isPremium } = useSubscription();
+export default function RecipesScreen() {
+  const { token, userName, userId } = useAuth();
+  const { isPremium, loading: subLoading } = useSubscription();
 
-  const [mainTab, setMainTab] = useState("mealplan");
+  const savedKey = userId ? `saved_recipes/${userId}` : "saved_recipes";
+
+  const [mainTab, setMainTab]     = useState("mealplan");
   const [allSubTab, setAllSubTab] = useState<"all" | "saved">("all");
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected]   = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
-  const [openCat, setOpenCat] = useState(null);
-  const [goal, setGoal] = useState(null);
-  const [mealType, setMealType] = useState(null);
+  const [openCat, setOpenCat]     = useState<number | null>(null);
+  const [goal, setGoal]           = useState<string | null>(null);
+  const [mealType, setMealType]   = useState<string | null>(null);
 
-  const [recipe, setRecipe] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [recipe, setRecipe]       = useState<any>(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
 
-  const [libRecipes, setLibRecipes] = useState([]);
+  const [libRecipes, setLibRecipes] = useState<any[]>([]);
   const [libLoading, setLibLoading] = useState(false);
-  const [libGoal, setLibGoal] = useState("");
-  const [libMeal, setLibMeal] = useState("");
-  const [libPage, setLibPage] = useState(1);
-  const [libPages, setLibPages] = useState(1);
-  const [libTotal, setLibTotal] = useState(0);
-  const [selected2, setSelected2] = useState(null);
+  const [libGoal, setLibGoal]     = useState("");
+  const [libMeal, setLibMeal]     = useState("");
+  const [libPage, setLibPage]     = useState(1);
+  const [libPages, setLibPages]   = useState(1);
+  const [libTotal, setLibTotal]   = useState(0);
+  const [selected2, setSelected2] = useState<any>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [savedRecipes, setSavedRecipes] = useState<any[]>([]);
 
-  // ── Load saved from local + backend ──
+  // ── Load saved from local (per-user key) + backend ──
   useEffect(() => {
-    AsyncStorage.getItem("saved_recipes").then((raw) => {
+    if (!savedKey) return;
+    AsyncStorage.getItem(savedKey).then((raw) => {
       if (raw) { try { setSavedRecipes(JSON.parse(raw)); } catch {} }
     });
-  }, []);
+  }, [savedKey]);
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${BASE_URL}/api/ recipes `, {
+    fetch(`${BASE_URL}/api/recipes/saved-recipes`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then((r) => r.json()).then((json) => {
       if (json.success && Array.isArray(json.data) && json.data.length) {
         setSavedRecipes(json.data);
-        AsyncStorage.setItem("saved_recipes", JSON.stringify(json.data));
+        AsyncStorage.setItem(savedKey, JSON.stringify(json.data)).catch(() => {});
       }
     }).catch(() => {});
-  }, [token]);
+  }, [token, savedKey]);
 
   async function toggleSave(recipe: any) {
     const key = recipeKey(recipe);
@@ -530,7 +544,7 @@ export default function useA() {
       ? savedRecipes.filter((r) => recipeKey(r) !== key)
       : [{ ...recipe, savedAt: Date.now() }, ...savedRecipes];
     setSavedRecipes(updated);
-    await AsyncStorage.setItem("saved_recipes", JSON.stringify(updated));
+    await AsyncStorage.setItem(savedKey, JSON.stringify(updated));
     if (token) {
       try {
         if (alreadySaved) {
@@ -562,7 +576,7 @@ export default function useA() {
 
   const isShowingDetail = recipe || selected2;
 
-  function toggleIngredient(item) {
+  function toggleIngredient(item: string) {
     setSelected((prev) => prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]);
   }
 
@@ -590,8 +604,8 @@ export default function useA() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed");
       setRecipe(json.data);
-    } catch (e) {
-      setError(e.message);
+    } catch (e: any) {
+      setError(e?.message || "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }
@@ -604,7 +618,7 @@ export default function useA() {
       const all = await res.json();
 
       // ── Filter ──
-      let filtered = all.filter((r) => {
+      let filtered = all.filter((r: any) => {
         if (libGoal && r.goal !== libGoal) return false;
         if (libMeal && r.mealType !== libMeal) return false;
         if (libDifficulty && (r.difficulty || "").toLowerCase() !== libDifficulty) return false;
@@ -649,7 +663,7 @@ export default function useA() {
   }
 
   return (
-    <PremiumGate isUserPremium={isPremium} featureName="Recipes">
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Recipes">
       <SafeAreaView style={s.screen} edges={["top"]}>
         {/* <PageBackground variant="recipes" /> */}
 
@@ -1021,7 +1035,7 @@ export default function useA() {
                       </Text>
                       <TouchableOpacity onPress={async () => {
                         setSavedRecipes([]);
-                        await AsyncStorage.setItem("saved_recipes", "[]");
+                        await AsyncStorage.setItem(savedKey, "[]").catch(() => {});
                         if (token) {
                           fetch(`${BASE_URL}/api/recipes/saved-recipes`, {
                             method: "DELETE",
@@ -1154,7 +1168,7 @@ export default function useA() {
               </View>
             </View>
 
-            {/* Difficulty */}
+            {/* Difficulty meal  */}
             <View>
               <Text style={s.sheetSectionLabel}>Difficulty</Text>
               <View style={s.sheetChipRow}>
@@ -1186,7 +1200,7 @@ export default function useA() {
 }
 //libCard
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#fafaf8" },
+  screen: { flex: 1, backgroundColor: "#ffffff" },
   header: {
     paddingHorizontal: 20,
     paddingTop: 10,

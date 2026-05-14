@@ -69,7 +69,7 @@ function formatLabel(date: Date): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -187,6 +187,10 @@ export function generateMealPlan(
   const days: MealPlanDay[] = [];
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  // Start from Monday of the current week
+  const dow = start.getDay();
+  const diffToMon = dow === 0 ? 6 : dow - 1;
+  start.setDate(start.getDate() - diffToMon);
 
   for (let i = 0; i < numDays; i++) {
     const date = new Date(start);

@@ -1,4 +1,6 @@
 import AvatarButton from "@/components/AvatarButton";
+import PremiumGate from "@/components/PremiumGate";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
@@ -199,7 +201,7 @@ function BottomSheet({ visible, onClose, children }) {
 const sh = StyleSheet.create({
   sheet: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#fafaf8",
+    backgroundColor: "#ffffff",
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: 22, paddingTop: 14,
     maxHeight: "90%",
@@ -405,7 +407,7 @@ function GoalsSheet({ visible, goals, calculated, hasCustom, token, onClose, onS
 
 const gs = StyleSheet.create({
   sheet: {
-    backgroundColor: "#fafaf8",
+    backgroundColor: "#ffffff",
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: 22, paddingTop: 14,
     shadowColor: "#000", shadowOffset: { width: 0, height: -4 },
@@ -1087,15 +1089,15 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
 }
 
 const mc = StyleSheet.create({
-  card:              { backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e8e5de", shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  foodIconWrap:      { width: 54, height: 54, borderRadius: 14, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
+  card:              { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  foodIconWrap:      { width: 54, height: 54, borderRadius: 15, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   foodPhoto:         { width: 54, height: 54 },
-  foods:             { fontSize: 15, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.2 },
-  typeTag:           { backgroundColor: "#f4f2ed", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  foods:             { fontSize: 15, fontWeight: "700", color: "#0e0e0e", letterSpacing: -0.2 },
+  typeTag:           { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   typeTagText:       { fontSize: 11, fontWeight: "600", color: "#888" },
-  latestBadge:       { backgroundColor: "rgba(232,56,13,0.1)", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  latestBadge:       { backgroundColor: "rgba(232,56,13,0.1)", borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3 },
   latestText:        { fontSize: 9, fontWeight: "700", color: "#e8380d" },
-  cal:               { fontSize: 15, fontWeight: "800", color: "#1a1a1a" },
+  cal:               { fontSize: 15, fontWeight: "800", color: "#0e0e0e" },
   calUnit:           { fontSize: 11, fontWeight: "400", color: "#bbb" },
   prot:              { fontSize: 12, color: "#888", fontWeight: "700" },
   dotBtn:            { width: 30, height: 30, borderRadius: 8, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", gap: 3 },
@@ -1122,15 +1124,16 @@ const DAY_ABBR  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 function MacroWeekStrip({ selDate, onSelect, weekCalories = {}, calorieGoal = 2000 }) {
   const colRefs  = useRef({});
 
-  // Build 7-day window ending today
+  // Build Mon–Sun of the current week
   const days = useMemo(() => {
-    const result = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      result.push(toLocalISO(d));
-    }
-    return result;
+    const today = new Date();
+    const dow = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const diffToMon = dow === 0 ? 6 : dow - 1;
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - diffToMon);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mon); d.setDate(mon.getDate() + i); return toLocalISO(d);
+    });
   }, []);
 
   const R = 18; // radius of progress ring
@@ -1186,26 +1189,27 @@ const ws = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 4,
     backgroundColor: "#fff",
-    borderRadius: 22,
+    borderRadius: 28,
     paddingVertical: 12,
-    borderWidth: 1, borderColor: "#e8e5de",
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3,
   },
-  col:          { flex: 1, alignItems: "center", gap: 5, paddingVertical: 2 },
-  abbr:         { fontSize: 11, fontWeight: "600", color: "#bbb", letterSpacing: 0.2 },
-  abbrSel:      { color: "#1a1a1a", fontWeight: "800" },
-  circleWrap:   { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  dayBubble:    { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  dayBubbleSel: { backgroundColor: "#1a1a1a" },
-  num:          { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  numSel:       { color: "#fff" },
-  dot:          { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
+  col:        { flex: 1, alignItems: "center", gap: 5, paddingVertical: 2 },
+  abbr:       { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.3)", letterSpacing: 0.2 },
+  abbrSel:    { color: "#e8380d", fontWeight: "800" },
+  circleWrap: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  dayBubble:  { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  dayBubbleSel: { backgroundColor: "#e8380d" },
+  num:        { fontSize: 13, fontWeight: "700", color: "#0e0e0e" },
+  numSel:     { color: "#fff" },
+  dot:        { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
 });
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const { token, userName } = useAuth();
+  const { isPremium, loading: subLoading } = useSubscription();
 
   const [logs,       setLogs]       = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -1350,18 +1354,17 @@ export default function NutritionScreen() {
                     { text: "Keep eating", color: "rgba(255,255,255,0.3)", bg: "rgba(255,255,255,0.06)" };
 
   return (
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Macro Scanner">
       <SafeAreaView style={n.screen} edges={["top"]}>
         <View style={n.header}>
-          <View style={n.headerRow}>
-            <View>
-              <Text style={n.greeting}>Good {getGreeting()}{userName ? `, ${userName}` : ""}</Text>
-              <Text style={n.title}>Nutrition</Text>
-            </View>
-            <AvatarButton />
-          </View>
+        <View>
+          <Text style={n.greeting}>Good {getGreeting()}{userName ? `, ${userName}` : ""}</Text>
+          <Text style={n.title}>Nutrition</Text>
         </View>
+        <View style={n.avatar}><AvatarButton /></View>
+      </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, backgroundColor: "#ffffff" }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
 
         {/* Week strip — always visible */}
         <MacroWeekStrip selDate={selDate} onSelect={setSelDate} weekCalories={weekCalories} calorieGoal={displayGoals.calories} />
@@ -1495,31 +1498,32 @@ export default function NutritionScreen() {
         onSaved={(newGoals, custom) => { setGoals(newGoals); setHasCustom(custom); }}
       />
       </SafeAreaView>
+    </PremiumGate>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────. View style={mc.foodIconWrap
 const n = StyleSheet.create({
-  screen:           { flex: 1, backgroundColor: "#fafaf8" },
-  header:           { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0, backgroundColor: "transparent", borderBottomWidth: 1, borderBottomColor: "rgba(232,229,222,0.5)" },
-  headerRow:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  greeting:         { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
-  title:            { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1, lineHeight: 30 },
-  dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
-  heroCard:         { backgroundColor: "#ffffff", borderRadius: 22, borderWidth: 1, borderColor: "#e8e5de", padding: 18, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 12, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  editGoalsBtn:     { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
+  screen:           { flex: 1, backgroundColor: "#ffffff" },
+  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)", backgroundColor: "transparent" },
+  greeting:         { fontSize: 12, color: "#888", fontWeight: "500", marginBottom: 2 },
+  title:            { fontSize: 26, fontWeight: "800", color: "#0e0e0e", letterSpacing: -1 },
+  avatar:           { flexDirection: "row", alignItems: "center", gap: 10 },
+  dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#0e0e0e" },
+  heroCard:         { backgroundColor: "#ffffff", borderRadius: 28, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", padding: 18, shadowColor: "#000", shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  editGoalsBtn:     { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
   editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "#888" },
   heroBody:         { flexDirection: "row", alignItems: "center", gap: 12 },
-  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, backgroundColor: "#fafaf8", borderTopWidth: 1, borderTopColor: "rgba(232,229,222,0.6)", gap: 10 },
-  logBtn:           { flex: 1, backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, backgroundColor: "#ffffff", gap: 10 },
+  logBtn:           { flex: 1, backgroundColor: "#e8380d", borderRadius: 22, paddingVertical: 16, alignItems: "center", justifyContent: "center", shadowColor: "#e8380d", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   logBtnText:       { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
-  manualBtn:        { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  manualBtnText:    { fontSize: 15, fontWeight: "600", color: "#1a1a1a", letterSpacing: 0.1 },
+  manualBtn:        { flex: 1, borderRadius: 22, paddingVertical: 16, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(0,0,0,0.08)", backgroundColor: "#fff" },
+  manualBtnText:    { fontSize: 15, fontWeight: "600", color: "#0e0e0e", letterSpacing: 0.1 },
   sectionLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
   sectionCount:     { fontSize: 11, fontWeight: "600", color: "#ccc" },
-  emptyCard:        { backgroundColor: "#fff", borderRadius: 22, borderWidth: 1, borderColor: "#e8e5de", padding: 36, alignItems: "center" },
-  emptyTitle:       { fontSize: 16, fontWeight: "700", color: "#1a1a1a", marginBottom: 6, textAlign: "center" },
+  emptyCard:        { backgroundColor: "#fff", borderRadius: 28, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", padding: 36, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } },
+  emptyTitle:       { fontSize: 16, fontWeight: "700", color: "#0e0e0e", marginBottom: 6, textAlign: "center" },
   emptyDesc:        { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
 });
 

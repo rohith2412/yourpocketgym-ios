@@ -27,7 +27,7 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
-import { getToken } from "../src/auth/storage";
+import { getToken } from "../../src/auth/storage";
 
 // ─── helpers progress 7d 30d ──────────────────────────────────────────────────────────────────
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
@@ -1444,7 +1444,7 @@ function LogSheet({
               contentContainerStyle={{
                 paddingHorizontal: 20,
                 paddingTop: 12,
-                paddingBottom: 40,
+                paddingBottom: 120,
               }}
               showsVerticalScrollIndicator={false}
             >
@@ -1570,7 +1570,7 @@ function LogSheet({
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
               automaticallyAdjustKeyboardInsets
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{ paddingBottom: 120 }}
             >
               {currentEx.sets.map((set: any, si: number) => (
                 <View key={si} style={lg.setRow}>
@@ -2014,7 +2014,6 @@ function ProgressScreen({ logs }) {
   if (logs.length === 0) {
     return (
       <View style={ps.empty}>
-        <Text style={{ fontSize: 48 }}>🏋️</Text>
         <Text style={ps.emptyTitle}>No workouts yet</Text>
         <Text style={ps.emptySub}>
           Log your first session to start tracking progress
@@ -2076,7 +2075,6 @@ function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
   if (!logs.length) {
     return (
       <View style={hs.empty}>
-        <Text style={{ fontSize: 48 }}>📋</Text>
         <Text style={hs.emptyTitle}>No workouts logged yet</Text>
         <Text style={hs.emptySub}>Your history will appear here</Text>
       </View>
@@ -2356,10 +2354,10 @@ export default function TrackingPage() {
                             ]}
                           >
                             {streakCount >= 5
-                              ? "🔥 On fire"
+                              ? "On fire"
                               : streakCount >= 3
-                                ? "⚡ Good week"
-                                : "💪 Keep going"}
+                                ? "Good week"
+                                : "Keep going"}
                           </Text>
                         </View>
                       </View>
@@ -2448,7 +2446,7 @@ export default function TrackingPage() {
       </View>
 
       {!showLog && (
-        <View style={t.fab}>
+        <View style={[t.fab, { bottom: 20 }]}>
           <Pressable onPress={() => setShowLog(true)} style={t.fabBtn}>
             <LinearGradient
               colors={["#232323", "#000000"]}
@@ -2470,7 +2468,7 @@ export default function TrackingPage() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const t = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fafaf8" },
+  root: { flex: 1, backgroundColor: "#ffffff" },
   header: {
     backgroundColor: "transparent",
     paddingHorizontal: 20,

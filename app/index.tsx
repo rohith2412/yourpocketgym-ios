@@ -1,4 +1,5 @@
-import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Redirect, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -26,6 +27,8 @@ const PHRASES = [
 
 export default function Index() {
   const router = useRouter();
+  const [destination, setDestination] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
 
   const [displayText, setDisplayText] = useState("");
 
@@ -35,7 +38,14 @@ export default function Index() {
   const spinAnim      = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    getToken().then((t) => { if (t) router.replace("/tracking"); });
+    (async () => {
+      const token = await getToken();
+      if (token) { setDestination("/(tabs)/tracking"); setChecking(false); return; }
+      const pending = await AsyncStorage.getItem("@pending_intro");
+      if (pending) { setDestination("/register"); setChecking(false); return; }
+      setDestination("/startersIntro");
+      setChecking(false);
+    })();
 
     // Fade whole screen in
     Animated.timing(fadeAnim, {
@@ -94,6 +104,8 @@ export default function Index() {
 
   const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
 
+  if (!checking && destination) return <Redirect href={destination as any} />;
+
   return (
     <Animated.View style={[s.root, { opacity: fadeAnim }]}>
       <StatusBar barStyle="dark-content" />
@@ -111,7 +123,7 @@ export default function Index() {
       {/* ── Buttons (always visible) ── */}
       <View style={s.bottom}>
         <Pressable
-          onPress={() => router.push("/register")}
+          onPress={() => router.push("/startersIntro")}
           style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
         >
           <Text style={s.primaryBtnText}>Create account</Text>

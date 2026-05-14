@@ -115,21 +115,9 @@ class IAPService {
         await this.init();
       }
 
-      // If IAP is not available (Expo Go, no native modules), return mock purchase
+      // If IAP is not available, throw — never silently fake a purchase
       if (!this.isAvailable) {
-        console.log("📱 Simulating purchase in development mode...");
-        return {
-          productId: sku,
-          transactionId: `mock_${Date.now()}`,
-          transactionReceipt: "mock_receipt_base64_encoded_data",
-          purchaseTime: Date.now(),
-          originalTransactionId: `mock_original_${Date.now()}`,
-          packageNameAndroid: "",
-          orderId: "",
-          type: "inapp",
-          signatureAndroid: "",
-          purchaseStateAndroid: 0,
-        } as ProductPurchase;
+        throw new Error("In-App Purchases are not available on this device.");
       }
 
       const product = this.getProduct(sku);

@@ -19,7 +19,6 @@ const TOTAL_STEPS = 5;
 
 interface Props {
   onComplete: (prefs: MealPreferences) => void;
-  onSkip: () => void;
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ function ProgressDots({ step }: { step: number }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function MealPlanOnboarding({ onComplete, onSkip }: Props) {
+export default function MealPlanOnboarding({ onComplete }: Props) {
   const [step, setStep] = useState(1);
   const [prefs, setPrefs] = useState<MealPreferences>({ ...DEFAULT_PREFERENCES });
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -147,9 +146,7 @@ export default function MealPlanOnboarding({ onComplete, onSkip }: Props) {
             <Text style={s.navBackText}>←</Text>
           </Pressable>
         ) : (
-          <Pressable onPress={onSkip} style={s.navBack}>
-            <Text style={s.navCloseText}>✕</Text>
-          </Pressable>
+          <View style={{ width: 40 }} />
         )}
         <ProgressDots step={step} />
         <View style={{ width: 40 }} />

@@ -68,7 +68,7 @@ export default function Login() {
       if (staleKeys.length > 0) await AsyncStorage.multiRemove(staleKeys);
 
       if (!data.user.hasIntro) router.replace("/startersIntro");
-      else                     router.replace("/tracking");
+      else                     router.replace("/(tabs)/tracking");
     } catch {
       alert("Something went wrong. Check your connection.");
     } finally {
@@ -91,7 +91,7 @@ export default function Login() {
 
             {/* ── Top bar ── */}
             <View style={s.topBar}>
-              <Pressable onPress={() => router.back()} style={s.backBtn}>
+              <Pressable onPress={() => router.replace("/register")} style={s.backBtn}>
                 <Text style={s.backBtnText}>←</Text>
               </Pressable>
               {/* <View style={s.logoRow}>

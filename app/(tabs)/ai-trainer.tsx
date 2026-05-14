@@ -1,12 +1,14 @@
 import AvatarButton from "@/components/AvatarButton";
+import PremiumGate from "@/components/PremiumGate";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Path } from "react-native-svg";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import exerciseImageCache from "../src/data/exerciseImageCache.json";
-import { generateWorkoutPlan } from "../src/utils/workoutPlanGenerator";
+import exerciseImageCache from "../../src/data/exerciseImageCache.json";
+import { generateWorkoutPlan } from "../../src/utils/workoutPlanGenerator";
 import {
   ActivityIndicator,
   Animated,
@@ -89,6 +91,48 @@ const QUICK_PROMPTS = [
   "How do I lose fat without losing muscle?",
 ];
 
+// ── Topic guard ───────────────────────────────────────────────────────────────
+// Keywords that strongly signal the message is about workouts or food/nutrition
+const FITNESS_KEYWORDS = [
+  "workout","exercise","training","gym","lift","lifting","muscle","strength","cardio",
+  "rep","reps","set","sets","form","squat","bench","deadlift","pull","push","press",
+  "protein","calorie","calories","macro","macros","diet","nutrition","eat","eating",
+  "food","meal","meals","fat","weight","body","recovery","rest","sleep","supplement",
+  "creatine","bcaa","pre-workout","post-workout","injury","stretch","warm","cool",
+  "plan","program","split","hypertrophy","endurance","flexibility","yoga","run",
+  "running","hiit","circuit","resistance","dumbbell","barbell","kettlebell","band",
+  "abs","core","glute","back","chest","shoulder","arm","leg","hamstring","quad",
+  "calf","calves","bicep","tricep","lats","traps","bulk","cut","lean","shred",
+  "gain","lose","burn","build","tone","definition","overload","progressive",
+  "deload","plateau","performance","athletic","fitness","health","body fat",
+  "bmi","metabolism","hydration","water","carb","carbs","fats","fiber","vitamin",
+  "mineral","zinc","magnesium","omega","fish oil","whey","casein","vegan protein",
+];
+
+// Patterns that clearly indicate off-topic content
+const OFF_TOPIC_PATTERNS = [
+  /\b(politics|election|president|government|war|news|weather|forecast)\b/i,
+  /\b(code|coding|programming|javascript|python|sql|algorithm|software|app dev)\b/i,
+  /\b(movie|film|tv show|series|netflix|song|music|artist|album|celebrity)\b/i,
+  /\b(stock|crypto|bitcoin|invest|finance|money|tax|loan|bank)\b/i,
+  /\b(history|geography|country|language|translate|math|homework|essay)\b/i,
+  /\b(relationship|dating|love|breakup|marriage|family issue)\b/i,
+];
+
+const OFF_TOPIC_REPLY =
+  "I'm your workout and nutrition coach — I can only help with training, exercises, meal planning, and recovery. Try asking something like \"What should I eat post-workout?\" or \"How do I improve my squat?\"";
+
+function isOffTopic(msg: string): boolean {
+  const lower = msg.toLowerCase();
+  // Always allow short follow-ups / context-dependent replies
+  if (msg.trim().split(/\s+/).length <= 4) return false;
+  // If any strong off-topic pattern matches → block
+  if (OFF_TOPIC_PATTERNS.some(re => re.test(lower))) return true;
+  // If zero fitness keywords → block
+  const hasFitness = FITNESS_KEYWORDS.some(kw => lower.includes(kw));
+  return !hasFitness;
+}
+
 const PROFILE_KEY    = "@gym_profile";
 const PLAN_KEY       = "@ai_workout_plan";
 const DONE_KEY       = (d: string) => `@workout_done/${d}`;
@@ -103,10 +147,12 @@ function toLocalISO(date = new Date()) {
 }
 function getWeekDates() {
   const today = new Date();
-  const sun = new Date(today);
-  sun.setDate(today.getDate() - today.getDay()); // back to Sunday
+  const dow = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diffToMon = dow === 0 ? 6 : dow - 1; // days back to Monday
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - diffToMon);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(sun); d.setDate(sun.getDate() + i); return toLocalISO(d);
+    const d = new Date(mon); d.setDate(mon.getDate() + i); return toLocalISO(d);
   });
 }
 function getPlanDayForDate(plan: any, date: string) {
@@ -377,7 +423,7 @@ function useAuth() {
   return { session, ready, userName, userId };
 }
 
-// ─── Profile Hook ─────────────────────────────────────────────────────────────
+// ─── Profile Hook ───────────────────────────────────────────────────────────── how do i im
 function useGymProfile(userId: string) {
   const [profile, setProfileState] = useState<GymProfile | null>(null);
   const [loaded, setLoaded]        = useState(false);
@@ -385,7 +431,12 @@ function useGymProfile(userId: string) {
   const profileKey = userId ? `${PROFILE_KEY}/${userId}` : null;
 
   useEffect(() => {
-    if (!profileKey) return;
+    // No userId (logged out / not yet resolved) — clear immediately
+    if (!profileKey) {
+      setProfileState(null);
+      setLoaded(true);
+      return;
+    }
     setLoaded(false);
     setProfileState(null);
     AsyncStorage.getItem(profileKey).then((raw) => {
@@ -471,8 +522,27 @@ function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any
   const [local, setLocal] = useState<GymProfile>({ ...EMPTY_PROFILE, ...initial });
   const fadeAnim          = useRef(new Animated.Value(1)).current;
 
+  // DAY_LABELS follows WEEK_DAYS order (Mon→Sun) for step 7
+  const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  // Pre-populate selDays from existing workoutDays string (indices into WEEK_DAYS)
+  function parseSavedDays(workoutDays: string): number[] {
+    if (!workoutDays) return [];
+    return workoutDays.split(",").map(s => s.trim())
+      .map(day => WEEK_DAYS.findIndex(w => w.toLowerCase() === day.toLowerCase()))
+      .filter(i => i !== -1);
+  }
+
+  const [selDays, setSelDays] = useState<number[]>(() => parseSavedDays(initial?.workoutDays || ""));
+
   useEffect(() => {
-    if (visible) { setStep(1); setLocal({ ...EMPTY_PROFILE, ...initial }); }
+    if (visible) {
+      setStep(1);
+      const merged = { ...EMPTY_PROFILE, ...initial };
+      setLocal(merged);
+      // Restore the day chip selection from saved workoutDays
+      setSelDays(parseSavedDays(merged.workoutDays));
+    }
   }, [visible, initial]);
 
   const set = (key: keyof GymProfile, val: any) => setLocal(prev => ({ ...prev, [key]: val }));
@@ -492,22 +562,30 @@ function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any
   };
 
   const toggleFocus = (val: string) => {
-    const arr = local.focusAreas.split(",").map(s => s.trim()).filter(Boolean);
+    const arr = (local.focusAreas || "").split(",").map(s => s.trim()).filter(Boolean);
     const upd = arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val];
     set("focusAreas", upd.join(", "));
   };
-  const hasFocus = (val: string) => local.focusAreas.split(",").map(s => s.trim()).includes(val);
+  const hasFocus = (val: string) => (local.focusAreas || "").split(",").map(s => s.trim()).includes(val);
 
-  const DAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  const [selDays, setSelDays] = useState<number[]>([]);
   const toggleDay = (i: number) => {
     const upd = selDays.includes(i) ? selDays.filter(d => d !== i) : [...selDays, i];
+    // Sort by week order so the string is always Mon→Sun
+    upd.sort((a, b) => a - b);
     setSelDays(upd);
-    set("daysPerWeek", String(upd.length));
+    // Sync both count AND day names into local profile
+    const dayNames = upd.map(idx => WEEK_DAYS[idx]).join(",");
+    setLocal(prev => ({ ...prev, daysPerWeek: String(upd.length), workoutDays: dayNames }));
   };
 
   function finish() {
-    onSave({ ...local, daysPerWeek: local.daysPerWeek || String(selDays.length) });
+    // Ensure workoutDays is always in sync with selDays on final submit
+    const dayNames = selDays.map(idx => WEEK_DAYS[idx]).join(",");
+    onSave({
+      ...local,
+      daysPerWeek: String(selDays.length) || local.daysPerWeek,
+      workoutDays: dayNames || local.workoutDays,
+    });
     onClose?.();
   }
 
@@ -557,9 +635,13 @@ function ProfileIntro({ visible, initial, onSave, onClose, isEdit = false }: any
             <View style={{ width: 40 }} />
           )}
           <PiDots step={step} />
-          <Pressable onPress={isEdit ? onClose : () => { onSave(local); onClose?.(); }} style={pi.navSkip}>
-            <Text style={pi.navSkipText}>{isEdit ? "Cancel" : "Skip"}</Text>
-          </Pressable>
+          {isEdit ? (
+            <Pressable onPress={onClose} style={pi.navSkip}>
+              <Text style={pi.navSkipText}>Cancel</Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 56 }} />
+          )}
         </View>
 
         {/* ── Animated content ── */}
@@ -823,7 +905,7 @@ function ProfileCard({ profile, onEdit }: { profile: GymProfile; onEdit: () => v
     profile.sessionLength && `${profile.sessionLength} min`,
   ].filter(Boolean);
 
-  const focusTags = profile.focusAreas.split(",").map(s => s.trim()).filter(Boolean);
+  const focusTags = (profile.focusAreas || "").split(",").map(s => s.trim()).filter(Boolean);
 
   return (
     <View style={pc.card}>
@@ -915,19 +997,21 @@ const WeekCalendar = React.memo(function WeekCalendar({ selDate, onSelect, compl
         const isSel   = date === selDate;
         const isToday = date === todayISO;
         const done    = !!completions[date];
-        const dayName = DAY_NAMES[i].toLowerCase();
+        const dateObj = new Date(date + "T12:00:00");
+        const dayName = DAY_NAMES[dateObj.getDay()].toLowerCase();
+        const abbr    = DAY_ABBRS[dateObj.getDay()];
         const planDay = planDays?.find((d: any) => {
           const n = d.day?.toLowerCase() ?? "";
           return n === dayName || dayName.startsWith(n) || n.startsWith(dayName.slice(0, 3));
         });
         const hasWork  = planDay && !planDay.restDay;
-        const num      = new Date(date + "T12:00:00").getDate();
+        const num      = dateObj.getDate();
         const exProg   = (exProgress?.[date] || 0) as number;
         const fullyDone = done || exProg >= 1;
 
         return (
           <Pressable key={date} onPress={() => onSelect(date)} style={wc.col}>
-            <Text style={[wc.abbr, isSel && wc.abbrSel]}>{DAY_ABBRS[i]}</Text>
+            <Text style={[wc.abbr, isSel && wc.abbrSel]}>{isToday ? "Today" : abbr}</Text>
             <View style={wc.circleWrap}>
               {/* Partial progress ring — grows as exercises are ticked */}
               {hasWork && exProg > 0 && !fullyDone && (
@@ -937,6 +1021,10 @@ const WeekCalendar = React.memo(function WeekCalendar({ selDate, onSelect, compl
                   color={isSel ? "rgba(255,255,255,0.85)" : "#e8380d"}
                 />
               )}
+              {/* Full white ring when all done */}
+              {hasWork && fullyDone && (
+                <ProgressRing progress={1} size={36} color="rgba(255,255,255,0.9)" />
+              )}
               <View style={[wc.circle, hasWork && fullyDone && !isSel && wc.circleDone]}>
                 <Text style={[wc.num, isSel && wc.numSel, hasWork && fullyDone && wc.numDone]}>
                   {hasWork && fullyDone ? "✓" : num}
@@ -944,6 +1032,8 @@ const WeekCalendar = React.memo(function WeekCalendar({ selDate, onSelect, compl
               </View>
               {/* Planned workout dot — only when no progress and not selected */}
               {hasWork && !fullyDone && exProg === 0 && !isSel && <View style={wc.workoutDot} />}
+              {/* Today indicator dot */}
+              {isToday && !isSel && <View style={wc.todayDot} />}
             </View>
           </Pressable>
         );
@@ -977,7 +1067,6 @@ const ExCheckbox = React.memo(function ExCheckbox({ checked, onToggle }: { check
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 type ExerciseCardProps = { ex: Exercise; index: number; checked: boolean; onToggle: () => void };
 const ExerciseCard = React.memo(function ExerciseCard({ ex, index, checked, onToggle }: ExerciseCardProps) {
-  const color = muscleColor(ex.muscleGroup);
   // Show best available instantly, upgrade async for unknowns
   const normKey = normalizeExKey(ex.name || "");
   const [imgSrc, setImgSrc] = useState<string>(
@@ -1005,8 +1094,8 @@ const ExerciseCard = React.memo(function ExerciseCard({ ex, index, checked, onTo
       <View style={ec.inner}>
         {/* Top row: muscle badge + checkbox */}
         <View style={ec.topRow}>
-          <View style={[ec.badge, { backgroundColor: `${color}18` }]}>
-            <Text style={[ec.badgeText, { color }]}>{(ex.muscleGroup || "").toUpperCase()}</Text>
+          <View style={ec.badge}>
+            <Text style={ec.badgeText}>{(ex.muscleGroup || "").toUpperCase()}</Text>
           </View>
           <ExCheckbox checked={checked} onToggle={onToggle} />
         </View>
@@ -1045,34 +1134,37 @@ const DayCard = React.memo(function DayCard({ day, checkedArr, onToggleEx }: Day
     );
   }
 
+  const total = day.exercises?.length ?? 0;
+  const doneCount = checkedArr?.filter(Boolean).length ?? 0;
+  const allDone = total > 0 && doneCount === total;
+
   return (
-    <View style={s.dayCard}>
-      <View style={s.dayCardHeader}>
+    <View style={{ gap: 12 }}>
+      {/* Header row — outside card, matches MealPlanView dayHeader */}
+      <View style={s.dayHeaderRow}>
         <View style={{ flex: 1 }}>
           <Text style={s.dayLabel}>{day.label}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
-            <Text style={s.dayMeta}>{day.exercises?.length} moves · {day.estimatedTime}min</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
+            <Text style={s.dayMeta}>{total} moves · {day.estimatedTime}min</Text>
             <View style={s.focusBadge}><Text style={s.focusBadgeText}>{day.focus}</Text></View>
           </View>
         </View>
-        <View style={s.dayBoxOpen}>
-          <Text style={s.dayBoxLabel}>{day.day?.slice(0, 3).toUpperCase()}</Text>
-          <Text style={s.dayBoxNum}>{day.exercises?.length ?? 0}</Text>
+        <View style={[s.progressBadge, allDone && s.progressBadgeDone]}>
+          <Text style={[s.progressNum, allDone && s.progressNumDone]}>{doneCount}/{total}</Text>
+          <Text style={[s.progressLbl, allDone && s.progressLblDone]}>done</Text>
         </View>
       </View>
-      <View style={s.dayBody}>
-        <View style={{ gap: 12 }}>
-          {day.exercises?.map((ex: Exercise, i: number) => (
-            <ExerciseCard
-              key={`${ex.name}-${i}`}
-              ex={ex}
-              index={i}
-              checked={checkedArr?.[i] || false}
-              onToggle={() => onToggleEx(i)}
-            />
-          ))}
-        </View>
-      </View>
+
+      {/* Exercise cards — standalone, no outer wrapper */}
+      {day.exercises?.map((ex: Exercise, i: number) => (
+        <ExerciseCard
+          key={`${ex.name}-${i}`}
+          ex={ex}
+          index={i}
+          checked={checkedArr?.[i] || false}
+          onToggle={() => onToggleEx(i)}
+        />
+      ))}
     </View>
   );
 });
@@ -1204,8 +1296,8 @@ function ChatView({ profile, token }: any) {
   const [messages, setMessages] = useState([{
     role: "assistant",
     content: intro
-      ? `Good ${getGreeting()}. I can see you're training for ${profile.goal}. What do you want to work on?`
-      : "Good. Ask me anything about training, nutrition or recovery.",
+      ? `Good ${getGreeting()}. I can see you're training for ${profile.goal}. Ask me anything about your workouts or nutrition.`
+      : "Ask me anything about training, exercises, meal planning or recovery.",
   }]);
   const [input, setInput]   = useState("");
   const [loading, setLoad]  = useState(false);
@@ -1219,14 +1311,29 @@ function ChatView({ profile, token }: any) {
     const msg = text || input.trim();
     if (!msg || loading) return;
     setInput("");
-    const next = [...messages, { role: "user", content: msg }];
+    const userMsg  = { role: "user", content: msg };
+    const next     = [...messages, userMsg];
     setMessages(next);
+
+    // ── Topic guard — block off-topic messages client-side ──────────────────
+    if (isOffTopic(msg)) {
+      setMessages(p => [...p, { role: "assistant", content: OFF_TOPIC_REPLY }]);
+      return;
+    }
+
     setLoad(true);
     try {
       const res  = await fetch(`${BASE_URL}/api/ai-trainer`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: "chat", messages: next, extra: { profile } }),
+        body: JSON.stringify({
+          type: "chat",
+          messages: next,
+          extra: {
+            profile,
+            systemNote: "You are a personal fitness and nutrition coach. Only answer questions about workouts, exercises, training plans, nutrition, meal planning, supplements, and recovery. If asked about anything else, politely decline and redirect to fitness or nutrition topics.",
+          },
+        }),
       });
       const json = await res.json();
       if (json.success) setMessages(p => [...p, { role: "assistant", content: json.data.reply }]);
@@ -1268,7 +1375,7 @@ function ChatView({ profile, token }: any) {
         )}
       </ScrollView>
       <View style={s.inputRow}>
-        <TextInput value={input} onChangeText={setInput} placeholder="Ask anything…" placeholderTextColor="#bbb" multiline style={s.chatInput} returnKeyType="send" blurOnSubmit onSubmitEditing={() => send()} />
+        <TextInput value={input} onChangeText={setInput} placeholder="Ask about workouts or nutrition…" placeholderTextColor="#bbb" multiline style={s.chatInput} returnKeyType="send" blurOnSubmit onSubmitEditing={() => send()} />
         <Pressable onPress={() => send()} disabled={!input.trim() || loading} style={[s.sendBtn, input.trim() && !loading && s.sendBtnActive]}>
           <Text style={[s.sendBtnIcon, input.trim() && !loading && { color: "#fff" }]}>↑</Text>
         </Pressable>
@@ -1371,7 +1478,6 @@ function EditPrefsSheet({ visible, initial, onSave, onClose }: any) {
           {DAYS_OPTS.map((d, i) => (
             <TouchableOpacity key={d} onPress={() => {
               set("daysPerWeek", d);
-              // Auto-update selected days to sensible defaults for this count
               const current = local.workoutDays ? local.workoutDays.split(",").map(s => s.trim()).filter(Boolean) : [];
               const count = parseInt(d);
               if (current.length !== count) set("workoutDays", defaultDays(count).join(","));
@@ -1400,7 +1506,6 @@ function EditPrefsSheet({ visible, initial, onSave, onClose }: any) {
                   if (selected) {
                     set("workoutDays", arr.filter(d => d !== day).join(","));
                   } else if (canAdd) {
-                    // Insert in week order
                     const ordered = WEEK_DAYS.filter(d => [...arr, day].includes(d));
                     set("workoutDays", ordered.join(","));
                   }
@@ -1486,9 +1591,11 @@ export default function AITrainerScreen() {
   const router = useRouter();
   const { session, ready, userName, userId } = useAuth();
   const { profile, loaded: profileLoaded, saveProfile } = useGymProfile(userId);
+  const { isPremium, loading: subLoading } = useSubscription();
 
   const planKey  = userId ? `${PLAN_KEY}/${userId}` : null;
-  const doneKey  = (d: string) => userId ? `${DONE_KEY(d)}/${userId}` : null;
+  // Stable memoized key builder — prevents toggleComplete from recreating every render
+  const doneKey  = useCallback((d: string) => userId ? `${DONE_KEY(d)}/${userId}` : null, [userId]);
 
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [mainTab,   setMainTab]   = useState("plan");
@@ -1514,18 +1621,45 @@ export default function AITrainerScreen() {
     if (ready && !session) router.replace("/login");
   }, [ready]);
 
-  // Load cached plan — re-run when userId changes; prefetch images immediately
+  // Load cached plan — auto-regenerate if stale (too many exercises from old build)
   useEffect(() => {
-    if (!planKey) { setPlan(null); return; }
-    AsyncStorage.getItem(planKey).then(raw => {
-      if (raw) try {
+    if (!planKey || !profileLoaded) return;
+    AsyncStorage.getItem(planKey).then(async raw => {
+      if (!raw) { setPlan(null); return; }
+      try {
         const parsed = JSON.parse(raw);
-        setPlan(parsed);
-        prefetchPlanImages(parsed); // warm image cache in background
+        // Detect stale plan: any workout day has >6 exercises
+        const isStale = parsed?.days?.some(
+          (d: any) => !d.restDay && Array.isArray(d.exercises) && d.exercises.length > 6,
+        );
+        if (isStale && profile) {
+          // Silently regenerate without showing the spinner
+          try {
+            const fresh = generateWorkoutPlan({
+              goal:          profile.goal,
+              experience:    profile.experience,
+              daysPerWeek:   profile.daysPerWeek,
+              workoutDays:   profile.workoutDays,
+              equipment:     profile.equipment,
+              focusAreas:    profile.focusAreas,
+              sessionLength: profile.sessionLength,
+              injuries:      profile.injuries,
+            }) as WorkoutPlan;
+            setPlan(fresh);
+            prefetchPlanImages(fresh);
+            AsyncStorage.setItem(planKey, JSON.stringify(fresh)).catch(() => {});
+          } catch {
+            // If regeneration fails for any reason, just show the cached plan
+            setPlan(parsed);
+            prefetchPlanImages(parsed);
+          }
+        } else {
+          setPlan(parsed);
+          prefetchPlanImages(parsed);
+        }
       } catch { setPlan(null); }
-      else setPlan(null);
     }).catch(() => setPlan(null));
-  }, [planKey]);
+  }, [planKey, profileLoaded, profile]);
 
   // Load weekly completions — re-run when userId changes
   useEffect(() => {
@@ -1676,6 +1810,7 @@ export default function AITrainerScreen() {
   if (ready && !session) return null;
 
   return (
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="AI Trainer">
     <SafeAreaView style={s.screen} edges={["top"]}>
       {/* Header */}
       <View style={s.header}>
@@ -1701,7 +1836,7 @@ export default function AITrainerScreen() {
 
         {/* ── PLAN TAB ── */}
         {mainTab === "plan" && !showPlan && (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 12, paddingBottom: 40, gap: 12 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 12, paddingBottom: 120, gap: 12 }}>
 
             {/* Week calendar - only if we have a plan */}
             {plan && (
@@ -1784,9 +1919,9 @@ export default function AITrainerScreen() {
         )}
       </View>
 
-      {/* First-time profile wizard */}
+      {/* First-time profile wizard — blocks both tabs until complete */}
       <ProfileIntro
-        visible={profileLoaded && !profile && mainTab === "plan"}
+        visible={profileLoaded && !profile}
         initial={EMPTY_PROFILE}
         isEdit={false}
         onSave={handleProfileSave}
@@ -1801,12 +1936,13 @@ export default function AITrainerScreen() {
         onClose={() => setShowProfileEdit(false)}
       />
     </SafeAreaView>
+    </PremiumGate>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  screen:      { flex: 1, backgroundColor: "#fafaf8" },
+  screen:      { flex: 1, backgroundColor: "#ffffff" },
   header:      { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: "rgba(232,229,222,0.6)" },
   headerRow:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   greeting:    { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
@@ -1864,10 +2000,17 @@ const s = StyleSheet.create({
   dayBoxOpen:   { width: 42, height: 42, borderRadius: 13, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" },
   dayBoxLabel:  { fontSize: 8, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 0.8 },
   dayBoxNum:    { fontSize: 16, fontWeight: "800", color: "#fff" },
-  dayLabel:     { fontSize: 15, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.3 },
-  dayMeta:      { fontSize: 11, color: "#aaa", fontWeight: "500" },
+  dayHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4, paddingHorizontal: 2 },
+  dayLabel:     { fontSize: 20, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5 },
+  dayMeta:      { fontSize: 12, color: "#aaa", fontWeight: "500" },
   focusBadge:   { backgroundColor: "rgba(232,56,13,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   focusBadgeText: { fontSize: 10, fontWeight: "700", color: "#e8380d" },
+  progressBadge: { alignItems: "center", backgroundColor: "#fff", borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  progressBadgeDone: { backgroundColor: "#e8380d", borderColor: "#e8380d" },
+  progressNum:  { fontSize: 15, fontWeight: "800", color: "#1a1a1a", lineHeight: 18 },
+  progressNumDone: { color: "#fff" },
+  progressLbl:  { fontSize: 9, fontWeight: "600", color: "#aaa", textTransform: "uppercase", letterSpacing: 0.5 },
+  progressLblDone: { color: "rgba(255,255,255,0.85)" },
   chevron:      { fontSize: 20, color: "#ccc" },
   dayBody:      { backgroundColor: "#f7f6f3", padding: 10, gap: 0 },
   warmupBox:    { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#ece9e3" },
@@ -1936,21 +2079,21 @@ const ec = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden",
   },
   cardDone:   { backgroundColor: "#fafaf8", borderColor: "rgba(0,0,0,0.03)" },
-  thumbWrap:  { width: 100, height: 78, alignSelf: "center", borderRadius: 16, overflow: "hidden", marginLeft: 14 },
-  thumb:      { width: 100, height: 78 },
+  thumbWrap:  { width: 88, height: 96, alignSelf: "center", borderRadius: 20, overflow: "hidden", marginLeft: 14 },
+  thumb:      { width: 88, height: 96 },
   thumbDim:   { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.45)" },
   inner:      { flex: 1, paddingLeft: 14, gap: 6 },
   topRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText:  { fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
+  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: "rgba(0,0,0,0.06)" },
+  badgeText:  { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: "rgba(0,0,0,0.45)" },
   name:       { fontSize: 16, fontWeight: "700", color: "#0e0e0e", lineHeight: 21, letterSpacing: -0.3 },
   nameDone:   { color: "rgba(0,0,0,0.28)", textDecorationLine: "line-through" },
   macroRow:   { flexDirection: "row", alignItems: "center", gap: 6 },
-  setPillAccent: { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: `${ORANGE}18`, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
-  setValAccent:  { fontSize: 11, fontWeight: "800", color: ORANGE },
-  repPill:    { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.04)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  setPillAccent: { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  setValAccent:  { fontSize: 11, fontWeight: "800", color: "#0e0e0e" },
+  repPill:    { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
   repVal:     { fontSize: 11, fontWeight: "700", color: "#0e0e0e" },
-  macroLbl:   { fontSize: 9, fontWeight: "500", color: "rgba(0,0,0,0.32)" },
+  macroLbl:   { fontSize: 9, fontWeight: "500", color: "rgba(0,0,0,0.38)" },
 });
 
 // ─── Week Calendar Styles ─────────────────────────────────────────────────────

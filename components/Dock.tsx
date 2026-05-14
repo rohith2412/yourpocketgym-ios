@@ -1,9 +1,9 @@
 import { usePathname, useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Platform,
+  LayoutChangeEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -14,28 +14,23 @@ import Svg, { Circle, Line, Path } from "react-native-svg";
 
 type IconProps = { active: boolean };
 type Tab = { id: string; label: string; href: string; Icon: React.FC<IconProps> };
-type TabItemProps = { tab: Tab; active: boolean; onPress: () => void };
 
-const stroke = (active: boolean) =>
-  active ? "#111111" : "rgba(60,60,67,0.55)";
+const stroke = (active: boolean) => (active ? "#111" : "rgba(60,60,67,0.45)");
 
-/* ---------------- ICONS ---------------- */
-
+/* ─── Icons ──────────────────────────────────────────────────────────────── */
 const RepsIcon = ({ active }: IconProps) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Path d="M12 20V10" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
-    <Path d="M18 20V4" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
-    <Path d="M6 20v-4" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
+    <Path d="M18 20V4"  stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
+    <Path d="M6 20v-4"  stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
-
 const TrainerIcon = ({ active }: IconProps) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="8" r="4" stroke={stroke(active)} strokeWidth="2" />
     <Path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" />
   </Svg>
 );
-
 const RecipesIcon = ({ active }: IconProps) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -43,127 +38,93 @@ const RecipesIcon = ({ active }: IconProps) => (
     <Path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </Svg>
 );
-
-
 const ScannerIcon = ({ active }: IconProps) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-      stroke={stroke(active)}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke={stroke(active)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     <Circle cx="12" cy="13" r="4" stroke={stroke(active)} strokeWidth="2" />
   </Svg>
 );
 
-/* ---------------- TABS ---------------- */
-
 const TABS: Tab[] = [
-  { id: "reps", label: "Reps", href: "/tracking", Icon: RepsIcon },
-  { id: "trainer", label: "AI Trainer", href: "/ai-trainer", Icon: TrainerIcon },
-  { id: "recipes", label: "Recipes", href: "/recipes", Icon: RecipesIcon },
-  { id: "scanner", label: "Scanner", href: "/MacroScanner", Icon: ScannerIcon },
+  { id: "reps",    label: "Reps",       href: "/tracking",     Icon: RepsIcon    },
+  { id: "trainer", label: "AI Trainer", href: "/ai-trainer",   Icon: TrainerIcon },
+  { id: "recipes", label: "Recipes",    href: "/recipes",      Icon: RecipesIcon },
+  { id: "scanner", label: "Scanner",    href: "/MacroScanner", Icon: ScannerIcon },
 ];
 
-/* ---------------- TAB ITEM ---------------- */
-
-function TabItem({ tab, active, onPress }: TabItemProps) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const pillOpacity = useRef(new Animated.Value(active ? 1 : 0)).current;
-  const pillScale = useRef(new Animated.Value(active ? 1 : 0.8)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(pillOpacity, {
-        toValue: active ? 1 : 0,
-        useNativeDriver: true,
-        tension: 80,
-        friction: 10,
-      }),
-      Animated.spring(pillScale, {
-        toValue: active ? 1 : 0.8,
-        useNativeDriver: true,
-        tension: 80,
-        friction: 10,
-      }),
-    ]).start();
-  }, [active]);
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() =>
-        Animated.spring(scale, {
-          toValue: 0.88,
-          useNativeDriver: true,
-          tension: 200,
-          friction: 10,
-        }).start()
-      }
-      onPressOut={() =>
-        Animated.spring(scale, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 200,
-          friction: 10,
-        }).start()
-      }
-      style={s.tabOuter}
-    >
-      <Animated.View style={[s.tabInner, { transform: [{ scale }] }]}>
-        <Animated.View
-          style={[
-            s.activePill,
-            {
-              opacity: pillOpacity,
-              transform: [{ scale: pillScale }],
-            },
-          ]}
-        />
-        <tab.Icon active={active} />
-        <Text style={[s.label, active && s.labelActive]}>{tab.label}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-/* ---------------- DOCK ---------------- */
-
+/* ─── Dock ───────────────────────────────────────────────────────────────── */
 export default function Dock() {
   const pathname = usePathname();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const router   = useRouter();
+  const insets   = useSafeAreaInsets();
+
+  const activeIndex = Math.max(TABS.findIndex(t => pathname.startsWith(t.href)), 0);
+  const [tabW, setTabW]   = useState(0);
+  const bubbleX           = useRef(new Animated.Value(0)).current;
+  const initialized       = useRef(false);
+
+  useEffect(() => {
+    if (tabW === 0) return;
+    const toValue = activeIndex * tabW;
+    if (!initialized.current) {
+      bubbleX.setValue(toValue);
+      initialized.current = true;
+      return;
+    }
+    Animated.spring(bubbleX, {
+      toValue,
+      useNativeDriver: true,
+      tension: 180,
+      friction: 22,
+    }).start();
+  }, [activeIndex, tabW]);
+
+  const onRowLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width / TABS.length;
+    if (w !== tabW) setTabW(w);
+  };
 
   return (
     <>
-      <View style={{ height: 82 + insets.bottom }} />
+      {/* Space so content doesn't hide behind dock */}
+      <View style={{ height: 80 + insets.bottom }} />
 
       <View
         style={[s.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}
         pointerEvents="box-none"
       >
-        <View style={s.dockShell}>
-          <View style={[StyleSheet.absoluteFill, s.dockBgFallback]} />
+        <View style={s.shell}>
+          <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
+          <View style={s.shellBg} />
+          <View style={s.topGloss} pointerEvents="none" />
 
-          <BlurView
-            intensity={80}
-            tint="light"
-            style={[StyleSheet.absoluteFill, { backgroundColor: "transparent" }]}
-          />
-
-          <View style={s.topHighlight} pointerEvents="none" />
-
-          <View style={s.tabRow}>
-            {TABS.map((tab) => (
-              <TabItem
-                key={tab.id}
-                tab={tab}
-                active={pathname.startsWith(tab.href)}
-                onPress={() => router.push(tab.href as any)}
+          <View style={s.row} onLayout={onRowLayout}>
+            {/* Single white bubble that slides */}
+            {tabW > 0 && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  s.bubble,
+                  { width: tabW - 12, transform: [{ translateX: bubbleX }] },
+                ]}
               />
-            ))}
+            )}
+
+            {TABS.map((tab) => {
+              const active = pathname.startsWith(tab.href);
+              return (
+                <Pressable
+                  key={tab.id}
+                  onPress={() => router.push(tab.href as any)}
+                  style={s.tab}
+                >
+                  <tab.Icon active={active} />
+                  <Text style={[s.label, active && s.labelActive]}>
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       </View>
@@ -171,88 +132,78 @@ export default function Dock() {
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
+/* ─── Styles ─────────────────────────────────────────────────────────────── */
 const s = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 0, left: 0, right: 0,
     alignItems: "center",
     paddingHorizontal: 16,
+    
   },
 
-  dockShell: {
+  
+
+  shell: {
     width: "100%",
     maxWidth: 430,
-    borderRadius: 28,
+    borderRadius: 36,
     overflow: "hidden",
-    borderWidth: 0.5,
-    borderColor: "rgba(255,255,255,0.6)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
-    shadowRadius: 28,
-    elevation: 14,
+    shadowRadius: 20,
+    elevation: 12,
   },
 
-  dockBgFallback: {
-    backgroundColor: "rgba(248,248,250,0.92)",
-    borderRadius: 28,
+  shellBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(240,240,244,0.9)",
+    borderRadius: 36,
   },
 
-  topHighlight: {
+  topGloss: {
     position: "absolute",
-    top: 0,
-    left: 20,
-    right: 20,
+    top: 0, left: 24, right: 24,
     height: 1,
-    borderRadius: 99,
     backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 99,
     zIndex: 10,
   },
 
-  tabRow: {
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
   },
 
-  tabOuter: {
-    width: 85,
-    alignItems: "center",
+  bubble: {
+    position: "absolute",
+    top: 5, bottom: 5,
+    left: 6,
+    borderRadius: 28,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
 
-  tabInner: {
-    width: "100%",
+  tab: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: 6,
-  },
-
-  activePill: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.78)",
-    borderWidth: 0.5,
-    borderColor: "rgba(255,255,255,0.95)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    paddingVertical: 8,
   },
 
   label: {
     fontSize: 10,
     fontWeight: "400",
-    color: "rgba(60,60,67,0.55)",
+    color: "rgba(60,60,67,0.5)",
     letterSpacing: 0.1,
     textAlign: "center",
-    width: "100%",
   },
 
   labelActive: {

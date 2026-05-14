@@ -58,17 +58,34 @@ export default function Register() {
       if (!res.ok) { alert(data.error || "Registration failed"); return; }
 
       await saveToken(data.token);
-      // Mirror login.jsx — write to AsyncStorage so all hooks (useAuth, useSubscription) can read the session
       await AsyncStorage.setItem("token", data.token);
       await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
-      const introRes  = await fetch("https://yourpocketgym.com/api/user-intro", {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },
-      });
-      const introData = await introRes.json();
-
-      if (!introRes.ok || !introData?.exists) router.replace("/startersIntro");
-      else                                     router.replace("/tracking");
+      // Submit pending intro data if user came through the new intro-first flow
+      const pendingIntro = await AsyncStorage.getItem("@pending_intro");
+      if (pendingIntro) {
+        try {
+          const introRes = await fetch("https://yourpocketgym.com/api/user-intro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },
+            body: pendingIntro,
+          });
+          const introData = await introRes.json();
+          if (introData.success) {
+            await AsyncStorage.setItem("user", JSON.stringify({ ...data.user, hasIntro: true }));
+          }
+        } catch {}
+        await AsyncStorage.removeItem("@pending_intro");
+        router.replace("/(tabs)/tracking");
+      } else {
+        // Old flow fallback — check if intro was already done on the server
+        const introRes  = await fetch("https://yourpocketgym.com/api/user-intro", {
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.token}` },
+        });
+        const introData = await introRes.json();
+        if (!introRes.ok || !introData?.exists) router.replace("/startersIntro");
+        else                                     router.replace("/(tabs)/tracking");
+      }
     } catch {
       alert("Something went wrong");
     } finally {
@@ -91,9 +108,7 @@ export default function Register() {
 
             {/* ── Top bar ── */}
             <View style={s.topBar}>
-              <Pressable onPress={() => router.back()} style={s.backBtn}>
-                <Text style={s.backBtnText}>←</Text>
-              </Pressable>
+              <View style={{ width: 36 }} />
               {/* <View style={s.logoRow}>
                 <Animated.Image
                   source={require("../assets/images/logo.png")}
