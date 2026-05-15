@@ -1,192 +1,34 @@
-import {
-  initConnection,
-  endConnection,
-  getProducts,
-  requestSubscription,
-  requestPurchase,
-  getAvailablePurchases,
-  Product,
-  ProductPurchase,
-  PurchaseError,
-} from "react-native-iap";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Purchases, { LOG_LEVEL, PurchasesPackage } from "react-native-purchases";
+import { Platform } from "react-native";
 
-/**
- * IAP Service for App Store In-App Purchases
- * Handles subscription and product purchases for PocketGym premium features
- */
+const API_KEY_IOS     = "appl_SwbGmMi0tJPRcSdhVDKXjNTKwgm";
+const API_KEY_ANDROID = ""; // add if you ship Android
 
-// Product IDs for App Store
-// Make sure these match your App Store Connect configuration
-const PRODUCT_IDS = {
-  PREMIUM_MONTHLY: "com.rohith.com.yourpocketgym.premium.monthly",
-  PREMIUM_ANNUAL:  "com.rohith.com.yourpocketgym.premium.annual",
-};
-
-const SKUS = Object.values(PRODUCT_IDS);
-
-class IAPService {
-  private isInitialized = false;
-  private isAvailable = false;
-  private products: Product[] = [];
-
-  /**
-   * Initialize the IAP connection
-   * In Expo Go or without native modules, gracefully falls back to mock mode
-   */
-  async init() {
-    try {
-      if (this.isInitialized) return;
-
-      await initConnection();
-      console.log("✅ IAP Connection initialized");
-      this.isAvailable = true;
-      this.isInitialized = true;
-
-      // Fetch available products
-      await this.fetchProducts();
-
-      // Restore purchases on app start
-      await this.restorePurchases();
-    } catch (error) {
-      // IAP not available in Expo Go, development builds, or without native modules
-      console.warn(
-        "⚠️ IAP not available - using mock mode for development.\n" +
-          "Install development build or use TestFlight for real purchases.\n" +
-          "Error:",
-        error
-      );
-      this.isAvailable = false;
-      this.isInitialized = true; // Mark as initialized even in mock mode
-      return; // Don't throw - let app work in demo mode
-    }
-  }
-
-  /**
-   * Shutdown the IAP connection
-   */
-  async shutdown() {
-    try {
-      if (!this.isInitialized || !this.isAvailable) return;
-      await endConnection();
-      this.isInitialized = false;
-    } catch (error) {
-      console.error("Failed to shutdown IAP:", error);
-    }
-  }
-
-  /**
-   * Fetch available products from App Store
-   */
-  private async fetchProducts() {
-    try {
-      const products = await getProducts({ skus: SKUS });
-      this.products = products;
-      console.log("Fetched products:", products);
-      return products;
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Get product details
-   */
-  getProduct(sku: string): Product | undefined {
-    return this.products.find((p) => p.productId === sku);
-  }
-
-  /**
-   * Get all available products
-   */
-  getProducts(): Product[] {
-    return this.products;
-  }
-
-  /**
-   * Request a subscription purchase
-   * @param sku - Product SKU (e.g., com.pocketgym.premium.monthly)
-   * @param userId - User ID for server-side verification
-   */
-  async requestSubscription(sku: string, userId: string): Promise<ProductPurchase> {
-    try {
-      if (!this.isInitialized) {
-        await this.init();
-      }
-
-      // If IAP is not available, throw — never silently fake a purchase
-      if (!this.isAvailable) {
-        throw new Error("In-App Purchases are not available on this device.");
-      }
-
-      const product = this.getProduct(sku);
-      if (!product) {
-        throw new Error(`Product not found: ${sku}`);
-      }
-
-      // Request purchase from App Store
-      const purchase = await requestSubscription({
-        sku,
-      });
-
-      // Save purchase locally for tracking
-      if (purchase) {
-        await AsyncStorage.setItem(
-          "lastPurchaseData",
-          JSON.stringify({
-            sku,
-            receipt: purchase.transactionReceipt,
-            transactionId: purchase.transactionId,
-            timestamp: new Date().toISOString(),
-          })
-        );
-      }
-
-      return purchase;
-    } catch (error) {
-      if (error instanceof PurchaseError) {
-        if (error.code === "E_ALREADY_OWNED") {
-          console.log("Product already owned");
-          throw new Error("You already have an active subscription");
-        } else if (error.code === "E_USER_CANCELLED") {
-          throw new Error("Purchase cancelled");
-        }
-      }
-      console.error("Purchase error:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Restore previous purchases
-   * Call this when user reinstalls app or logs in
-   */
-  async restorePurchases(): Promise<ProductPurchase[]> {
-    try {
-      const purchases = await getAvailablePurchases();
-      console.log("Restored purchases:", purchases);
-      return purchases;
-    } catch (error) {
-      console.error("Error restoring purchases:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Check if product is owned
-   */
-  async isProductOwned(sku: string): Promise<boolean> {
-    try {
-      const purchases = await getAvailablePurchases();
-      return purchases.some((p) => p.productId === sku);
-    } catch (error) {
-      console.error("Error checking product ownership:", error);
-      return false;
-    }
-  }
+export function configureRevenueCat(userId?: string) {
+  Purchases.setLogLevel(LOG_LEVEL.ERROR);
+  const apiKey = Platform.OS === "ios" ? API_KEY_IOS : API_KEY_ANDROID;
+  Purchases.configure({ apiKey, appUserID: userId ?? null });
 }
 
-// Export singleton instance
-export const iapService = new IAPService();
-export { PRODUCT_IDS, SKUS };
+export async function getOfferings() {
+  const offerings = await Purchases.getOfferings();
+  return offerings.current;
+}
+
+export async function purchasePackage(pkg: PurchasesPackage) {
+  const { customerInfo } = await Purchases.purchasePackage(pkg);
+  return customerInfo;
+}
+
+export async function restorePurchases() {
+  const customerInfo = await Purchases.restorePurchases();
+  return customerInfo;
+}
+
+export async function getCustomerInfo() {
+  return await Purchases.getCustomerInfo();
+}
+
+export function isPremiumCustomer(customerInfo: any): boolean {
+  return typeof customerInfo?.entitlements?.active?.["premium"] !== "undefined";
+}

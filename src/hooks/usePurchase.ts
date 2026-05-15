@@ -1,204 +1,70 @@
-import { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { iapService, PRODUCT_IDS } from "../services/iapService";
+import { useState } from "react";
+import { purchasePackage, restorePurchases, getOfferings, isPremiumCustomer } from "../services/iapService";
+import { PurchasesPackage } from "react-native-purchases";
 
-interface PurchaseState {
-  isLoading: boolean;
-  error: string | null;
-  isProcessing: boolean;
-}
-
-/**
- * Hook to handle in-app purchases
- * Manages purchase flow and backend verification
- */
 export function usePurchase() {
-  const [state, setState] = useState<PurchaseState>({
-    isLoading: false,
-    error: null,
-    isProcessing: false,
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
 
-  // Initialize IAP service on mount
-  useEffect(() => {
-    const initIAP = async () => {
-      try {
-        await iapService.init();
-      } catch (error) {
-        // IAP initialization errors are logged by iapService
-        // App continues to work in mock/development mode
-        console.log("IAP initialization completed (may be in mock mode)");
-      }
-    };
-
-    initIAP();
-
-    return () => {
-      // Clean up connection when component unmounts
-      iapService.shutdown().catch(() => {
-        // Ignore shutdown errors
-      });
-    };
-  }, []);
-
-  /**
-   * Handle subscription purchase
-   * 1. Request purchase from App Store
-   * 2. Get receipt from purchase
-   * 3. Send receipt to backend for verification
-   * 4. Update subscription status in app
-   */
-  const purchaseMonthlySubscription = async (userId: string) => {
-    return await purchaseSubscription(PRODUCT_IDS.PREMIUM_MONTHLY, userId);
+  const purchaseMonthlySubscription = async (_userId: string) => {
+    return await _purchase("monthly");
   };
 
-  const purchaseAnnualSubscription = async (userId: string) => {
-    return await purchaseSubscription(PRODUCT_IDS.PREMIUM_ANNUAL, userId);
+  const purchaseAnnualSubscription = async (_userId: string) => {
+    return await _purchase("annual");
   };
 
-  const purchaseSubscription = async (sku: string, userId: string) => {
-    setState({
-      isLoading: true,
-      error: null,
-      isProcessing: true,
-    });
-
+  const _purchase = async (type: "monthly" | "annual") => {
+    setIsLoading(true);
+    setError(null);
     try {
-      // Step 1: Request purchase from App Store
-      const purchase = await iapService.requestSubscription(sku, userId);
+      const offering = await getOfferings();
+      if (!offering) throw new Error("No offerings available");
 
-      if (!purchase) {
-        throw new Error("Purchase returned no receipt");
-      }
+      const pkg: PurchasesPackage | null =
+        type === "annual"
+          ? offering.annual ?? offering.availablePackages[0]
+          : offering.monthly ?? offering.availablePackages[0];
 
-      // Step 2: Verify receipt with backend
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
+      if (!pkg) throw new Error("Product not found");
 
-      const verifyResponse = await fetch(
-        "https://yourpocketgym.com/api/subscription/verify-receipt",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            receiptData: purchase.transactionReceipt,
-            bundleId: "com.rohith.com.yourpocketgym",
-            transactionId: purchase.transactionId,
-          }),
-        }
-      );
-
-      if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json();
-        throw new Error(
-          errorData.error || `Backend verification failed: ${verifyResponse.status}`
-        );
-      }
-
-      const verifyData = await verifyResponse.json();
-
-      if (!verifyData.success) {
-        throw new Error(verifyData.error || "Backend verification failed");
-      }
-
-      setState({
-        isLoading: false,
-        error: null,
-        isProcessing: false,
-      });
-
-      return {
-        success: true,
-        subscription: verifyData.subscription,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred";
-
-      setState({
-        isLoading: false,
-        error: errorMessage,
-        isProcessing: false,
-      });
-
-      console.error("Purchase error:", error);
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
+      const customerInfo = await purchasePackage(pkg);
+      const success = isPremiumCustomer(customerInfo);
+      return { success, subscription: customerInfo };
+    } catch (err: any) {
+      // User cancelled — don't show error
+      if (err?.userCancelled) return { success: false, error: "cancelled" };
+      const msg = err?.message || "Purchase failed";
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  /**
-   * Restore previous purchases
-   * Call when user reinstalls app or needs to restore access
-   */
-  const restorePurchases = async (userId: string) => {
-    setState({
-      isLoading: true,
-      error: null,
-      isProcessing: false,
-    });
-
+  const handleRestorePurchases = async (_userId: string) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      // Call backend restore endpoint
-      const response = await fetch("https://yourpocketgym.com/api/subscription/restore", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Restore failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      setState({
-        isLoading: false,
-        error: null,
-        isProcessing: false,
-      });
-
-      return {
-        success: true,
-        subscription: data.subscription,
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Restore failed";
-
-      setState({
-        isLoading: false,
-        error: errorMessage,
-        isProcessing: false,
-      });
-
-      return {
-        success: false,
-        error: errorMessage,
-      };
+      const customerInfo = await restorePurchases();
+      const success = isPremiumCustomer(customerInfo);
+      if (!success) return { success: false, error: "No active subscription found" };
+      return { success: true, subscription: customerInfo };
+    } catch (err: any) {
+      const msg = err?.message || "Restore failed";
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
-    ...state,
+    isLoading,
+    isProcessing: isLoading,
+    error,
     purchaseMonthlySubscription,
     purchaseAnnualSubscription,
-    purchaseSubscription,
-    restorePurchases,
+    restorePurchases: handleRestorePurchases,
   };
 }
