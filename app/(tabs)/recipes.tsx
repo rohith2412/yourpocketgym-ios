@@ -490,7 +490,7 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
 
 export default function RecipesScreen() {
   const { token, userName, userId } = useAuth();
-  const { isPremium, loading: subLoading } = useSubscription();
+  const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
 
   const savedKey = userId ? `saved_recipes/${userId}` : "saved_recipes";
 
@@ -663,7 +663,7 @@ export default function RecipesScreen() {
   }
 
   return (
-    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Recipes">
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Recipes" onPurchaseSuccess={refreshSubscriptionStatus}>
       <SafeAreaView style={s.screen} edges={["top"]}>
         {/* <PageBackground variant="recipes" /> */}
 

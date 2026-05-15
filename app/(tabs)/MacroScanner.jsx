@@ -1209,7 +1209,7 @@ const ws = StyleSheet.create({
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const { token, userName } = useAuth();
-  const { isPremium, loading: subLoading } = useSubscription();
+  const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
 
   const [logs,       setLogs]       = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -1354,7 +1354,7 @@ export default function NutritionScreen() {
                     { text: "Keep eating", color: "rgba(255,255,255,0.3)", bg: "rgba(255,255,255,0.06)" };
 
   return (
-    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Macro Scanner">
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Macro Scanner" onPurchaseSuccess={refreshSubscriptionStatus}>
       <SafeAreaView style={n.screen} edges={["top"]}>
         <View style={n.header}>
         <View>

@@ -1591,7 +1591,7 @@ export default function AITrainerScreen() {
   const router = useRouter();
   const { session, ready, userName, userId } = useAuth();
   const { profile, loaded: profileLoaded, saveProfile } = useGymProfile(userId);
-  const { isPremium, loading: subLoading } = useSubscription();
+  const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
 
   const planKey  = userId ? `${PLAN_KEY}/${userId}` : null;
   // Stable memoized key builder — prevents toggleComplete from recreating every render
@@ -1810,7 +1810,7 @@ export default function AITrainerScreen() {
   if (ready && !session) return null;
 
   return (
-    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="AI Trainer">
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="AI Trainer" onPurchaseSuccess={refreshSubscriptionStatus}>
     <SafeAreaView style={s.screen} edges={["top"]}>
       {/* Header */}
       <View style={s.header}>

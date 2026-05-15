@@ -26,6 +26,7 @@ interface PremiumGateProps {
   subChecking?: boolean;   // while true → don't show paywall (status still resolving)
   children: React.ReactNode;
   featureName?: string;
+  onPurchaseSuccess?: () => void | Promise<void>;
 }
 
 const DOCK_RESERVED = 110;
@@ -39,6 +40,7 @@ export default function PremiumGate({
   subChecking = false,
   children,
   featureName = "Feature",
+  onPurchaseSuccess,
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = React.useState<string>("");
@@ -93,7 +95,7 @@ export default function PremiumGate({
     }
     const result = await purchaseMonthlySubscription(userId);
     if (result.success) {
-      Alert.alert("Welcome to Premium", "Your subscription is now active. Refresh to continue.");
+      await onPurchaseSuccess?.();
     } else {
       Alert.alert("Purchase Failed", result.error || "Please try again.");
     }
@@ -106,7 +108,7 @@ export default function PremiumGate({
     }
     const result = await restorePurchases(userId);
     if (result.success) {
-      Alert.alert("Restored", "Your purchases have been restored. Refresh to continue.");
+      await onPurchaseSuccess?.();
     } else {
       Alert.alert("No Purchases Found", "You don't have any previous purchases to restore.");
     }
