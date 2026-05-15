@@ -30,5 +30,5 @@ export async function getCustomerInfo() {
 }
 
 export function isPremiumCustomer(customerInfo: any): boolean {
-  return typeof customerInfo?.entitlements?.active?.["premium"] !== "undefined";
+  return typeof customerInfo?.entitlements?.active?.["PocketGym Pro"] !== "undefined";
 }
