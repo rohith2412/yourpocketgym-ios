@@ -1,7 +1,7 @@
 import Purchases, { LOG_LEVEL, PurchasesPackage } from "react-native-purchases";
 import { Platform } from "react-native";
 
-const API_KEY_IOS     = "appl_SwbGmMi0tJPRcSdhVDKXjNTKwgm";
+const API_KEY_IOS     = "appl_SXPYpLLAAgXRvaXNP0GalcFLKJQ";
 const API_KEY_ANDROID = ""; // add if you ship Android
 
 export function configureRevenueCat(userId?: string) {
