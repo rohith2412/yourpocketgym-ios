@@ -1,35 +1,33 @@
-import { useEffect, useState, useCallback } from "react";
-import { getCustomerInfo, isPremiumCustomer } from "../services/iapService";
+import { useCallback, useEffect, useState } from "react";
+import { getCustomerInfo, isPremium } from "../services/iapService";
 
 export function useSubscription() {
-  const [isPremium, setIsPremium] = useState<boolean | null>(null);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [isPremiumUser, setIsPremiumUser] = useState<boolean | null>(null);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
 
-  const checkSubscriptionStatus = useCallback(async () => {
+  const check = useCallback(async () => {
     try {
       setLoading(true);
-      const customerInfo = await getCustomerInfo();
-      setIsPremium(isPremiumCustomer(customerInfo));
+      const info = await getCustomerInfo();
+      setIsPremiumUser(isPremium(info));
       setError(null);
     } catch (err: any) {
-      setError(err?.message || "Failed to check subscription");
-      setIsPremium(false);
+      setError(err?.message ?? "Could not verify subscription.");
+      setIsPremiumUser(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    checkSubscriptionStatus();
-  }, []);
+  useEffect(() => { check(); }, []);
 
   return {
-    isPremium:                 isPremium === true,
+    isPremium:                 isPremiumUser === true,
     loading,
     error,
     subscriptionStatus:        null,
-    refreshSubscriptionStatus: checkSubscriptionStatus,
-    shouldShowPaywall:         isPremium === false,
+    refreshSubscriptionStatus: check,
+    shouldShowPaywall:         isPremiumUser === false,
   };
 }

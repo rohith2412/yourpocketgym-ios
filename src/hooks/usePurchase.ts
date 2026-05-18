@@ -1,40 +1,35 @@
 import { useState } from "react";
-import { purchasePackage, restorePurchases, getOfferings, isPremiumCustomer } from "../services/iapService";
+import { getOfferings, purchasePackage, restorePurchases, isPremium } from "../services/iapService";
 import { PurchasesPackage } from "react-native-purchases";
+
+interface PurchaseResult {
+  success: boolean;
+  error?: string;
+}
 
 export function usePurchase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]         = useState<string | null>(null);
 
-  const purchaseMonthlySubscription = async (_userId: string) => {
-    return await _purchase("monthly");
-  };
-
-  const purchaseAnnualSubscription = async (_userId: string) => {
-    return await _purchase("annual");
-  };
-
-  const _purchase = async (type: "monthly" | "annual") => {
+  const purchase = async (type: "monthly" | "annual"): Promise<PurchaseResult> => {
     setIsLoading(true);
     setError(null);
     try {
       const offering = await getOfferings();
-      if (!offering) throw new Error("No offerings available");
+      if (!offering) throw new Error("No offerings available. Try again later.");
 
       const pkg: PurchasesPackage | null =
         type === "annual"
-          ? offering.annual ?? offering.availablePackages[0]
-          : offering.monthly ?? offering.availablePackages[0];
+          ? (offering.annual ?? offering.availablePackages[0])
+          : (offering.monthly ?? offering.availablePackages[0]);
 
-      if (!pkg) throw new Error("Product not found");
+      if (!pkg) throw new Error("Product not found.");
 
       const customerInfo = await purchasePackage(pkg);
-      const success = isPremiumCustomer(customerInfo);
-      return { success, subscription: customerInfo };
+      return { success: isPremium(customerInfo) };
     } catch (err: any) {
-      // User cancelled — don't show error
-      if (err?.userCancelled) return { success: false, error: "cancelled" };
-      const msg = err?.message || "Purchase failed";
+      if (err?.userCancelled) return { success: false };
+      const msg = err?.message ?? "Purchase failed. Please try again.";
       setError(msg);
       return { success: false, error: msg };
     } finally {
@@ -42,16 +37,17 @@ export function usePurchase() {
     }
   };
 
-  const handleRestorePurchases = async (_userId: string) => {
+  const restore = async (): Promise<PurchaseResult> => {
     setIsLoading(true);
     setError(null);
     try {
       const customerInfo = await restorePurchases();
-      const success = isPremiumCustomer(customerInfo);
-      if (!success) return { success: false, error: "No active subscription found" };
-      return { success: true, subscription: customerInfo };
+      if (!isPremium(customerInfo)) {
+        return { success: false, error: "No active subscription found." };
+      }
+      return { success: true };
     } catch (err: any) {
-      const msg = err?.message || "Restore failed";
+      const msg = err?.message ?? "Restore failed. Please try again.";
       setError(msg);
       return { success: false, error: msg };
     } finally {
@@ -63,8 +59,8 @@ export function usePurchase() {
     isLoading,
     isProcessing: isLoading,
     error,
-    purchaseMonthlySubscription,
-    purchaseAnnualSubscription,
-    restorePurchases: handleRestorePurchases,
+    purchaseMonthlySubscription: (_userId: string) => purchase("monthly"),
+    purchaseAnnualSubscription:  (_userId: string) => purchase("annual"),
+    restorePurchases:            (_userId: string) => restore(),
   };
 }
