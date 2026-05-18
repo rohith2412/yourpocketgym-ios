@@ -50,7 +50,6 @@ Recipe Requests
 • Generate recipe suggestions based on your selected ingredients and dietary goals
 • Display your workout history, volume tracking, and progress stats
 • Calculate BMI and personalised nutrition goals from your profile
-• Process your subscription via Stripe
 • Respond to your messages in the AI Trainer feature`,
   },
   {
@@ -84,7 +83,6 @@ All AI-generated content is for informational purposes only and may not be 100% 
     body: `We do not sell your personal information. We share data only with:
 
 • AI service providers - to power the AI Trainer, food analysis, recipe generation, and workout plan features
-• Stripe - for secure payment processing (we never store your card details)
 • Google - for authentication if you use Google Sign-In
 
 All third-party providers are bound by data processing agreements and may not use your data for their own purposes.`,
@@ -143,7 +141,7 @@ export default function PrivacyScreen() {
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={s.updated}>Last updated: April 18, 2025</Text>
+        <Text style={s.updated}>Last updated: May 18, 2025</Text>
         <Text style={s.intro}>
           Your Pocket Gym ("we", "us", or "our") is committed to protecting your
           privacy. This policy explains what data we collect across all features

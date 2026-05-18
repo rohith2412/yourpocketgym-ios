@@ -47,10 +47,6 @@ Always consult a qualified professional before starting a new exercise program o
     body: `You may delete your account at any time from Profile → Delete Account. This permanently removes all your data from our servers including workout logs, meal logs, recipes, and profile information.`,
   },
   {
-    title: "Subscriptions & Billing",
-    body: `Some features may require a paid subscription. Subscriptions are billed through the Apple App Store. You can manage or cancel your subscription at any time through your App Store account settings. No refunds are provided for partial subscription periods unless required by law.`,
-  },
-  {
     title: "Intellectual Property",
     body: `All content, design, and code within Your Pocket Gym is owned by or licensed to us. You may not reproduce, distribute, or create derivative works without our express written permission.`,
   },
@@ -80,7 +76,7 @@ export default function TermsScreen() {
         <Text style={st.title}>Terms of Service</Text>
       </View>
       <ScrollView contentContainerStyle={st.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={st.updated}>Last updated: April 2025</Text>
+        <Text style={st.updated}>Last updated: May 2025</Text>
         {SECTIONS.map((sec) => (
           <View key={sec.title} style={st.section}>
             <Text style={st.sectionTitle}>{sec.title}</Text>

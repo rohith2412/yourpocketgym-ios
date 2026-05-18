@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -558,8 +557,6 @@ export default function ProfileScreen() {
   const [loading, setLoading]         = useState(true);
   const [showEdit, setShowEdit]       = useState(false);
   const [signingOut, setSigningOut]   = useState(false);
-  const [cancelConfirm, setCancelConfirm] = useState(false);
-  const [canceling, setCanceling]     = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -587,16 +584,6 @@ export default function ProfileScreen() {
     router.replace("/login");
   };
 
-  const handleCancelSubscription = async () => {
-    if (!cancelConfirm) { setCancelConfirm(true); setTimeout(() => setCancelConfirm(false), 4000); return; }
-    setCanceling(true);
-    try {
-      const res  = await fetch(`${API}/stripe/cancel`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const json = await res.json();
-      if (json.success) { setProfile((p) => ({ ...p, subscriptionStatus: "canceling", isSubscribed: false })); setCancelConfirm(false); }
-      else alert("Error: " + json.error);
-    } finally { setCanceling(false); }
-  };
 
   if (loading) {
     return <View style={s.centered}><ActivityIndicator size="large" color="#000000" /></View>;
@@ -606,9 +593,6 @@ export default function ProfileScreen() {
   const bmiInfo     = bmiVal ? bmiCategory(bmiVal) : null;
   const goal        = profile?.fitnessGoal    ? GOAL_MAP[profile.fitnessGoal]       : null;
   const exp         = profile?.experienceLevel ? EXP_MAP[profile.experienceLevel]   : null;
-  const expiryDate  = profile?.currentPeriodEnd ? formatDate(profile.currentPeriodEnd) : null;
-  const daysRemaining = profile?.currentPeriodEnd
-    ? Math.max(0, Math.ceil((new Date(profile.currentPeriodEnd) - Date.now()) / 86400000)) : null;
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
@@ -635,9 +619,6 @@ export default function ProfileScreen() {
           <View style={s.heroTextWrap}>
             <View style={s.heroNameRow}>
               <Text style={s.heroName}>{profile?.name ?? "Athlete"}</Text>
-              {profile?.isSubscribed && (
-                <View style={s.proBadge}><Text style={s.proBadgeText}>PRO</Text></View>
-              )}
             </View>
             <Text style={s.heroEmail}>{profile?.email}</Text>
             {profile?.memberSince && (
@@ -652,27 +633,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Pro banner */}
-        {profile?.isSubscribed && (
-          <View style={s.proBanner}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.proBannerTitle}>Pro subscriber</Text>
-              <Text style={s.proBannerSub}>{expiryDate ? `Renews · ${expiryDate}` : "All features unlocked"}</Text>
-            </View>
-            <Pressable style={s.detailsBtn} onPress={() => router.push("/pricing")}>
-              <Text style={s.detailsBtnText}>Details</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* Canceling notice */}
-        {profile?.subscriptionStatus === "canceling" && (
-          <View style={s.cancelNotice}>
-            <Text style={s.cancelNoticeText}>
-              Your subscription is canceled. Pro access continues until end of billing period.
-            </Text>
-          </View>
-        )}
 
         {/* Activity stats */}
         {profile?.workoutStats?.sessions > 0 && (
@@ -775,18 +735,6 @@ export default function ProfileScreen() {
           <MenuRow
             label="Edit fitness profile"
             onPress={() => profile?.hasIntro && setShowEdit(true)}
-          />
-          <Divider />
-          <MenuRow
-            label="Manage Subscription"
-            onPress={() => Linking.openURL("https://apps.apple.com/account/subscriptions")}
-            right={
-              <View style={[s.planBadge, profile?.isSubscribed && s.planBadgePro]}>
-                <Text style={[s.planBadgeText, profile?.isSubscribed && s.planBadgeTextPro]}>
-                  {profile?.isSubscribed ? "PRO" : "FREE"}
-                </Text>
-              </View>
-            }
           />
           <Divider />
           <MenuRow label="Terms of Service"  onPress={() => router.push("/legal/terms")} />
