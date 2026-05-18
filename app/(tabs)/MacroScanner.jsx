@@ -809,6 +809,9 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
         body:    JSON.stringify({ image: b64, mealType, localDate: toLocalISO() }),
       });
       const json = await res.json();
+      if (res.status === 429) {
+        throw new Error(`🚫 Daily limit reached (${json.limit} scans/day)\nYou've used all your scans for today. Come back tomorrow!`);
+      }
       if (!json.success) throw new Error(json.error || "Unknown error");
 
       // 2. Save photo to documentDirectory (awaited — so we have the real path)
