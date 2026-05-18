@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -664,17 +665,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Upgrade banner */}
-        {profile && !profile.isSubscribed && profile.subscriptionStatus !== "canceling" && (
-          <Pressable style={s.upgradeBanner} onPress={() => router.push("/pricing")}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.upgradeTitle}>Unlock Pro</Text>
-              <Text style={s.upgradeSub}>AI trainer, nutrition scanning, recipes & more</Text>
-            </View>
-            <View style={s.priceBadge}><Text style={s.priceBadgeText}>$12/mo →</Text></View>
-          </Pressable>
-        )}
-
         {/* Canceling notice */}
         {profile?.subscriptionStatus === "canceling" && (
           <View style={s.cancelNotice}>
@@ -788,8 +778,8 @@ export default function ProfileScreen() {
           />
           <Divider />
           <MenuRow
-            label={profile?.isSubscribed ? "View subscription" : "Upgrade to Pro"}
-            onPress={() => router.push("/pricing")}
+            label="Manage Subscription"
+            onPress={() => Linking.openURL("https://apps.apple.com/account/subscriptions")}
             right={
               <View style={[s.planBadge, profile?.isSubscribed && s.planBadgePro]}>
                 <Text style={[s.planBadgeText, profile?.isSubscribed && s.planBadgeTextPro]}>
@@ -798,26 +788,6 @@ export default function ProfileScreen() {
               </View>
             }
           />
-          {profile?.isSubscribed && (
-            <>
-              <Divider />
-              {cancelConfirm && expiryDate && (
-                <View style={s.cancelWarning}>
-                  <Text style={s.cancelWarningTitle}>You'll lose Pro access on:</Text>
-                  <Text style={s.cancelWarningDate}>{expiryDate}</Text>
-                  <Text style={s.cancelWarningSub}>
-                    {daysRemaining === 0 ? "Access expires today" : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} of Pro remaining`}
-                  </Text>
-                </View>
-              )}
-              <MenuRow
-                label={canceling ? "Canceling…" : cancelConfirm ? "Tap again to confirm" : "Cancel subscription"}
-                labelStyle={{ color: cancelConfirm ? "#ef4444" : "#888" }}
-                onPress={handleCancelSubscription}
-                disabled={canceling}
-              />
-            </>
-          )}
           <Divider />
           <MenuRow label="Terms of Service"  onPress={() => router.push("/legal/terms")} />
           <Divider />
