@@ -750,15 +750,16 @@ let _pendingB64 = null;
 
 // ─── Log Sheet ────────────────────────────────────────────────────────────────
 function LogSheet({ visible, onClose, onSuccess, token }) {
-  const [imageUri, setImageUri] = useState(null);
-  const [mealType, setMealType] = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  const [imageUri,     setImageUri]     = useState(null);
+  const [mealType,     setMealType]     = useState(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState(null);
+  const [rateLimited,  setRateLimited]  = useState(false);
 
   // Reset state every time the sheet opens
   useEffect(() => {
     if (visible) {
-      setImageUri(null); setMealType(null); setError(null);
+      setImageUri(null); setMealType(null); setError(null); setRateLimited(false);
       _pendingB64 = null;
     }
   }, [visible]);
@@ -810,7 +811,8 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
       });
       const json = await res.json();
       if (res.status === 429) {
-        throw new Error(`🚫 Daily limit reached (${json.limit} scans/day)\nYou've used all your scans for today. Come back tomorrow!`);
+        setRateLimited(true);
+        return;
       }
       if (!json.success) throw new Error(json.error || "Unknown error");
 
@@ -855,8 +857,17 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
           </Pressable>
         ))}
       </View>
-      {error && <Text style={lf.err}>{error}</Text>}
-      <Pressable onPress={submit} disabled={!imageUri || !mealType || loading} style={[g.saveBtn, { opacity: !imageUri || !mealType || loading ? 0.35 : 1 }]}>
+      {rateLimited && (
+        <View style={lf.limitBanner}>
+          <Text style={lf.limitIcon}>⏱</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={lf.limitTitle}>Daily limit reached</Text>
+            <Text style={lf.limitSub}>You've used all 10 AI scans for today. Come back tomorrow or log macros manually.</Text>
+          </View>
+        </View>
+      )}
+      {!rateLimited && error && <Text style={lf.err}>{error}</Text>}
+      <Pressable onPress={submit} disabled={!imageUri || !mealType || loading || rateLimited} style={[g.saveBtn, { opacity: !imageUri || !mealType || loading || rateLimited ? 0.35 : 1 }]}>
         {loading ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <ActivityIndicator size="small" color="#fff" />
@@ -883,6 +894,10 @@ const lf = StyleSheet.create({
   mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
   mealBtnText:  { fontSize: 12, fontWeight: "600", color: "#888" },
   err:         { fontSize: 13, color: "#ef4444", fontWeight: "600", marginBottom: 12 },
+  limitBanner: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#f8f6f2", borderRadius: 16, borderWidth: 1, borderColor: "#e8e5de", padding: 14, marginBottom: 14 },
+  limitIcon:   { fontSize: 22, lineHeight: 26 },
+  limitTitle:  { fontSize: 14, fontWeight: "700", color: "#0e0e0e", marginBottom: 3 },
+  limitSub:    { fontSize: 12, color: "#888", lineHeight: 17 },
 });
 
 // ─── Result Sheet ─────────────────────────────────────────────────────────────
