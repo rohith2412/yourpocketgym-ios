@@ -19,7 +19,7 @@ const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
 // Set to false to bypass the paywall during development
-const PAYWALL_ENABLED = true;
+const PAYWALL_ENABLED = false;
 
 interface PremiumGateProps {
   isUserPremium: boolean;
