@@ -109,16 +109,6 @@ export default function DeleteAccountScreen() {
           </View>
         </View>
 
-        {/* Alternative */}
-        <View style={s.altCard}>
-          <Text style={s.altTitle}>Not ready to leave?</Text>
-          <Text style={s.altBody}>
-            If you have an issue with the app, we'd love to help before you go.
-            Contact us at{" "}
-            <Text style={s.altLink}>support@yourpocketgym.com</Text>
-          </Text>
-        </View>
-
         {/* Confirmation input */}
         <View style={s.confirmCard}>
           <Text style={s.confirmLabel}>
