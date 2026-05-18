@@ -252,7 +252,7 @@ function EditSheet({ profile, token, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const slideAnim   = useRef(new Animated.Value(600)).current;
+  const slideAnim    = useRef(new Animated.Value(600)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -283,29 +283,33 @@ function EditSheet({ profile, token, onClose, onSaved }) {
     } finally { setSaving(false); }
   };
 
-  // ── Sub-components load ───────────────────────────────────────────────────────────
-  const SectionHead = ({ children }) => (
-    <Text style={es.sectionHead}>{children}</Text>
+  // Apple-style grouped section
+  const Section = ({ label, children }) => (
+    <View style={es.section}>
+      {label ? <Text style={es.sectionLabel}>{label}</Text> : null}
+      <View style={es.sectionGroup}>{children}</View>
+    </View>
   );
 
-  const Stepper = ({ label, field, min, max, unit }) => (
-    <View style={es.stepCard}>
-      <Text style={es.stepCardLabel}>{label}</Text>
-      <Text style={es.stepCardVal}>
-        {form[field]}<Text style={es.stepCardUnit}> {unit}</Text>
-      </Text>
-      <View style={es.stepBtns}>
-        <Pressable
-          style={es.stepBtn}
-          onPress={() => set(field, Math.max(min, (form[field] || min) - 1))}
-        >
-          <Text style={es.stepBtnText}>−</Text>
+  // Row with checkmark (for option lists)
+  const OptionRow = ({ label, active, onPress, last }) => (
+    <Pressable onPress={onPress} style={[es.row, !last && es.rowBorder]}>
+      <Text style={es.rowLabel}>{label}</Text>
+      {active && <Text style={es.checkmark}>✓</Text>}
+    </Pressable>
+  );
+
+  // Stepper row (−  value  +)
+  const StepperRow = ({ label, field, min, max, unit, last }) => (
+    <View style={[es.row, !last && es.rowBorder]}>
+      <Text style={es.rowLabel}>{label}</Text>
+      <View style={es.stepperInline}>
+        <Pressable onPress={() => set(field, Math.max(min, form[field] - 1))} style={es.stepperBtn}>
+          <Text style={es.stepperBtnText}>−</Text>
         </Pressable>
-        <Pressable
-          style={[es.stepBtn, es.stepBtnPlus]}
-          onPress={() => set(field, Math.min(max, (form[field] || min) + 1))}
-        >
-          <Text style={[es.stepBtnText, { color: "#fff" }]}>+</Text>
+        <Text style={es.stepperVal}>{form[field]}<Text style={es.stepperUnit}> {unit}</Text></Text>
+        <Pressable onPress={() => set(field, Math.min(max, form[field] + 1))} style={es.stepperBtn}>
+          <Text style={es.stepperBtnText}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -314,20 +318,26 @@ function EditSheet({ profile, token, onClose, onSaved }) {
   return (
     <Modal visible transparent animationType="none" onRequestClose={dismiss}>
       {/* Backdrop */}
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.55)", opacity: backdropAnim }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.4)", opacity: backdropAnim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
       </Animated.View>
 
       {/* Sheet */}
       <Animated.View style={[es.sheet, { transform: [{ translateY: slideAnim }] }]}>
 
-        {/* Header */}
-        <View style={es.header}>
+        {/* Native-style nav bar */}
+        <View style={es.navBar}>
           <View style={es.handle} />
-          <View style={es.headRow}>
-            <Text style={es.headTitle}>Edit Profile</Text>
-            <Pressable onPress={dismiss} style={es.closeBtn}>
-              <Text style={es.closeBtnText}>✕</Text>
+          <View style={es.navRow}>
+            <Pressable onPress={dismiss}>
+              <Text style={es.navCancel}>Cancel</Text>
+            </Pressable>
+            <Text style={es.navTitle}>Edit Profile</Text>
+            <Pressable onPress={save} disabled={saving}>
+              {saving
+                ? <ActivityIndicator size="small" color="#007AFF" />
+                : <Text style={es.navDone}>Done</Text>
+              }
             </Pressable>
           </View>
         </View>
@@ -336,98 +346,66 @@ function EditSheet({ profile, token, onClose, onSaved }) {
           style={es.body}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
         >
+          {/* Goal */}
+          <Section label="FITNESS GOAL">
+            {GOALS_META.map((g, i) => (
+              <OptionRow
+                key={g.val}
+                label={g.label}
+                active={form.fitnessGoal === g.val}
+                onPress={() => set("fitnessGoal", g.val)}
+                last={i === GOALS_META.length - 1}
+              />
+            ))}
+          </Section>
 
-          {/* ── Goal ── */}
-          <SectionHead>Your Goal</SectionHead>
-          <View style={es.goalGrid}>
-            {GOALS_META.map((g) => {
-              const active = form.fitnessGoal === g.val;
-              return (
-                <Pressable
-                  key={g.val}
-                  onPress={() => set("fitnessGoal", g.val)}
-                  style={[es.goalCard, active && es.goalCardActive]}
-                >
-                  <Text style={[es.goalLabel, active && es.goalLabelActive]}>{g.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* Experience */}
+          <Section label="EXPERIENCE LEVEL">
+            {EXP_META.map((e, i) => (
+              <OptionRow
+                key={e.val}
+                label={e.label}
+                active={form.experienceLevel === e.val}
+                onPress={() => set("experienceLevel", e.val)}
+                last={i === EXP_META.length - 1}
+              />
+            ))}
+          </Section>
 
-          {/* ── Experience ── */}
-          <SectionHead>Experience Level</SectionHead>
-          <View style={es.expRow}>
-            {EXP_META.map((e) => {
-              const active = form.experienceLevel === e.val;
-              return (
-                <Pressable
-                  key={e.val}
-                  onPress={() => set("experienceLevel", e.val)}
-                  style={[es.expCard, active && es.expCardActive]}
-                >
-                  <Text style={[es.expLabel, active && es.expLabelActive]}>{e.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* Body stats */}
+          <Section label="BODY STATS">
+            <StepperRow label="Age"    field="age"    min={10}  max={99}  unit="yrs" />
+            <StepperRow label="Height" field="height" min={100} max={250} unit="cm"  />
+            <StepperRow label="Weight" field="weight" min={30}  max={250} unit="kg" last />
+          </Section>
 
-          {/* ── Body stats ── */}
-          <SectionHead>Body Stats</SectionHead>
-          <View style={es.stepRow}>
-            <Stepper label="Age"    field="age"    min={10}  max={99}  unit="yrs" />
-            <Stepper label="Height" field="height" min={100} max={250} unit="cm"  />
-            <Stepper label="Weight" field="weight" min={30}  max={250} unit="kg"  />
-          </View>
+          {/* Sex */}
+          <Section label="BIOLOGICAL SEX">
+            {["Male", "Female", "Other"].map((label, i, arr) => (
+              <OptionRow
+                key={label}
+                label={label}
+                active={form.gender === label.toLowerCase()}
+                onPress={() => set("gender", label.toLowerCase())}
+                last={i === arr.length - 1}
+              />
+            ))}
+          </Section>
 
-          {/* ── Sex ── */}
-          <SectionHead>Biological Sex</SectionHead>
-          <View style={es.genderRow}>
-            {["Male", "Female", "Other"].map((label) => {
-              const val = label.toLowerCase();
-              const active = form.gender === val;
-              return (
-                <Pressable
-                  key={val}
-                  onPress={() => set("gender", val)}
-                  style={[es.genderBtn, active && es.genderBtnActive]}
-                >
-                  <Text style={[es.genderLabel, active && es.genderLabelActive]}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* ── Days per week ── */}
-          <SectionHead>Training Days / Week</SectionHead>
-          <View style={es.daysRow}>
-            {[1,2,3,4,5,6,7].map((n) => {
-              const active = form.workoutDaysPerWeek === n;
-              return (
-                <Pressable
-                  key={n}
-                  onPress={() => set("workoutDaysPerWeek", n)}
-                  style={[es.dayBtn, active && es.dayBtnActive]}
-                >
-                  <Text style={[es.dayBtnText, active && es.dayBtnTextActive]}>{n}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* ── Save ── */}
-          <Pressable
-            style={[es.saveBtn, saving && { opacity: 0.5 }]}
-            onPress={save}
-            disabled={saving}
-          >
-            {saving
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={es.saveBtnText}>Save changes</Text>
-            }
-          </Pressable>
-
+          {/* Training days */}
+          <Section label="TRAINING DAYS / WEEK">
+            {[1,2,3,4,5,6,7].map((n, i) => (
+              <OptionRow
+                key={n}
+                label={`${n} day${n > 1 ? "s" : ""}`}
+                active={form.workoutDaysPerWeek === n}
+                onPress={() => set("workoutDaysPerWeek", n)}
+                last={i === 6}
+              />
+            ))}
+          </Section>
         </ScrollView>
       </Animated.View>
     </Modal>
@@ -435,118 +413,74 @@ function EditSheet({ profile, token, onClose, onSaved }) {
 }
 
 const es = StyleSheet.create({
-  // Sheet
   sheet: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#fafaf8",
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: "#f2f2f7",
+    borderTopLeftRadius: 12, borderTopRightRadius: 12,
     maxHeight: "94%",
-    shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 24,
-    shadowOffset: { width: 0, height: -6 }, elevation: 24,
+    shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 24,
+    shadowOffset: { width: 0, height: -4 },
   },
 
-  // Dark header
-  header: {
-    backgroundColor: "#111111",
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingHorizontal: 20, paddingBottom: 20,
+  // Native nav bar
+  navBar: {
+    backgroundColor: "#f2f2f7",
+    borderTopLeftRadius: 12, borderTopRightRadius: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(60,60,67,0.18)",
   },
   handle: {
-    width: 36, height: 4, backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 99, alignSelf: "center", marginTop: 12, marginBottom: 16,
+    width: 36, height: 5, backgroundColor: "rgba(60,60,67,0.3)",
+    borderRadius: 99, alignSelf: "center", marginTop: 8, marginBottom: 12,
   },
-  headRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  headEyebrow: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.3)", letterSpacing: 1.4, marginBottom: 4 },
-  headTitle: { fontSize: 22, fontWeight: "800", color: "#ffffff", letterSpacing: -0.5 },
-  closeBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
+  navRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingBottom: 4,
+  },
+  navTitle:  { fontSize: 17, fontWeight: "600", color: "#000" },
+  navCancel: { fontSize: 17, color: "#007AFF" },
+  navDone:   { fontSize: 17, fontWeight: "600", color: "#007AFF" },
+
+  body: { paddingTop: 16 },
+
+  // Grouped section
+  section: { marginBottom: 28, paddingHorizontal: 16 },
+  sectionLabel: {
+    fontSize: 12, fontWeight: "400", color: "#6c6c70",
+    letterSpacing: 0.1, textTransform: "uppercase",
+    marginBottom: 6, marginLeft: 16,
+  },
+  sectionGroup: {
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+
+  // Row
+  row: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingVertical: 13, backgroundColor: "#fff",
+    minHeight: 44,
+  },
+  rowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(60,60,67,0.18)",
+  },
+  rowLabel: { fontSize: 17, color: "#000" },
+  checkmark: { fontSize: 17, color: "#007AFF", fontWeight: "600" },
+
+  // Inline stepper
+  stepperInline: { flexDirection: "row", alignItems: "center", gap: 12 },
+  stepperBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "#e5e5ea",
     alignItems: "center", justifyContent: "center",
   },
-  closeBtnText: { fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: "700" },
-
-  body: { paddingHorizontal: 20, paddingTop: 24 },
-
-  sectionHead: {
-    fontSize: 11, fontWeight: "700", color: "#aaa",
-    letterSpacing: 1.2, textTransform: "uppercase",
-    marginBottom: 12, marginTop: 4,
-  },
-
-  // Goal cards
-  goalGrid: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  goalCard: {
-    flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#fff", paddingVertical: 14, paddingHorizontal: 10,
-    alignItems: "center", gap: 4,
-  },
-  goalCardActive: { backgroundColor: "#111111", borderColor: "#111111" },
-  goalLabel: { fontSize: 12, fontWeight: "700", color: "#1a1a1a", textAlign: "center" },
-  goalLabelActive: { color: "#ffffff" },
-  goalDesc: { fontSize: 10, color: "#bbb", textAlign: "center", lineHeight: 14 },
-  goalDescActive: { color: "rgba(255,255,255,0.35)" },
-
-  // Experience
-  expRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  expCard: {
-    flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#fff", paddingVertical: 14, paddingHorizontal: 8,
-    alignItems: "center", gap: 3,
-  },
-  expCardActive: { backgroundColor: "#111111", borderColor: "#111111" },
-  expLabel: { fontSize: 12, fontWeight: "700", color: "#1a1a1a", textAlign: "center" },
-  expLabelActive: { color: "#fff" },
-  expSub: { fontSize: 10, color: "#bbb", textAlign: "center" },
-  expSubActive: { color: "rgba(255,255,255,0.35)" },
-
-  // Body stats steppers
-  stepRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  stepCard: {
-    flex: 1, backgroundColor: "#fff", borderRadius: 14,
-    borderWidth: 1, borderColor: "#e8e5de",
-    padding: 12, alignItems: "center", gap: 6,
-  },
-  stepCardLabel: { fontSize: 10, fontWeight: "600", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
-  stepCardVal: { fontSize: 20, fontWeight: "700", color: "#1a1a1a", letterSpacing: -0.5 },
-  stepCardUnit: { fontSize: 11, fontWeight: "400", color: "#ccc" },
-  stepBtns: { flexDirection: "row", gap: 6, width: "100%" },
-  stepBtn: {
-    flex: 1, height: 34, borderRadius: 8,
-    borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#f5f5f4", alignItems: "center", justifyContent: "center",
-  },
-  stepBtnPlus: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  stepBtnText: { fontSize: 18, color: "#1a1a1a", fontWeight: "500", lineHeight: 22 },
-
-  // Gender
-  genderRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  genderBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 14,
-    borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#fff", alignItems: "center",
-  },
-  genderBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  genderLabel: { fontSize: 13, fontWeight: "600", color: "#666" },
-  genderLabelActive: { color: "#fff" },
-
-  // Days
-  daysRow: { flexDirection: "row", gap: 5, marginBottom: 24 },
-  dayBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#fff", alignItems: "center",
-  },
-  dayBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  dayBtnText: { fontSize: 14, fontWeight: "600", color: "#bbb" },
-  dayBtnTextActive: { color: "#fff" },
-
-  // Save
-  saveBtn: {
-    backgroundColor: "#111111", borderRadius: 14,
-    paddingVertical: 17, alignItems: "center",
-    marginTop: 4,
-  },
-  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "700", letterSpacing: -0.1 },
+  stepperBtnText: { fontSize: 20, color: "#000", fontWeight: "400", lineHeight: 24 },
+  stepperVal: { fontSize: 17, color: "#000", minWidth: 56, textAlign: "center" },
+  stepperUnit: { fontSize: 13, color: "#8e8e93" },
 });
 
 // ── Main ──────────────────────────────────────────────────────────────────────
