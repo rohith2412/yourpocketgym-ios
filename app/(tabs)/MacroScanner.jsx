@@ -862,7 +862,7 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
           <Text style={lf.limitIcon}>⏱</Text>
           <View style={{ flex: 1 }}>
             <Text style={lf.limitTitle}>Daily limit reached</Text>
-            <Text style={lf.limitSub}>You've used all 10 AI scans for today. Come back tomorrow or log macros manually.</Text>
+            <Text style={lf.limitSub}>You've used all 3 AI scans for today. Come back tomorrow or log macros manually.</Text>
           </View>
         </View>
       )}
