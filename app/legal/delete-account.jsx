@@ -100,7 +100,6 @@ export default function DeleteAccountScreen() {
               "All workout logs and history",
               "All meal logs and nutrition data",
               "Your AI Trainer conversation history",
-              "Your subscription (no refund for remaining days)",
             ].map((item, i) => (
               <View key={i} style={s.listRow}>
                 <Text style={s.listDot}>•</Text>
