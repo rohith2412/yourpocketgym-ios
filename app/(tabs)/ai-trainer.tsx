@@ -990,7 +990,9 @@ const WeekCalendar = React.memo(function WeekCalendar({ selDate, onSelect, compl
       {/* Sliding orange pill */}
       {colWidth > 0 && (
         <Animated.View pointerEvents="none"
-          style={[wc.pill, { width: colWidth - 6, opacity: pillOpac, transform: [{ translateX: Animated.add(pillX, 3) }] }]} />
+          style={[wc.pill, { width: colWidth - 6, opacity: pillOpac, transform: [{ translateX: Animated.add(pillX, 3) }] }]}>
+          <View style={{ flex: 1, borderRadius: 20, backgroundColor: "#e8380d" }} />
+        </Animated.View>
       )}
 
       {dates.map((date, i) => {
@@ -2105,7 +2107,7 @@ const ec = StyleSheet.create({
 // ─── Week Calendar Styles ─────────────────────────────────────────────────────
 const wc = StyleSheet.create({
   container:  { flexDirection: "row", backgroundColor: "#fff", borderRadius: 28, paddingVertical: 14, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden" },
-  pill:       { position: "absolute", top: 7, bottom: 7, borderRadius: 20, backgroundColor: "#e8380d" },
+  pill:       { position: "absolute", top: 7, bottom: 7, borderRadius: 20, overflow: "hidden" },
   col:        { flex: 1, alignItems: "center", gap: 6, paddingVertical: 2, zIndex: 1 },
   abbr:       { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.3)", letterSpacing: 0.2 },
   abbrSel:    { color: "#fff", fontWeight: "800" },

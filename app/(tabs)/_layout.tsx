@@ -10,7 +10,7 @@ const ROUTES = [
   { key: "tracking",      title: "Reps",       focusedIcon: { sfSymbol: "chart.bar.fill" },                        activeTintColor: "#1a1a1a" },
   { key: "ai-trainer",   title: "AI Trainer",  focusedIcon: { sfSymbol: "figure.strengthtraining.traditional" },   activeTintColor: "#1a1a1a" },
   { key: "recipes",      title: "Recipes",     focusedIcon: { sfSymbol: "fork.knife" },                            activeTintColor: "#1a1a1a" },
-  { key: "MacroScanner", title: "Scanner",     focusedIcon: { sfSymbol: "camera.fill" },                           activeTintColor: "#1a1a1a" },
+  { key: "MacroScanner", title: "Scanner",     focusedIcon: require("../../assets/images/scanner-tab.png"),         activeTintColor: "#1a1a1a" },
 ];
 
 const SCENES: Record<string, React.ComponentType> = {

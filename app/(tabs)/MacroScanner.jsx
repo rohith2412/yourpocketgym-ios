@@ -1487,19 +1487,12 @@ export default function NutritionScreen() {
           </Pressable>
           <Pressable onPress={() => setShowLog(true)} style={n.logBtn}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-              {/* scanner viewfinder with apple inside */}
+              {/* camera icon */}
               <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-                {/* corner brackets */}
-                <Path d="M3 9V5a2 2 0 0 1 2-2h4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
-                <Path d="M21 9V5a2 2 0 0 0-2-2h-4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
-                <Path d="M3 15v4a2 2 0 0 0 2 2h4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
-                <Path d="M21 15v4a2 2 0 0 1-2 2h-4" stroke="#fff" strokeWidth={1.8} strokeLinecap="round"/>
-                {/* apple stem */}
-                <Path d="M12 7 C12 7 12.5 5.5 14 5.5" stroke="#fff" strokeWidth={1.3} strokeLinecap="round"/>
-                {/* apple leaf */}
-                <Path d="M12.5 6 C13 5 15 4.5 15 6 C14 6.2 12.5 6 12.5 6 Z" fill="#fff" opacity="0.9"/>
-                {/* apple body — classic two-lobe shape */}
-                <Path d="M9 10 C7.5 10 7 11.5 7 13 C7 15.5 8.5 18.5 10 18.5 C10.8 18.5 11 18 12 18 C13 18 13.2 18.5 14 18.5 C15.5 18.5 17 15.5 17 13 C17 11.5 16.5 10 15 10 C14.2 10 13.5 10.5 12 10.5 C10.5 10.5 9.8 10 9 10 Z" fill="#fff" opacity="0.95"/>
+                {/* camera body */}
+                <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                {/* lens circle */}
+                <Path d="M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="#fff" strokeWidth={1.8}/>
               </Svg>
               <Text style={n.logBtnText}>Scan your food</Text>
             </View>
