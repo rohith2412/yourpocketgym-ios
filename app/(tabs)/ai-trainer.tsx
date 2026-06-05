@@ -1331,7 +1331,7 @@ function ChatView({ profile, token }: any) {
           messages: next,
           extra: {
             profile,
-            systemNote: "You are a personal fitness and nutrition coach. Only answer questions about workouts, exercises, training plans, nutrition, meal planning, supplements, and recovery. If asked about anything else, politely decline and redirect to fitness or nutrition topics.",
+            systemNote: "You are a personal fitness and nutrition coach. Only answer questions about workouts, exercises, training plans, nutrition, meal planning, supplements, and recovery. If asked about anything else, politely decline and redirect to fitness or nutrition topics. IMPORTANT: When providing any health or medical information (BMI calculations, calorie recommendations, macro targets, weight management advice, or wellness guidance), always include a brief citation of the source (e.g., WHO, CDC, ACE, ACSM, NIH) and add a disclaimer that this is for informational purposes only and not a substitute for professional medical advice. For BMI calculations, cite the WHO BMI classification (WHO, 2023). For calorie/nutrition guidance, cite USDA Dietary Guidelines or ACE (American Council on Exercise). Always end health-related answers with: 'Consult a healthcare professional for personalised medical advice.'",
           },
         }),
       });
@@ -1355,6 +1355,12 @@ function ChatView({ profile, token }: any) {
             ))}
           </View>
         )}
+        {/* Medical disclaimer — always visible */}
+        <View style={{ backgroundColor: "#f5f3ee", borderRadius: 10, padding: 12, marginBottom: 4 }}>
+          <Text style={{ fontSize: 11, color: "#8a8578", lineHeight: 16 }}>
+            Health and nutrition information provided here is for general informational purposes only and is not a substitute for professional medical advice. BMI classifications follow WHO guidelines (who.int). Nutrition guidance references USDA Dietary Guidelines (dietaryguidelines.gov) and ACE (acefitness.org). Always consult a qualified healthcare professional before making changes to your diet or exercise routine.
+          </Text>
+        </View>
         {messages.map((m, i) => (
           <View key={i} style={[s.msgRow, m.role === "user" && { justifyContent: "flex-end" }]}>
             {m.role === "assistant" && <View style={s.botDot} />}

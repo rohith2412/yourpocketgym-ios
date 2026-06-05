@@ -317,6 +317,9 @@ export default function MealPlanOnboarding({ onComplete }: Props) {
             <Text style={s.eyebrow}>STEP 4 OF {TOTAL_STEPS}</Text>
             <Text style={s.bigTitle}>Daily calorie{"\n"}<Text style={s.accent}>target?</Text></Text>
             <Text style={s.bigSub}>Choose a preset or type your own.</Text>
+            <Text style={{ fontSize: 10, color: "#b0ada5", lineHeight: 14, marginBottom: 4 }}>
+              Calorie ranges based on USDA Dietary Guidelines for Americans (dietaryguidelines.gov). Consult a healthcare professional for personalised targets.
+            </Text>
 
             <View style={s.presetRow}>
               {CALORIE_PRESETS.map((p) => {

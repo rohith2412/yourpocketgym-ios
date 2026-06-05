@@ -1,4 +1,6 @@
 import AvatarButton from "@/components/AvatarButton";
+import PremiumGate from "@/components/PremiumGate";
+import { useSubscription } from "@/src/hooks/useSubscription";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -2190,6 +2192,7 @@ const hs = StyleSheet.create({
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function TrackingPage() {
+  const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
   const [tab, setTab] = useState("progress");
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
@@ -2286,8 +2289,9 @@ export default function TrackingPage() {
     .reduce((s, l) => s + totalVolLog(l), 0);
 
   return (
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Tracking" onPurchaseSuccess={refreshSubscriptionStatus}>
     <SafeAreaView style={t.root} edges={["top"]}>
-   
+
       <StatusBar barStyle="dark-content" />
 
       <View style={t.header}>
@@ -2463,6 +2467,7 @@ export default function TrackingPage() {
         <LogSheet onClose={() => setShowLog(false)} onSaved={fetchLogs} />
       )}
     </SafeAreaView>
+    </PremiumGate>
   );
 }
 

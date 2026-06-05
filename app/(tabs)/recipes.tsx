@@ -198,6 +198,9 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
           <MacroBar label="Sugar" value={recipe.macros?.sugar} max={50} color="#fb923c" />
           <MacroBar label="Sodium" value={recipe.macros?.sodium} max={2300} color="#60a5fa" unit="mg" />
           <MacroBar label="Cholesterol" value={recipe.macros?.cholesterol} max={300} color="#e879f9" unit="mg" />
+          <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginTop: 8, lineHeight: 13 }}>
+            Nutritional values are estimates based on USDA FoodData Central (fdc.nal.usda.gov). Not a substitute for professional dietary advice.
+          </Text>
         </View>
 
         {recipe.proteinSources?.length > 0 && (
@@ -663,7 +666,6 @@ export default function RecipesScreen() {
   }
 
   return (
-    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Recipes" onPurchaseSuccess={refreshSubscriptionStatus}>
       <SafeAreaView style={s.screen} edges={["top"]}>
         {/* <PageBackground variant="recipes" /> */}
 
@@ -1195,7 +1197,6 @@ export default function RecipesScreen() {
         </View>
       </Modal>
       </SafeAreaView>
-    </PremiumGate>
   );
 }
 //libCard

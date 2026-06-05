@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BlurView } from "expo-blur";
 import {
   Linking,
   Pressable,
@@ -11,29 +10,79 @@ import {
   Alert,
   Image,
   Animated,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
+import Svg, { Path, Circle, Line, Rect } from "react-native-svg";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
 // Set to false to bypass the paywall during development
-const PAYWALL_ENABLED = false;
+const PAYWALL_ENABLED = true;
 
 interface PremiumGateProps {
   isUserPremium: boolean;
-  subChecking?: boolean;   // while true → don't show paywall (status still resolving)
+  subChecking?: boolean;
   children: React.ReactNode;
   featureName?: string;
   onPurchaseSuccess?: () => void | Promise<void>;
 }
 
-const DOCK_RESERVED = 110;
 const LOGO = require("@/assets/images/logo.png");
-
-// Pre-warm the image asset so it's in memory before the component mounts
 Image.prefetch(Image.resolveAssetSource(LOGO).uri).catch(() => {});
+
+// ── SVG Icon Components ──────────────────────────────────────────────────────
+function CoachIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+      <Line x1="10" y1="22" x2="14" y2="22" />
+      <Line x1="9" y1="9" x2="15" y2="9" />
+      <Line x1="12" y1="6" x2="12" y2="12" />
+    </Svg>
+  );
+}
+
+function RecipeIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <Path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <Line x1="9" y1="7" x2="16" y2="7" />
+      <Line x1="9" y1="11" x2="14" y2="11" />
+    </Svg>
+  );
+}
+
+function ScanIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <Circle cx="12" cy="13" r="4" />
+    </Svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <Rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      <Line x1="9" y1="10" x2="15" y2="10" />
+      <Line x1="9" y1="14" x2="15" y2="14" />
+      <Line x1="9" y1="18" x2="13" y2="18" />
+    </Svg>
+  );
+}
+
+const FEATURES = [
+  { icon: CoachIcon, title: "Unlimited AI Coach", desc: "Personal training guidance anytime" },
+  { icon: RecipeIcon, title: "All Recipes & Meal Plans", desc: "Curated meals matched to your goals" },
+  { icon: ScanIcon, title: "Macro Scanner", desc: "Snap a photo, get instant nutrition" },
+  { icon: ListIcon, title: "Weekly Shopping Lists", desc: "Auto-generated from your meal plan" },
+];
 
 export default function PremiumGate({
   isUserPremium,
@@ -43,18 +92,17 @@ export default function PremiumGate({
   onPurchaseSuccess,
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
-  const [userId, setUserId] = React.useState<string>("");
+  const [userId, setUserId] = useState<string>("");
   const [logoReady, setLogoReady] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
 
-  // Only start the fade once the logo has fired onLoad
   useEffect(() => {
     if (!logoReady) return;
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: 800,
       useNativeDriver: true,
     }).start();
   }, [logoReady]);
@@ -74,16 +122,14 @@ export default function PremiumGate({
       .catch((e) => console.error("Failed to get user:", e));
   }, []);
 
-  // Paywall disabled (dev mode) or confirmed premium — show content
   if (!PAYWALL_ENABLED || isUserPremium) {
     return <>{children}</>;
   }
 
-  // Still checking subscription — show a neutral loader so no inner modals/intros fire
   if (subChecking) {
     return (
       <View style={s.loadingScreen}>
-        <ActivityIndicator size="large" color="#e8380d" />
+        <ActivityIndicator size="large" color="#000000" />
       </View>
     );
   }
@@ -115,287 +161,249 @@ export default function PremiumGate({
   };
 
   return (
-    <View style={s.root} pointerEvents="box-none">
-      {/* Never mount children when paywall is active — prevents inner modals
-          (MealPlanView onboarding, ProfileIntro, etc.) from firing */}
-
+    <View style={s.root}>
       <Animated.View
         style={[
-          s.overlay,
+          s.container,
           {
             opacity: fadeAnim,
-            paddingTop: insets.top,
-            paddingBottom: DOCK_RESERVED + insets.bottom,
+            paddingTop: insets.top + 20,
+            paddingBottom: insets.bottom + 20,
           },
         ]}
       >
-        <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
-        <View style={s.scrim} />
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Logo */}
+          <Image
+            source={LOGO}
+            style={s.logo}
+            resizeMode="contain"
+            fadeDuration={0}
+            onLoad={() => setLogoReady(true)}
+            onError={() => setLogoReady(true)}
+          />
 
-        <View style={s.cardWrap}>
-          <View style={s.card}>
+          {/* Title */}
+          <Text style={s.title}>PocketGym Pro</Text>
+          <Text style={s.subtitle}>Unlock everything. Train smarter.</Text>
 
-            {/* White header band */}
-            <View style={s.cardBand}>
-              <View style={s.bandLeft}>
-                <Image
-                  source={LOGO}
-                  style={s.logo}
-                  resizeMode="contain"
-                  fadeDuration={0}
-                  onLoad={() => setLogoReady(true)}
-                  // Safety net: if onLoad never fires, fade in anyway after 400ms
-                  onError={() => setLogoReady(true)}
-                />
-                <View>
-                  <Text style={s.eyebrow}>POCKETGYM PREMIUM</Text>
-                  <Text style={s.bandTitle}>Monthly</Text>
+          {/* Features */}
+          <View style={s.features}>
+            {FEATURES.map((f, i) => (
+              <View key={i} style={s.featureRow}>
+                <View style={s.featureIcon}>
+                  <f.icon />
+                </View>
+                <View style={s.featureInfo}>
+                  <Text style={s.featureTitle}>{f.title}</Text>
+                  <Text style={s.featureDesc}>{f.desc}</Text>
                 </View>
               </View>
-              <View style={s.priceBadge}>
-                <Text style={s.priceAmount}>$12.99</Text>
-                <Text style={s.pricePer}>/mo</Text>
+            ))}
+          </View>
+
+          {/* Plan selector */}
+          <View style={s.plan}>
+            <View style={s.planLeft}>
+              <View style={s.planRadio}>
+                <View style={s.planRadioInner} />
               </View>
+              <Text style={s.planName}>Monthly</Text>
             </View>
-
-            {/* Divider */}
-            <View style={s.divider} />
-
-            {/* Body */}
-            <View style={s.body}>
-              <Text style={s.subtitle}>
-                Everything you need to train, eat, and recover smarter.
-              </Text>
-
-              <View style={s.features}>
-                <Feature text="Unlimited AI Training Coach" />
-                <Feature text="Unlimited Recipes" />
-                <Feature text="Unlimited Macro Scanner" />
-                <Feature text="Unlimited AI Chat Bots" />
-              </View>
-
-              {error ? (
-                <View style={s.errorBox}>
-                  <Text style={s.errorText}>{error}</Text>
-                </View>
-              ) : null}
-
-              <Pressable
-                style={({ pressed }) => [
-                  s.cta,
-                  pressed && s.ctaPressed,
-                  isLoading && s.ctaDisabled,
-                ]}
-                onPress={handlePurchase}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <View style={s.ctaInner}>
-                    <Text style={s.ctaText}>Continue</Text>
-                    <View style={s.ctaPricePill}>
-                      <Text style={s.ctaPriceText}>$12.99 / mo</Text>
-                    </View>
-                  </View>
-                )}
-              </Pressable>
-
-              <Pressable onPress={handleRestore} disabled={isLoading}>
-                <Text style={[s.restore, isLoading && { opacity: 0.5 }]}>
-                  Restore purchase
-                </Text>
-              </Pressable>
-
-              {/* Apple-required subscription disclosure */}
-              <Text style={s.renewalNotice}>
-                PocketGym Premium · $12.99 / month (auto-renews){"\n"}
-                Subscription auto-renews monthly unless cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple ID account. You can manage or cancel your subscription at any time in your App Store account settings.
-              </Text>
-
-              <View style={s.legalRow}>
-                <Text
-                  style={s.legalLink}
-                  onPress={() => Linking.openURL(TERMS_URL)}
-                >
-                  Terms of Use
-                </Text>
-                <Text style={s.legalDot}> · </Text>
-                <Text
-                  style={s.legalLink}
-                  onPress={() => Linking.openURL(PRIVACY_URL)}
-                >
-                  Privacy Policy
-                </Text>
-              </View>
+            <View style={s.planPrice}>
+              <Text style={s.planAmount}>$12.99</Text>
+              <Text style={s.planPeriod}>per month</Text>
             </View>
           </View>
-        </View>
+
+          {/* Error */}
+          {error ? (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          {/* CTA */}
+          <Pressable
+            style={({ pressed }) => [
+              s.cta,
+              pressed && s.ctaPressed,
+              isLoading && s.ctaDisabled,
+            ]}
+            onPress={handlePurchase}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={s.ctaText}>Continue</Text>
+            )}
+          </Pressable>
+
+          {/* Restore */}
+          <Pressable onPress={handleRestore} disabled={isLoading}>
+            <Text style={[s.restore, isLoading && { opacity: 0.5 }]}>
+              Restore purchase
+            </Text>
+          </Pressable>
+
+          {/* Apple-required disclosure */}
+          <Text style={s.renewalNotice}>
+            Subscription auto-renews monthly unless cancelled at least 24 hours
+            before the end of the current period. Payment is charged to your
+            Apple ID account. Manage or cancel anytime in Settings {">"} Apple ID {">"} Subscriptions.
+          </Text>
+
+          {/* Legal links */}
+          <View style={s.legalRow}>
+            <Text
+              style={s.legalLink}
+              onPress={() => Linking.openURL(TERMS_URL)}
+            >
+              Terms
+            </Text>
+            <Text style={s.legalDot}> · </Text>
+            <Text
+              style={s.legalLink}
+              onPress={() => Linking.openURL(PRIVACY_URL)}
+            >
+              Privacy
+            </Text>
+          </View>
+        </ScrollView>
       </Animated.View>
     </View>
   );
 }
 
-function Feature({ text }: { text: string }) {
-  return (
-    <View style={s.featureRow}>
-      <View style={s.checkCircle}>
-        <Text style={s.checkMark}>✓</Text>
-      </View>
-      <Text style={s.featureText}>{text}</Text>
-    </View>
-  );
-}
-
-const ORANGE = "#e8380d";
-const ORANGE_DARK = "#c42e09";
-const INK = "#1a1a1a";
-const MUTED = "#6b6b6b";
-const HAIRLINE = "#e8e6e1";
-const ORANGE_TINT = "#fff3f0";
-
 const s = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
+    backgroundColor: "#ffffff",
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: "#fafaf8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  overlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  cardWrap: {
-    width: "100%",
-    paddingHorizontal: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 80,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 360,
     backgroundColor: "#ffffff",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: HAIRLINE,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 32,
-    elevation: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  cardBand: {
+  container: {
+    flex: 1,
     backgroundColor: "#ffffff",
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
-  bandLeft: {
-    flexDirection: "row",
+  scrollContent: {
     alignItems: "center",
-    gap: 12,
+    paddingHorizontal: 28,
+    paddingBottom: 20,
   },
   logo: {
-    width: 44,
-    height: 44,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    marginBottom: 20,
   },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: MUTED,
-    letterSpacing: 2,
-    marginBottom: 2,
-  },
-  bandTitle: {
-    fontSize: 26,
+  title: {
+    fontSize: 28,
     fontWeight: "800",
-    color: INK,
-    letterSpacing: -0.5,
-  },
-  priceBadge: {
-    backgroundColor: ORANGE_TINT,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#fdd5cc",
-  },
-  priceAmount: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: ORANGE,
-    lineHeight: 24,
-  },
-  pricePer: {
-    fontSize: 11,
-    color: ORANGE,
-    fontWeight: "600",
+    color: "#000000",
     textAlign: "center",
-    opacity: 0.7,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: HAIRLINE,
-    marginHorizontal: 20,
-  },
-  body: {
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 22,
-    alignItems: "center",
+    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
-    color: MUTED,
+    fontSize: 15,
+    color: "#8e8e93",
     textAlign: "center",
-    marginBottom: 18,
-    lineHeight: 19,
+    lineHeight: 22,
+    marginBottom: 32,
   },
   features: {
     width: "100%",
-    gap: 10,
-    marginBottom: 22,
+    gap: 20,
+    marginBottom: 36,
+    paddingHorizontal: 4,
   },
   featureRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    alignItems: "flex-start",
+    gap: 14,
   },
-  checkCircle: {
-    width: 20,
-    height: 20,
+  featureIcon: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
-    backgroundColor: ORANGE_TINT,
+    backgroundColor: "#f2f2f7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  featureInfo: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000000",
+    marginBottom: 2,
+  },
+  featureDesc: {
+    fontSize: 13,
+    color: "#8e8e93",
+    lineHeight: 18,
+  },
+  plan: {
+    width: "100%",
+    borderWidth: 2,
+    borderColor: "#000000",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  planLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  planRadio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
   },
-  checkMark: {
-    fontSize: 11,
-    color: ORANGE_DARK,
-    fontWeight: "700",
-    lineHeight: 14,
+  planRadioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#000000",
   },
-  featureText: {
-    fontSize: 13,
-    color: INK,
+  planName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000000",
+  },
+  planPrice: {
+    alignItems: "flex-end",
+  },
+  planAmount: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000000",
+  },
+  planPeriod: {
+    fontSize: 12,
+    color: "#8e8e93",
     fontWeight: "500",
-    flex: 1,
   },
   errorBox: {
     width: "100%",
@@ -413,57 +421,35 @@ const s = StyleSheet.create({
   },
   cta: {
     width: "100%",
-    backgroundColor: ORANGE,
+    backgroundColor: "#000000",
     borderRadius: 14,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: 17,
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   ctaPressed: {
-    backgroundColor: ORANGE_DARK,
+    backgroundColor: "#333333",
   },
   ctaDisabled: {
     opacity: 0.6,
   },
-  ctaInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-  },
   ctaText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#ffffff",
-    flex: 1,
-    textAlign: "center",
-  },
-  ctaPricePill: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    position: "absolute",
-    right: 0,
-  },
-  ctaPriceText: {
-    fontSize: 12,
+    fontSize: 17,
     fontWeight: "700",
     color: "#ffffff",
   },
   restore: {
     fontSize: 13,
-    color: MUTED,
-    textDecorationLine: "underline",
-    marginBottom: 12,
+    color: "#8e8e93",
+    marginBottom: 16,
   },
   renewalNotice: {
     fontSize: 10,
-    color: MUTED,
+    color: "#c7c7cc",
     textAlign: "center",
     lineHeight: 15,
-    marginBottom: 10,
-    paddingHorizontal: 4,
+    marginBottom: 8,
+    paddingHorizontal: 12,
   },
   legalRow: {
     flexDirection: "row",
@@ -471,12 +457,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   legalLink: {
-    fontSize: 11,
-    color: "#4a90d9",
+    fontSize: 10,
+    color: "#8e8e93",
     textDecorationLine: "underline",
   },
   legalDot: {
-    fontSize: 11,
-    color: MUTED,
+    fontSize: 10,
+    color: "#8e8e93",
   },
 });
