@@ -2,7 +2,7 @@ import Purchases, { LOG_LEVEL, PurchasesPackage, CustomerInfo } from "react-nati
 import { Platform } from "react-native";
 
 // ── RevenueCat config ──────────────────────────────────────────────────────────
-const RC_API_KEY_IOS     = "appl_kxSrGLjXMPAUBBgAmUzXIPdeYCb";
+const RC_API_KEY_IOS     = "appl_iTmcyKbdGUdpxaBhhLPfoEubfIb";
 const RC_API_KEY_ANDROID = ""; // add if Android is ever shipped
 const ENTITLEMENT_ID     = "PocketGym Pro";
 
