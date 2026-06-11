@@ -128,13 +128,11 @@ export default function PremiumGate({
   return (
     <Animated.View style={[s.root, { opacity: fadeIn, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 8 }]}>
 
-      {/* Logo with spring animation */}
-      <Animated.View style={[s.logoWrap, { transform: [{ scale: logoScale }] }]}>
+      {/* Logo + Title inline */}
+      <Animated.View style={[s.titleRow, { transform: [{ scale: logoScale }] }]}>
         <Image source={LOGO} style={s.logo} resizeMode="contain" />
+        <Text style={s.title}>Get PocketGym Pro</Text>
       </Animated.View>
-
-      {/* Title */}
-      <Text style={s.title}>Get PocketGym Pro</Text>
       <Text style={s.subtitle}>
         Unlock AI coaching, macro tracking{"\n"}and personalized meal plans.
       </Text>
@@ -168,13 +166,11 @@ export default function PremiumGate({
       {/* Spacer */}
       <View style={{ flex: 1 }} />
 
-      {/* Pricing */}
-      <View style={s.pricingRow}>
-        <View style={s.priceBox}>
-          <Text style={s.priceNumber}>1</Text>
-          <Text style={s.priceLabel}>MONTH</Text>
-          <Text style={s.priceAmount}>$12.99</Text>
-        </View>
+      {/* Pricing — full width, aligned with CTA */}
+      <View style={s.priceBox}>
+        <Text style={s.priceNumber}>1</Text>
+        <Text style={s.priceLabel}>MONTH</Text>
+        <Text style={s.priceAmount}>$12.99</Text>
       </View>
 
       {/* Error */}
@@ -224,22 +220,22 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
 
-  logoWrap: {
+  titleRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 8,
   },
   logo: {
-    width: 68,
-    height: 68,
+    width: 42,
+    height: 42,
   },
-
   title: {
     fontSize: 26,
     fontWeight: "800",
     color: "#1a1a1a",
-    textAlign: "center",
     letterSpacing: -0.5,
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
@@ -258,27 +254,27 @@ const s = StyleSheet.create({
     gap: 8,
   },
   laurelImg: {
-    width: 22,
-    height: 36,
+    width: 28,
+    height: 44,
   },
   badgeTextWrap: {
     alignItems: "center",
   },
   badgeTop: {
-    fontSize: 10,
-    color: "#aaaaaa",
+    fontSize: 11,
+    color: "#999999",
     fontWeight: "500",
     fontStyle: "italic",
   },
   badgeMain: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#1a1a1a",
     letterSpacing: -0.2,
   },
   badgeBottom: {
-    fontSize: 10,
-    color: "#aaaaaa",
+    fontSize: 11,
+    color: "#999999",
     fontWeight: "500",
     fontStyle: "italic",
   },
@@ -336,19 +332,15 @@ const s = StyleSheet.create({
   },
 
   /* Pricing */
-  pricingRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 14,
-  },
   priceBox: {
-    paddingVertical: 14,
-    paddingHorizontal: 36,
+    width: "100%",
+    paddingVertical: 16,
     borderRadius: 14,
     borderWidth: 2,
     borderColor: BRAND,
     alignItems: "center",
     backgroundColor: "#fff5f3",
+    marginBottom: 14,
   },
   priceNumber: {
     fontSize: 28,
@@ -384,18 +376,18 @@ const s = StyleSheet.create({
 
   /* CTA */
   cta: {
-    backgroundColor: BRAND,
+    backgroundColor: "#f06040",
     borderRadius: 14,
     paddingVertical: 17,
     alignItems: "center",
     marginBottom: 14,
-    shadowColor: BRAND,
+    shadowColor: "#f06040",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
   },
   ctaPressed: {
-    backgroundColor: "#c02e0a",
+    backgroundColor: "#e04e30",
   },
   ctaDisabled: {
     opacity: 0.5,
