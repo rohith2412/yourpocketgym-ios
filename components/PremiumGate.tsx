@@ -9,18 +9,18 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Animated,
+  Easing,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
-const LAUREL_LEFT  = require("@/assets/images/laurel-left.webp");
-const LAUREL_RIGHT = require("@/assets/images/laurel-right.webp");
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 const PAYWALL_ENABLED = true;
-
 const BRAND = "#e8380d";
+const { width: SCREEN_W } = Dimensions.get("window");
 
 interface PremiumGateProps {
   isUserPremium: boolean;
@@ -31,6 +31,14 @@ interface PremiumGateProps {
 }
 
 const LOGO = require("@/assets/images/logo.png");
+const LAUREL_LEFT  = require("@/assets/images/laurel-left.webp");
+const LAUREL_RIGHT = require("@/assets/images/laurel-right.webp");
+
+const REVIEWS = [
+  { title: "Life changing app", body: "The AI trainer actually understands my goals. Lost 12 lbs in 2 months just following the plans!", author: "Mike R.", stars: 5 },
+  { title: "Your AI fitness companion", body: "Finally an app that tracks my workouts and gives real coaching. Like a personal trainer in my pocket!", author: "Sarah K.", stars: 5 },
+  { title: "Worth every penny", body: "Macro scanner alone saves me 20 min a day. The workout plans are perfectly tailored to my home gym.", author: "Alex T.", stars: 5 },
+];
 
 export default function PremiumGate({
   isUserPremium,
@@ -41,8 +49,42 @@ export default function PremiumGate({
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string>("");
+  const [reviewIdx, setReviewIdx] = useState(0);
+  const fadeIn = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.5)).current;
+  const reviewFade = useRef(new Animated.Value(1)).current;
+  const ctaScale = useRef(new Animated.Value(1)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
+
+  // Entrance animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(logoScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  // Auto-rotate reviews
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(reviewFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+        setReviewIdx(i => (i + 1) % REVIEWS.length);
+        Animated.timing(reviewFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Subtle CTA pulse
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(ctaScale, { toValue: 1.02, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(ctaScale, { toValue: 1, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem("user")
@@ -81,18 +123,15 @@ export default function PremiumGate({
     else Alert.alert("No Purchases Found", "No active subscription found.");
   };
 
+  const review = REVIEWS[reviewIdx];
+
   return (
-    <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 12 }]}>
+    <Animated.View style={[s.root, { opacity: fadeIn, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 8 }]}>
 
-      {/* Close button area */}
-      <View style={s.topBar}>
-        <View style={{ width: 28 }} />
-      </View>
-
-      {/* Logo */}
-      <View style={s.logoWrap}>
+      {/* Logo with spring animation */}
+      <Animated.View style={[s.logoWrap, { transform: [{ scale: logoScale }] }]}>
         <Image source={LOGO} style={s.logo} resizeMode="contain" />
-      </View>
+      </Animated.View>
 
       {/* Title */}
       <Text style={s.title}>Get PocketGym Pro</Text>
@@ -111,14 +150,19 @@ export default function PremiumGate({
         <Image source={LAUREL_RIGHT} style={s.laurelImg} resizeMode="contain" />
       </View>
 
-      {/* Review card */}
-      <View style={s.reviewCard}>
-        <Text style={s.reviewTitle}>Your AI fitness companion</Text>
-        <Text style={s.reviewStars}>★★★★★</Text>
-        <Text style={s.reviewBody}>
-          Finally an app that actually tracks my workouts and gives me real coaching. The AI trainer is like having a personal trainer in my pocket!
-        </Text>
-        <Text style={s.reviewAuthor}>FitnessFan2026</Text>
+      {/* Review card — auto-rotating */}
+      <Animated.View style={[s.reviewCard, { opacity: reviewFade }]}>
+        <Text style={s.reviewTitle}>{review.title}</Text>
+        <Text style={s.reviewStars}>{"★".repeat(review.stars)}</Text>
+        <Text style={s.reviewBody}>{review.body}</Text>
+        <Text style={s.reviewAuthor}>{review.author}</Text>
+      </Animated.View>
+
+      {/* Dots */}
+      <View style={s.dotsRow}>
+        {REVIEWS.map((_, i) => (
+          <View key={i} style={[s.dot, i === reviewIdx && s.dotActive]} />
+        ))}
       </View>
 
       {/* Spacer */}
@@ -126,10 +170,10 @@ export default function PremiumGate({
 
       {/* Pricing */}
       <View style={s.pricingRow}>
-        <View style={[s.priceBox, s.priceBoxSelected]}>
-          <Text style={[s.priceNumber, s.priceNumberSelected]}>1</Text>
-          <Text style={[s.priceLabel, s.priceLabelSelected]}>MONTH</Text>
-          <Text style={[s.priceAmount, s.priceAmountSelected]}>$12.99</Text>
+        <View style={s.priceBox}>
+          <Text style={s.priceNumber}>1</Text>
+          <Text style={s.priceLabel}>MONTH</Text>
+          <Text style={s.priceAmount}>$12.99</Text>
         </View>
       </View>
 
@@ -140,18 +184,20 @@ export default function PremiumGate({
         </View>
       ) : null}
 
-      {/* CTA */}
-      <Pressable
-        style={({ pressed }) => [s.cta, pressed && s.ctaPressed, isLoading && s.ctaDisabled]}
-        onPress={handlePurchase}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <Text style={s.ctaText}>Continue</Text>
-        )}
-      </Pressable>
+      {/* CTA with subtle pulse */}
+      <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+        <Pressable
+          style={({ pressed }) => [s.cta, pressed && s.ctaPressed, isLoading && s.ctaDisabled]}
+          onPress={handlePurchase}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={s.ctaText}>Continue</Text>
+          )}
+        </Pressable>
+      </Animated.View>
 
       {/* Footer */}
       <View style={s.footerRow}>
@@ -161,7 +207,7 @@ export default function PremiumGate({
         <Text style={s.footerLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
         <Text style={s.footerLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy</Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -178,41 +224,37 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
 
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 20,
-  },
-
   logoWrap: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   logo: {
-    width: 72,
-    height: 72,
+    width: 68,
+    height: 68,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "800",
     color: "#1a1a1a",
     textAlign: "center",
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: "#888888",
+    color: "#999999",
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 18,
   },
 
+  /* Badge */
   badgeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 20,
     gap: 8,
   },
   laurelImg: {
@@ -241,15 +283,17 @@ const s = StyleSheet.create({
     fontStyle: "italic",
   },
 
+  /* Review */
   reviewCard: {
     backgroundColor: "#fafafa",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 18,
     borderWidth: 1,
     borderColor: "#f0f0f0",
+    minHeight: 140,
   },
   reviewTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#1a1a1a",
     marginBottom: 4,
@@ -257,65 +301,74 @@ const s = StyleSheet.create({
   reviewStars: {
     fontSize: 14,
     color: "#f59e0b",
-    marginBottom: 8,
+    marginBottom: 10,
     letterSpacing: 2,
   },
   reviewBody: {
     fontSize: 13,
     color: "#666666",
-    lineHeight: 19,
-    marginBottom: 8,
+    lineHeight: 20,
+    marginBottom: 10,
   },
   reviewAuthor: {
     fontSize: 12,
-    color: "#aaaaaa",
-    fontWeight: "500",
+    color: "#bbbbbb",
+    fontWeight: "600",
   },
 
+  /* Dots */
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#e0e0e0",
+  },
+  dotActive: {
+    backgroundColor: BRAND,
+    width: 18,
+    borderRadius: 3,
+  },
+
+  /* Pricing */
   pricingRow: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   priceBox: {
     paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: 36,
+    borderRadius: 14,
     borderWidth: 2,
-    borderColor: "#e5e5e5",
-    alignItems: "center",
-  },
-  priceBoxSelected: {
     borderColor: BRAND,
+    alignItems: "center",
     backgroundColor: "#fff5f3",
   },
   priceNumber: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1a1a1a",
-  },
-  priceNumberSelected: {
     color: BRAND,
   },
   priceLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#999999",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  priceLabelSelected: {
     color: BRAND,
+    letterSpacing: 1,
+    marginBottom: 2,
   },
   priceAmount: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#1a1a1a",
-  },
-  priceAmountSelected: {
     color: BRAND,
   },
 
+  /* Error */
   errorBox: {
     backgroundColor: "#fef2f2",
     borderRadius: 10,
@@ -329,12 +382,17 @@ const s = StyleSheet.create({
     fontWeight: "500",
   },
 
+  /* CTA */
   cta: {
     backgroundColor: BRAND,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 17,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
+    shadowColor: BRAND,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
   },
   ctaPressed: {
     backgroundColor: "#c02e0a",
@@ -343,19 +401,20 @@ const s = StyleSheet.create({
     opacity: 0.5,
   },
   ctaText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
     color: "#ffffff",
   },
 
+  /* Footer */
   footerRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 24,
+    gap: 20,
   },
   footerLink: {
     fontSize: 12,
-    color: "#bbbbbb",
+    color: "#cccccc",
     fontWeight: "500",
   },
 });
