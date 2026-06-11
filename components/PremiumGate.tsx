@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
+import { LinearGradient } from "expo-linear-gradient";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -30,9 +31,7 @@ interface PremiumGateProps {
 }
 
 const HERO_IMG = require("@/assets/images/frontComp.png");
-const LOGO     = require("@/assets/images/logo.png");
 Image.prefetch(Image.resolveAssetSource(HERO_IMG).uri).catch(() => {});
-Image.prefetch(Image.resolveAssetSource(LOGO).uri).catch(() => {});
 
 export default function PremiumGate({
   isUserPremium,
@@ -45,20 +44,20 @@ export default function PremiumGate({
   const [userId, setUserId] = useState<string>("");
   const [ready, setReady] = useState(false);
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
 
   useEffect(() => {
     if (!ready) return;
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
     ]).start();
   }, [ready]);
 
   useEffect(() => {
-    setTimeout(() => setReady(true), 100);
+    setTimeout(() => setReady(true), 150);
     AsyncStorage.getItem("user")
       .then((userStr) => {
         if (userStr) {
@@ -96,34 +95,63 @@ export default function PremiumGate({
   };
 
   return (
-    <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[s.root, { paddingBottom: insets.bottom }]}>
 
-      {/* ── Hero image area ─────────────────────────────── */}
-      <View style={s.heroSection}>
+      {/* ── Purple/gradient hero area ─────────────────── */}
+      <LinearGradient
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
+        style={[s.heroSection, { paddingTop: insets.top + 12 }]}
+      >
+        {/* Close-ish area spacer */}
+        <View style={s.heroTopSpacer} />
+
+        {/* Hero image */}
         <Image source={HERO_IMG} style={s.heroImg} resizeMode="contain" />
-      </View>
 
-      {/* ── Bottom content ──────────────────────────────── */}
-      <Animated.View style={[s.bottom, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        {/* Title overlaid on gradient */}
+        <Text style={s.heroTitle}>Unlock Everything</Text>
+        <Text style={s.heroSubtitle}>
+          AI coaching, macro tracking & meal plans
+        </Text>
+      </LinearGradient>
 
-        {/* Title block */}
-        <View style={s.titleBlock}>
-          <Text style={s.title}>
-            Unlock <Text style={s.titleAccent}>Pro</Text>
-          </Text>
-          <Text style={s.subtitle}>
-            AI coaching, macro tracking, meal plans — all unlimited.
-          </Text>
+      {/* ── White bottom card ─────────────────────────── */}
+      <Animated.View style={[s.bottomCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+
+        {/* Timeline steps */}
+        <View style={s.timeline}>
+          <TimelineStep
+            icon="✓"
+            iconBg="#10b981"
+            title="Sign Up"
+            desc="Create your account for free"
+            isLast={false}
+          />
+          <TimelineStep
+            icon="⚡"
+            iconBg="#ef4444"
+            title="Today: Get Instant Access"
+            desc="Unlock all premium features"
+            isLast={false}
+          />
+          <TimelineStep
+            icon="💳"
+            iconBg="#8b5cf6"
+            title="Payment Starts"
+            desc="$12.99/mo, cancel anytime in Settings"
+            isLast={true}
+          />
         </View>
 
-        {/* Pricing pill */}
-        <View style={s.pricingPill}>
-          <View style={s.pillLeft}>
-            <Text style={s.pillPrice}>$12.99</Text>
-            <Text style={s.pillPeriod}>/month</Text>
+        {/* Pricing selector */}
+        <View style={s.planOption}>
+          <View style={s.planRadioOuter}>
+            <View style={s.planRadioInner} />
           </View>
-          <View style={s.pillDivider} />
-          <Text style={s.pillDetail}>Cancel anytime</Text>
+          <View style={s.planInfo}>
+            <Text style={s.planLabel}>Monthly</Text>
+          </View>
+          <Text style={s.planPrice}>$12.99 / mo</Text>
         </View>
 
         {/* Error */}
@@ -139,31 +167,104 @@ export default function PremiumGate({
           onPress={handlePurchase}
           disabled={isLoading}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={s.ctaText}>Continue</Text>
-          )}
+          <LinearGradient
+            colors={["#ef4444", "#dc2626"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={s.ctaGradient}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={s.ctaText}>Subscribe Now</Text>
+            )}
+          </LinearGradient>
         </Pressable>
 
-        {/* Restore + Legal */}
-        <View style={s.footerRow}>
-          <Pressable onPress={handleRestore} disabled={isLoading}>
-            <Text style={[s.footerLink, isLoading && { opacity: 0.4 }]}>Restore</Text>
-          </Pressable>
-          <Text style={s.footerDot}>·</Text>
-          <Text style={s.footerLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
-          <Text style={s.footerDot}>·</Text>
-          <Text style={s.footerLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy</Text>
-        </View>
+        {/* Footer */}
+        <Pressable onPress={handleRestore} disabled={isLoading}>
+          <Text style={[s.restoreText, isLoading && { opacity: 0.4 }]}>
+            Restore purchase
+          </Text>
+        </Pressable>
 
         <Text style={s.disclosure}>
-          Auto-renews at $12.99/mo. Cancel in Settings anytime.
+          Auto-renews at $12.99/mo. Cancel in Settings {">"} Apple ID {">"} Subscriptions.
         </Text>
+
+        <View style={s.legalRow}>
+          <Text style={s.legalLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
+          <Text style={s.legalDot}>·</Text>
+          <Text style={s.legalLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy</Text>
+        </View>
       </Animated.View>
     </View>
   );
 }
+
+/* ── Timeline Step Component ──────────────────────────── */
+function TimelineStep({ icon, iconBg, title, desc, isLast }: {
+  icon: string; iconBg: string; title: string; desc: string; isLast: boolean;
+}) {
+  return (
+    <View style={ts.row}>
+      <View style={ts.iconCol}>
+        <View style={[ts.iconCircle, { backgroundColor: iconBg }]}>
+          <Text style={ts.iconText}>{icon}</Text>
+        </View>
+        {!isLast && <View style={ts.line} />}
+      </View>
+      <View style={ts.textCol}>
+        <Text style={ts.title}>{title}</Text>
+        <Text style={ts.desc}>{desc}</Text>
+      </View>
+    </View>
+  );
+}
+
+const ts = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    minHeight: 56,
+  },
+  iconCol: {
+    width: 36,
+    alignItems: "center",
+  },
+  iconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconText: {
+    fontSize: 13,
+    color: "#ffffff",
+  },
+  line: {
+    flex: 1,
+    width: 2,
+    backgroundColor: "#e5e7eb",
+    marginVertical: 4,
+  },
+  textCol: {
+    flex: 1,
+    marginLeft: 12,
+    paddingBottom: 16,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111111",
+    marginBottom: 3,
+  },
+  desc: {
+    fontSize: 12,
+    color: "#888888",
+    lineHeight: 17,
+  },
+});
 
 const s = StyleSheet.create({
   root: {
@@ -179,77 +280,87 @@ const s = StyleSheet.create({
 
   /* ── Hero ────────────────────────────────────────── */
   heroSection: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  heroTopSpacer: {
+    height: 8,
   },
   heroImg: {
-    width: SCREEN_W * 0.85,
-    height: SCREEN_H * 0.38,
+    width: SCREEN_W * 0.75,
+    height: SCREEN_H * 0.26,
+    marginBottom: 16,
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: "#ffffff",
+    textAlign: "center",
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    textAlign: "center",
+    fontWeight: "500",
+    paddingHorizontal: 40,
   },
 
-  /* ── Bottom ──────────────────────────────────────── */
-  bottom: {
+  /* ── Bottom card ─────────────────────────────────── */
+  bottomCard: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 8,
+    paddingTop: 24,
   },
-  titleBlock: {
+
+  /* ── Timeline ────────────────────────────────────── */
+  timeline: {
     marginBottom: 20,
   },
-  title: {
-    fontSize: 34,
-    fontWeight: "900",
-    color: "#000000",
-    letterSpacing: -1,
-    marginBottom: 8,
-  },
-  titleAccent: {
-    color: "#ef4444",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#888888",
-    lineHeight: 22,
-    fontWeight: "500",
-  },
 
-  /* ── Pricing pill ────────────────────────────────── */
-  pricingPill: {
+  /* ── Plan option ─────────────────────────────────── */
+  planOption: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    borderWidth: 2,
+    borderColor: "#ef4444",
     borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: "#fef7f7",
   },
-  pillLeft: {
-    flexDirection: "row",
-    alignItems: "baseline",
+  planRadioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
-  pillPrice: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#000000",
+  planRadioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#ef4444",
   },
-  pillPeriod: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#888888",
-    marginLeft: 2,
+  planInfo: {
+    flex: 1,
   },
-  pillDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: "#dddddd",
-    marginHorizontal: 16,
+  planLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111111",
   },
-  pillDetail: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#888888",
+  planPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111111",
   },
 
   /* ── Error ───────────────────────────────────────── */
@@ -268,47 +379,62 @@ const s = StyleSheet.create({
 
   /* ── CTA ─────────────────────────────────────────── */
   cta: {
-    backgroundColor: "#000000",
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 14,
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  ctaGradient: {
+    paddingVertical: 17,
     alignItems: "center",
-    marginBottom: 16,
   },
   ctaPressed: {
-    backgroundColor: "#222222",
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   ctaDisabled: {
     opacity: 0.5,
   },
   ctaText: {
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#ffffff",
     letterSpacing: -0.3,
   },
 
   /* ── Footer ──────────────────────────────────────── */
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  footerLink: {
-    fontSize: 12,
+  restoreText: {
+    fontSize: 13,
+    color: "#ef4444",
+    textAlign: "center",
     fontWeight: "600",
-    color: "#aaaaaa",
-  },
-  footerDot: {
-    fontSize: 12,
-    color: "#cccccc",
-    marginHorizontal: 8,
+    marginBottom: 12,
   },
   disclosure: {
     fontSize: 10,
-    color: "#cccccc",
+    color: "#bbbbbb",
     textAlign: "center",
     lineHeight: 14,
-    fontWeight: "400",
+    marginBottom: 8,
+    paddingHorizontal: 16,
+  },
+  legalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  legalLink: {
+    fontSize: 10,
+    color: "#bbbbbb",
+    fontWeight: "500",
+  },
+  legalDot: {
+    fontSize: 10,
+    color: "#cccccc",
+    marginHorizontal: 6,
   },
 });
