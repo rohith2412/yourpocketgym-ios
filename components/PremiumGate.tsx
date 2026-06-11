@@ -53,7 +53,6 @@ export default function PremiumGate({
   const fadeIn = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.5)).current;
   const reviewFade = useRef(new Animated.Value(1)).current;
-  const ctaScale = useRef(new Animated.Value(1)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
 
@@ -76,15 +75,6 @@ export default function PremiumGate({
     return () => clearInterval(interval);
   }, []);
 
-  // Subtle CTA pulse
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(ctaScale, { toValue: 1.02, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(ctaScale, { toValue: 1, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    ).start();
-  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem("user")
@@ -180,20 +170,18 @@ export default function PremiumGate({
         </View>
       ) : null}
 
-      {/* CTA with subtle pulse */}
-      <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-        <Pressable
-          style={({ pressed }) => [s.cta, pressed && s.ctaPressed, isLoading && s.ctaDisabled]}
-          onPress={handlePurchase}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={s.ctaText}>Continue</Text>
-          )}
-        </Pressable>
-      </Animated.View>
+      {/* CTA */}
+      <Pressable
+        style={({ pressed }) => [s.cta, pressed && s.ctaPressed, isLoading && s.ctaDisabled]}
+        onPress={handlePurchase}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={s.ctaText}>Continue</Text>
+        )}
+      </Pressable>
 
       {/* Footer */}
       <View style={s.footerRow}>
@@ -335,7 +323,7 @@ const s = StyleSheet.create({
   /* Pricing */
   priceBox: {
     width: "100%",
-    paddingVertical: 16,
+    paddingVertical: 17,
     borderRadius: 14,
     borderWidth: 2,
     borderColor: BRAND,
@@ -377,15 +365,12 @@ const s = StyleSheet.create({
 
   /* CTA */
   cta: {
+    width: "100%",
     backgroundColor: "#f06040",
     borderRadius: 14,
     paddingVertical: 17,
     alignItems: "center",
     marginBottom: 14,
-    shadowColor: "#f06040",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
   },
   ctaPressed: {
     backgroundColor: "#e04e30",
