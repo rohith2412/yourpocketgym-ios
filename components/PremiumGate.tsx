@@ -14,12 +14,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
-import Svg, { Path, Circle, Line, Rect } from "react-native-svg";
+import Svg, { Path, Circle, Line, Rect, Defs, LinearGradient, Stop } from "react-native-svg";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
-// Set to false to bypass the paywall during development
 const PAYWALL_ENABLED = true;
 
 interface PremiumGateProps {
@@ -36,52 +35,47 @@ Image.prefetch(Image.resolveAssetSource(LOGO).uri).catch(() => {});
 // ── SVG Icon Components ──────────────────────────────────────────────────────
 function CoachIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-      <Line x1="10" y1="22" x2="14" y2="22" />
-      <Line x1="9" y1="9" x2="15" y2="9" />
-      <Line x1="12" y1="6" x2="12" y2="12" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="6" r="2.5" fill="#ef4444" opacity="0.2" />
+      <Path d="M12 9v6m-3-6v6m6 0v6" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" />
+      <Rect x="9" y="15" width="6" height="6" rx="1" fill="#ef4444" opacity="0.1" stroke="#ef4444" strokeWidth="1.5" />
     </Svg>
   );
 }
 
 function RecipeIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <Path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      <Line x1="9" y1="7" x2="16" y2="7" />
-      <Line x1="9" y1="11" x2="14" y2="11" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Rect x="4" y="3" width="16" height="18" rx="2" fill="#ef4444" opacity="0.1" stroke="#ef4444" strokeWidth="1.5" />
+      <Path d="M8 7h8M8 11h8M8 15h5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
     </Svg>
   );
 }
 
 function ScanIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <Circle cx="12" cy="13" r="4" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Rect x="3" y="5" width="18" height="14" rx="2" fill="#ef4444" opacity="0.1" stroke="#ef4444" strokeWidth="1.5" />
+      <Circle cx="12" cy="12" r="3.5" fill="none" stroke="#ef4444" strokeWidth="1.5" />
+      <Circle cx="12" cy="12" r="1.5" fill="#ef4444" />
     </Svg>
   );
 }
 
 function ListIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#1c1c1e" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <Rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-      <Line x1="9" y1="10" x2="15" y2="10" />
-      <Line x1="9" y1="14" x2="15" y2="14" />
-      <Line x1="9" y1="18" x2="13" y2="18" />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 6h2v2H4V6zm0 5h2v2H4v-2zm0 5h2v2H4v-2z" fill="#ef4444" />
+      <Path d="M8 7h12M8 12h12M8 17h12" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
     </Svg>
   );
 }
 
 const FEATURES = [
-  { icon: CoachIcon, title: "Unlimited AI Coach", desc: "Personal training guidance anytime" },
-  { icon: RecipeIcon, title: "All Recipes & Meal Plans", desc: "Curated meals matched to your goals" },
-  { icon: ScanIcon, title: "Macro Scanner", desc: "Snap a photo, get instant nutrition" },
-  { icon: ListIcon, title: "Weekly Shopping Lists", desc: "Auto-generated from your meal plan" },
+  { icon: CoachIcon, title: "Unlimited AI Coach", desc: "Personal training guidance tailored to you" },
+  { icon: RecipeIcon, title: "All Recipes & Meal Plans", desc: "Curated nutrition matched to your goals" },
+  { icon: ScanIcon, title: "Macro Scanner", desc: "AI-powered food recognition" },
+  { icon: ListIcon, title: "Smart Tracking", desc: "Track every workout and meal" },
 ];
 
 export default function PremiumGate({
@@ -129,7 +123,7 @@ export default function PremiumGate({
   if (subChecking) {
     return (
       <View style={s.loadingScreen}>
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color="#ef4444" />
       </View>
     );
   }
@@ -177,6 +171,9 @@ export default function PremiumGate({
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
+          {/* Decorative top element */}
+          <View style={s.topDecor} />
+
           {/* Logo */}
           <Image
             source={LOGO}
@@ -189,31 +186,59 @@ export default function PremiumGate({
 
           {/* Title */}
           <Text style={s.title}>PocketGym Pro</Text>
-          <Text style={s.subtitle}>Unlock everything. Train smarter.</Text>
+          <Text style={s.subtitle}>Unlock your fitness potential</Text>
 
-          {/* Features */}
-          <View style={s.features}>
+          {/* Features Grid */}
+          <View style={s.featuresGrid}>
             {FEATURES.map((f, i) => (
-              <View key={i} style={s.featureRow}>
-                <View style={s.featureIcon}>
+              <View key={i} style={s.featureCard}>
+                <View style={s.featureIconBox}>
                   <f.icon />
                 </View>
-                <View style={s.featureInfo}>
-                  <Text style={s.featureTitle}>{f.title}</Text>
-                  <Text style={s.featureDesc}>{f.desc}</Text>
-                </View>
+                <Text style={s.featureTitle}>{f.title}</Text>
+                <Text style={s.featureDesc}>{f.desc}</Text>
               </View>
             ))}
           </View>
 
-          {/* Plan selector */}
-          <View style={s.planCard}>
-            <Text style={s.planName}>Monthly</Text>
-            <View style={s.planPriceBlock}>
-              <Text style={s.planAmount}>$12.99</Text>
-              <Text style={s.planPeriod}>per month</Text>
+          {/* Pricing Card - Premium Design */}
+          <View style={s.premiumPricingCard}>
+            <View style={s.pricingHeader}>
+              <Text style={s.planNamePremium}>Monthly Subscription</Text>
+              <View style={s.pricingBadge}>
+                <Text style={s.badgeText}>7-DAY FREE TRIAL</Text>
+              </View>
             </View>
-            <Text style={s.planSubtext}>Billed monthly. Cancel anytime.</Text>
+
+            <View style={s.priceDisplay}>
+              <Text style={s.priceCurrency}>$</Text>
+              <Text style={s.priceAmount}>12.99</Text>
+              <Text style={s.pricePeriod}>/month</Text>
+            </View>
+
+            <Text style={s.priceSubtext}>Cancel anytime. Auto-renews monthly.</Text>
+
+            <View style={s.pricingDivider} />
+
+            <View style={s.whatsIncluded}>
+              <Text style={s.whatsIncludedTitle}>What's Included:</Text>
+              <View style={s.checkmarkItem}>
+                <Text style={s.checkmark}>✓</Text>
+                <Text style={s.checkmarkText}>Unlimited AI Coach Sessions</Text>
+              </View>
+              <View style={s.checkmarkItem}>
+                <Text style={s.checkmark}>✓</Text>
+                <Text style={s.checkmarkText}>Full Tracking & Analytics</Text>
+              </View>
+              <View style={s.checkmarkItem}>
+                <Text style={s.checkmark}>✓</Text>
+                <Text style={s.checkmarkText}>All Recipes & Meal Plans</Text>
+              </View>
+              <View style={s.checkmarkItem}>
+                <Text style={s.checkmark}>✓</Text>
+                <Text style={s.checkmarkText}>Priority Support</Text>
+              </View>
+            </View>
           </View>
 
           {/* Error */}
@@ -223,11 +248,11 @@ export default function PremiumGate({
             </View>
           ) : null}
 
-          {/* CTA */}
+          {/* Premium CTA Button */}
           <Pressable
             style={({ pressed }) => [
-              s.cta,
-              pressed && s.ctaPressed,
+              s.ctaPremium,
+              pressed && s.ctaPremiumPressed,
               isLoading && s.ctaDisabled,
             ]}
             onPress={handlePurchase}
@@ -236,22 +261,23 @@ export default function PremiumGate({
             {isLoading ? (
               <ActivityIndicator color="#ffffff" size="small" />
             ) : (
-              <Text style={s.ctaText}>Continue</Text>
+              <>
+                <Text style={s.ctaTextPremium}>Start Free Trial</Text>
+                <Text style={s.ctaSubtext}>Then $12.99/month</Text>
+              </>
             )}
           </Pressable>
 
-          {/* Restore */}
+          {/* Restore Link */}
           <Pressable onPress={handleRestore} disabled={isLoading}>
-            <Text style={[s.restore, isLoading && { opacity: 0.5 }]}>
-              Restore purchase
+            <Text style={[s.restoreLink, isLoading && { opacity: 0.5 }]}>
+              Already a member? Restore purchase
             </Text>
           </Pressable>
 
           {/* Apple-required disclosure */}
           <Text style={s.renewalNotice}>
-            Subscription auto-renews monthly unless cancelled at least 24 hours
-            before the end of the current period. Payment is charged to your
-            Apple ID account. Manage or cancel anytime in Settings {">"} Apple ID {">"} Subscriptions.
+            Subscription auto-renews monthly unless cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple ID account. Manage or cancel anytime in Settings.
           </Text>
 
           {/* Legal links */}
@@ -279,162 +305,262 @@ export default function PremiumGate({
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fafafa",
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fafafa",
     alignItems: "center",
     justifyContent: "center",
   },
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fafafa",
   },
   scrollContent: {
     alignItems: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  logo: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+  topDecor: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#ef4444",
+    opacity: 0.08,
     marginBottom: 20,
   },
+  logo: {
+    width: 70,
+    height: 70,
+    borderRadius: 18,
+    marginBottom: 24,
+    marginTop: -65,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "800",
     color: "#000000",
     textAlign: "center",
-    letterSpacing: -0.5,
+    letterSpacing: -0.7,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
-    color: "#8e8e93",
+    fontSize: 16,
+    color: "#666666",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,
+    fontWeight: "500",
   },
-  features: {
+  featuresGrid: {
     width: "100%",
-    gap: 20,
-    marginBottom: 36,
-    paddingHorizontal: 4,
-  },
-  featureRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 14,
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 28,
   },
-  featureIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#f2f2f7",
+  featureCard: {
+    width: "48%",
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 14,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  featureIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#fef2f2",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 1,
-  },
-  featureInfo: {
-    flex: 1,
+    marginBottom: 10,
   },
   featureTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#000000",
-    marginBottom: 2,
-  },
-  featureDesc: {
     fontSize: 13,
-    color: "#8e8e93",
-    lineHeight: 18,
-  },
-  planCard: {
-    width: "100%",
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#fafafa",
-    marginBottom: 24,
-  },
-  planName: {
-    fontSize: 15,
     fontWeight: "700",
     color: "#000000",
-    marginBottom: 12,
+    textAlign: "center",
+    marginBottom: 4,
   },
-  planPriceBlock: {
+  featureDesc: {
+    fontSize: 11,
+    color: "#999999",
+    textAlign: "center",
+    lineHeight: 15,
+  },
+  premiumPricingCard: {
+    width: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: "#ef4444",
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+  },
+  pricingHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  planNamePremium: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000000",
+    marginBottom: 8,
+  },
+  pricingBadge: {
+    backgroundColor: "#fef2f2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ef4444",
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#ef4444",
+    letterSpacing: 0.5,
+  },
+  priceDisplay: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  priceCurrency: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#ef4444",
+    marginRight: 4,
+    marginTop: 4,
+  },
+  priceAmount: {
+    fontSize: 56,
+    fontWeight: "900",
+    color: "#000000",
+    lineHeight: 64,
+  },
+  pricePeriod: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#999999",
+    marginLeft: 8,
+    marginTop: 12,
+  },
+  priceSubtext: {
+    fontSize: 13,
+    color: "#999999",
+    textAlign: "center",
+    marginBottom: 20,
+    fontWeight: "500",
+  },
+  pricingDivider: {
+    height: 1,
+    backgroundColor: "#f0f0f0",
+    marginVertical: 18,
+  },
+  whatsIncluded: {
+    width: "100%",
+  },
+  whatsIncludedTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#666666",
+    marginBottom: 12,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+  checkmarkItem: {
+    flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
   },
-  planAmount: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#000000",
-    lineHeight: 32,
+  checkmark: {
+    fontSize: 18,
+    color: "#ef4444",
+    fontWeight: "900",
+    marginRight: 10,
+    marginTop: -2,
   },
-  planPeriod: {
-    fontSize: 12,
-    color: "#8e8e93",
+  checkmarkText: {
+    fontSize: 13,
+    color: "#333333",
     fontWeight: "500",
-    marginTop: 4,
-  },
-  planSubtext: {
-    fontSize: 12,
-    color: "#8e8e93",
-    textAlign: "center",
-    lineHeight: 16,
+    flex: 1,
   },
   errorBox: {
     width: "100%",
     backgroundColor: "#fef2f2",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 12,
-    borderLeftWidth: 3,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
     borderLeftColor: "#dc2626",
   },
   errorText: {
     fontSize: 12,
     color: "#991b1b",
     textAlign: "center",
+    fontWeight: "500",
   },
-  cta: {
+  ctaPremium: {
     width: "100%",
-    backgroundColor: "#000000",
-    borderRadius: 14,
-    paddingVertical: 17,
+    backgroundColor: "#ef4444",
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: "center",
     marginBottom: 12,
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
   },
-  ctaPressed: {
-    backgroundColor: "#333333",
+  ctaPremiumPressed: {
+    backgroundColor: "#dc2626",
+    shadowOpacity: 0.35,
   },
   ctaDisabled: {
     opacity: 0.6,
   },
-  ctaText: {
+  ctaTextPremium: {
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#ffffff",
   },
-  restore: {
+  ctaSubtext: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  restoreLink: {
     fontSize: 13,
-    color: "#8e8e93",
-    marginBottom: 16,
+    color: "#ef4444",
+    marginBottom: 20,
+    fontWeight: "600",
   },
   renewalNotice: {
     fontSize: 10,
-    color: "#c7c7cc",
+    color: "#999999",
     textAlign: "center",
     lineHeight: 15,
-    marginBottom: 8,
-    paddingHorizontal: 12,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+    fontWeight: "400",
   },
   legalRow: {
     flexDirection: "row",
@@ -443,11 +569,12 @@ const s = StyleSheet.create({
   },
   legalLink: {
     fontSize: 10,
-    color: "#8e8e93",
+    color: "#999999",
     textDecorationLine: "underline",
+    fontWeight: "500",
   },
   legalDot: {
     fontSize: 10,
-    color: "#8e8e93",
+    color: "#999999",
   },
 });
