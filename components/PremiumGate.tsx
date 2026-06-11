@@ -133,15 +133,15 @@ export default function PremiumGate({
   return (
     <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 12 }]}>
 
-      {/* Header — title + close area */}
+      {/* Header */}
       <View style={s.header}>
+        <Text style={s.titleLine}>Unlock your</Text>
         <View style={s.titleRow}>
-          <Text style={s.title}>Unlock your </Text>
           <Image source={LOGO} style={s.logoInline} resizeMode="contain" />
           <Text style={s.title}> PocketGym</Text>
           <Text style={s.titleSuper}>+</Text>
         </View>
-        <Text style={s.titleSecondLine}>fitness superpowers</Text>
+        <Text style={s.titleLine}>fitness superpowers</Text>
       </View>
 
       {/* Feature list */}
@@ -227,15 +227,19 @@ const s = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  titleLine: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+  },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
   },
   logoInline: {
-    width: 26,
-    height: 26,
-    marginTop: 2,
+    width: 28,
+    height: 28,
   },
   title: {
     fontSize: 28,
@@ -248,12 +252,6 @@ const s = StyleSheet.create({
     fontWeight: "700",
     color: "#1a1a1a",
     marginTop: -8,
-  },
-  titleSecondLine: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#1a1a1a",
-    letterSpacing: -0.5,
   },
 
   /* Feature list */
