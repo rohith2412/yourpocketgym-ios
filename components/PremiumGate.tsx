@@ -139,7 +139,7 @@ export default function PremiumGate({
         <View style={s.titleRow}>
           <Image source={LOGO} style={s.logoInline} resizeMode="contain" />
           <Text style={s.title}> PocketGym</Text>
-          <Text style={s.titleSuper}>+</Text>
+          <Text style={s.titleSuper}></Text>
         </View>
         <Text style={s.titleLine}>fitness superpowers</Text>
       </View>
@@ -194,7 +194,7 @@ export default function PremiumGate({
         {isLoading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={s.ctaText}>Get PocketGym+ Monthly</Text>
+          <Text style={s.ctaText}>Get premium</Text>
         )}
       </Pressable>
 
