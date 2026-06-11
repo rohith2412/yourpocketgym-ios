@@ -223,19 +223,19 @@ const s = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
+    justifyContent: "flex-start",
+    gap: 8,
     marginBottom: 8,
   },
   logo: {
-    width: 42,
-    height: 42,
+    width: 32,
+    height: 32,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#1a1a1a",
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
