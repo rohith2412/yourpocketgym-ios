@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Linking,
@@ -9,18 +9,14 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Animated,
-  Easing,
-  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
+import Svg, { Path, Circle, Rect, Line, G } from "react-native-svg";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 const PAYWALL_ENABLED = true;
-const BRAND = "#e8380d";
-const { width: SCREEN_W } = Dimensions.get("window");
 
 interface PremiumGateProps {
   isUserPremium: boolean;
@@ -31,13 +27,58 @@ interface PremiumGateProps {
 }
 
 const LOGO = require("@/assets/images/logo.png");
-const LAUREL_LEFT  = require("@/assets/images/laurel-left.webp");
-const LAUREL_RIGHT = require("@/assets/images/laurel-right.webp");
 
-const REVIEWS = [
-  { title: "Life changing app", body: "The AI trainer actually understands my goals. Lost 12 lbs in 2 months just following the plans!", author: "Mike R.", stars: 5 },
-  { title: "Your AI fitness companion", body: "Finally an app that tracks my workouts and gives real coaching. Like a personal trainer in my pocket!", author: "Sarah K.", stars: 5 },
-  { title: "Worth every penny", body: "Macro scanner alone saves me 20 min a day. The workout plans are perfectly tailored to my home gym.", author: "Alex T.", stars: 5 },
+// Feature icons
+function InfinityIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" stroke="#1a1a1a" strokeWidth={1.5} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function ChartIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Rect x="3" y="12" width="4" height="9" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
+      <Rect x="10" y="7" width="4" height="14" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
+      <Rect x="17" y="3" width="4" height="18" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+function BrainIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Line x1="9" y1="21" x2="15" y2="21" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" />
+      <Line x1="10" y1="24" x2="14" y2="24" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function CheckCircle() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" fill="#1a1a1a" />
+      <Path d="M8 12.5l2.5 2.5 5-5" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+const FEATURES = [
+  { icon: InfinityIcon, title: "Unlimited AI Coach", desc: "Train smarter with AI guidance" },
+  { icon: SparkleIcon, title: "Macro Scanner", desc: "Snap photos for instant nutrition" },
+  { icon: ChartIcon, title: "Full Tracking", desc: "Track every rep and meal" },
+  { icon: BrainIcon, title: "Smart Meal Plans", desc: "Personalized to your goals" },
 ];
 
 export default function PremiumGate({
@@ -49,32 +90,8 @@ export default function PremiumGate({
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string>("");
-  const [reviewIdx, setReviewIdx] = useState(0);
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.5)).current;
-  const reviewFade = useRef(new Animated.Value(1)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
-
-  // Entrance animation
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.spring(logoScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: true }),
-    ]).start();
-  }, []);
-
-  // Auto-rotate reviews
-  useEffect(() => {
-    const interval = setInterval(() => {
-      Animated.timing(reviewFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-        setReviewIdx(i => (i + 1) % REVIEWS.length);
-        Animated.timing(reviewFade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
 
   useEffect(() => {
     AsyncStorage.getItem("user")
@@ -94,7 +111,7 @@ export default function PremiumGate({
   if (subChecking) {
     return (
       <View style={s.loadingScreen}>
-        <ActivityIndicator size="large" color={BRAND} />
+        <ActivityIndicator size="large" color="#1a1a1a" />
       </View>
     );
   }
@@ -113,55 +130,53 @@ export default function PremiumGate({
     else Alert.alert("No Purchases Found", "No active subscription found.");
   };
 
-  const review = REVIEWS[reviewIdx];
-
   return (
-    <Animated.View style={[s.root, { opacity: fadeIn, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 8 }]}>
+    <View style={[s.root, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 12 }]}>
 
-      {/* Logo + Title inline */}
-      <Animated.View style={[s.titleRow, { transform: [{ scale: logoScale }] }]}>
-        <Image source={LOGO} style={s.logo} resizeMode="contain" />
-        <Text style={s.title}>Get PocketGym Pro</Text>
-      </Animated.View>
-      <Text style={s.subtitle}>
-        Unlock AI coaching, macro tracking{"\n"}and personalized meal plans.
-      </Text>
-
-      {/* Badge */}
-      <View style={s.badgeRow}>
-        <Image source={LAUREL_LEFT} style={s.laurelImg} resizeMode="contain" />
-        <View style={s.badgeTextWrap}>
-          <Text style={s.badgeTop}>Available on the</Text>
-          <Text style={s.badgeMain}>App Store</Text>
-          <Text style={s.badgeBottom}>Health & Fitness</Text>
+      {/* Header — title + close area */}
+      <View style={s.header}>
+        <View style={s.titleRow}>
+          <Text style={s.title}>Unlock your </Text>
+          <Image source={LOGO} style={s.logoInline} resizeMode="contain" />
+          <Text style={s.title}> PocketGym</Text>
+          <Text style={s.titleSuper}>+</Text>
         </View>
-        <Image source={LAUREL_RIGHT} style={s.laurelImg} resizeMode="contain" />
+        <Text style={s.titleSecondLine}>fitness superpowers</Text>
       </View>
 
-      {/* Review card — auto-rotating */}
-      <Animated.View style={[s.reviewCard, { opacity: reviewFade }]}>
-        <Text style={s.reviewTitle}>{review.title}</Text>
-        <Text style={s.reviewStars}>{"★".repeat(review.stars)}</Text>
-        <Text style={s.reviewBody}>{review.body}</Text>
-        <Text style={s.reviewAuthor}>{review.author}</Text>
-      </Animated.View>
-
-      {/* Dots */}
-      <View style={s.dotsRow}>
-        {REVIEWS.map((_, i) => (
-          <View key={i} style={[s.dot, i === reviewIdx && s.dotActive]} />
+      {/* Feature list */}
+      <View style={s.featureCard}>
+        {FEATURES.map((f, i) => (
+          <View key={i} style={[s.featureRow, i < FEATURES.length - 1 && s.featureRowBorder]}>
+            <View style={s.featureLeft}>
+              <f.icon />
+              <View style={s.featureText}>
+                <Text style={s.featureTitle}>{f.title}</Text>
+                <Text style={s.featureDesc}>{f.desc}</Text>
+              </View>
+            </View>
+            <CheckCircle />
+          </View>
         ))}
       </View>
 
+      {/* Pricing */}
+      <View style={s.pricingCard}>
+        <View style={s.priceOption}>
+          <Text style={s.priceOptionLabel}>Monthly</Text>
+          <Text style={s.priceOptionAmount}>$12.99</Text>
+          <Text style={s.priceOptionSub}>$12.99 per month</Text>
+        </View>
+      </View>
+
+      {/* Billing info */}
+      <Text style={s.billingMain}>$12.99 per month.</Text>
+      <Text style={s.billingDisclosure}>
+        Auto-renews unless canceled at least 24 hours before renewal. Cancel anytime in App Store settings.
+      </Text>
+
       {/* Spacer */}
       <View style={{ flex: 1 }} />
-
-      {/* Pricing — full width, aligned with CTA */}
-      <View style={s.priceBox}>
-        <Text style={s.priceNumber}>1</Text>
-        <Text style={s.priceLabel}>MONTH</Text>
-        <Text style={s.priceAmount}>$12.99</Text>
-      </View>
 
       {/* Error */}
       {error ? (
@@ -179,174 +194,155 @@ export default function PremiumGate({
         {isLoading ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={s.ctaText}>Continue</Text>
+          <Text style={s.ctaText}>Get PocketGym+ Monthly</Text>
         )}
       </Pressable>
 
       {/* Footer */}
       <View style={s.footerRow}>
+        <Text style={s.footerLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms of service</Text>
+        <Text style={s.footerLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy policy</Text>
         <Pressable onPress={handleRestore} disabled={isLoading}>
-          <Text style={s.footerLink}>Restore Purchases</Text>
+          <Text style={s.footerLink}>Restore purchase</Text>
         </Pressable>
-        <Text style={s.footerLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
-        <Text style={s.footerLink} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy</Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 24,
+    backgroundColor: "#fafaf8",
+    paddingHorizontal: 20,
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fafaf8",
     alignItems: "center",
     justifyContent: "center",
   },
 
+  /* Header */
+  header: {
+    marginBottom: 24,
+  },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 8,
-    marginBottom: 8,
+    flexWrap: "wrap",
   },
-  logo: {
-    width: 32,
-    height: 32,
+  logoInline: {
+    width: 26,
+    height: 26,
+    marginTop: 2,
   },
   title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    letterSpacing: -0.5,
+  },
+  titleSuper: {
     fontSize: 18,
     fontWeight: "700",
     color: "#1a1a1a",
-    letterSpacing: -0.3,
+    marginTop: -8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#999999",
-    textAlign: "center",
-    lineHeight: 20,
-    marginTop: 8,
-    marginBottom: 18,
-  },
-
-  /* Badge */
-  badgeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-    gap: 8,
-  },
-  laurelImg: {
-    width: 28,
-    height: 44,
-  },
-  badgeTextWrap: {
-    alignItems: "center",
-  },
-  badgeTop: {
-    fontSize: 11,
-    color: "#999999",
-    fontWeight: "500",
-    fontStyle: "italic",
-  },
-  badgeMain: {
-    fontSize: 16,
+  titleSecondLine: {
+    fontSize: 28,
     fontWeight: "800",
     color: "#1a1a1a",
-    letterSpacing: -0.2,
-  },
-  badgeBottom: {
-    fontSize: 11,
-    color: "#999999",
-    fontWeight: "500",
-    fontStyle: "italic",
+    letterSpacing: -0.5,
   },
 
-  /* Review */
-  reviewCard: {
-    backgroundColor: "#fafafa",
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-    minHeight: 140,
+  /* Feature list */
+  featureCard: {
+    backgroundColor: "#f0ede8",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginBottom: 20,
   },
-  reviewTitle: {
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+  },
+  featureRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  featureLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 14,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#1a1a1a",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  reviewStars: {
-    fontSize: 14,
-    color: "#f59e0b",
-    marginBottom: 10,
-    letterSpacing: 2,
-  },
-  reviewBody: {
-    fontSize: 13,
-    color: "#666666",
-    lineHeight: 20,
-    marginBottom: 10,
-  },
-  reviewAuthor: {
+  featureDesc: {
     fontSize: 12,
-    color: "#bbbbbb",
-    fontWeight: "600",
-  },
-
-  /* Dots */
-  dotsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#e0e0e0",
-  },
-  dotActive: {
-    backgroundColor: BRAND,
-    width: 18,
-    borderRadius: 3,
+    color: "#888888",
+    fontWeight: "400",
   },
 
   /* Pricing */
-  priceBox: {
-    width: "100%",
-    paddingVertical: 17,
+  pricingCard: {
+    backgroundColor: "#f0ede8",
     borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+  },
+  priceOption: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     borderWidth: 2,
-    borderColor: BRAND,
-    alignItems: "center",
-    backgroundColor: "#fff5f3",
-    marginBottom: 14,
+    borderColor: "#1a1a1a",
   },
-  priceNumber: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: BRAND,
-  },
-  priceLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: BRAND,
-    letterSpacing: 1,
+  priceOptionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1a1a1a",
     marginBottom: 2,
   },
-  priceAmount: {
-    fontSize: 16,
+  priceOptionAmount: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1a1a1a",
+    marginBottom: 2,
+  },
+  priceOptionSub: {
+    fontSize: 12,
+    color: "#888888",
+    fontWeight: "400",
+  },
+
+  /* Billing */
+  billingMain: {
+    fontSize: 14,
     fontWeight: "700",
-    color: BRAND,
+    color: "#1a1a1a",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  billingDisclosure: {
+    fontSize: 12,
+    color: "#aaaaaa",
+    textAlign: "center",
+    lineHeight: 17,
+    fontStyle: "italic",
+    paddingHorizontal: 12,
   },
 
   /* Error */
@@ -365,34 +361,34 @@ const s = StyleSheet.create({
 
   /* CTA */
   cta: {
-    width: "100%",
-    backgroundColor: "#f06040",
-    borderRadius: 14,
-    paddingVertical: 17,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   ctaPressed: {
-    backgroundColor: "#e04e30",
+    backgroundColor: "#333333",
   },
   ctaDisabled: {
     opacity: 0.5,
   },
   ctaText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
     color: "#ffffff",
+    fontStyle: "italic",
   },
 
   /* Footer */
   footerRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 20,
+    gap: 16,
   },
   footerLink: {
     fontSize: 12,
-    color: "#cccccc",
-    fontWeight: "500",
+    color: "#bbbbbb",
+    fontWeight: "400",
   },
 });
