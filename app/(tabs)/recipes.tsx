@@ -666,6 +666,7 @@ export default function RecipesScreen() {
   }
 
   return (
+    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Recipes" onPurchaseSuccess={refreshSubscriptionStatus}>
       <SafeAreaView style={s.screen} edges={["top"]}>
         {/* <PageBackground variant="recipes" /> */}
 
@@ -1197,6 +1198,7 @@ export default function RecipesScreen() {
         </View>
       </Modal>
       </SafeAreaView>
+    </PremiumGate>
   );
 }
 //libCard

@@ -2289,7 +2289,6 @@ export default function TrackingPage() {
     .reduce((s, l) => s + totalVolLog(l), 0);
 
   return (
-    <PremiumGate isUserPremium={isPremium} subChecking={subLoading} featureName="Tracking" onPurchaseSuccess={refreshSubscriptionStatus}>
     <SafeAreaView style={t.root} edges={["top"]}>
 
       <StatusBar barStyle="dark-content" />
@@ -2467,7 +2466,6 @@ export default function TrackingPage() {
         <LogSheet onClose={() => setShowLog(false)} onSaved={fetchLogs} />
       )}
     </SafeAreaView>
-    </PremiumGate>
   );
 }
 
