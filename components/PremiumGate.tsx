@@ -8,19 +8,18 @@ import {
   View,
   ActivityIndicator,
   Alert,
-  Image,
   Animated,
+  Easing,
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
-import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle, Path, Line, Rect } from "react-native-svg";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
-
 const PAYWALL_ENABLED = true;
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const { width: SCREEN_W } = Dimensions.get("window");
 
 interface PremiumGateProps {
   isUserPremium: boolean;
@@ -30,9 +29,131 @@ interface PremiumGateProps {
   onPurchaseSuccess?: () => void | Promise<void>;
 }
 
-const HERO_IMG = require("@/assets/images/frontComp.png");
-Image.prefetch(Image.resolveAssetSource(HERO_IMG).uri).catch(() => {});
+/* ── Animated rings illustration ──────────────────────── */
+function AnimatedRings() {
+  const ring1 = useRef(new Animated.Value(0)).current;
+  const ring2 = useRef(new Animated.Value(0)).current;
+  const ring3 = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
+  useEffect(() => {
+    // Staggered fade-in for rings
+    Animated.stagger(200, [
+      Animated.timing(ring1, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(ring2, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+      Animated.timing(ring3, { toValue: 1, duration: 800, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+    ]).start();
+
+    // Continuous gentle pulse on center
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.08, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+        Animated.timing(pulse, { toValue: 1, duration: 2000, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <View style={a.container}>
+      {/* Outer ring */}
+      <Animated.View style={[a.ring, a.ring3, { opacity: ring3, transform: [{ scale: ring3.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] }]} />
+      {/* Middle ring */}
+      <Animated.View style={[a.ring, a.ring2, { opacity: ring2, transform: [{ scale: ring2.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] }]} />
+      {/* Inner ring */}
+      <Animated.View style={[a.ring, a.ring1, { opacity: ring1, transform: [{ scale: ring1.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] }]} />
+      {/* Center icon - pulsing */}
+      <Animated.View style={[a.center, { transform: [{ scale: pulse }] }]}>
+        <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+          <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#ef4444" opacity={0.9} />
+        </Svg>
+      </Animated.View>
+
+      {/* Floating dots */}
+      <Animated.View style={[a.dot, a.dot1, { opacity: ring2 }]} />
+      <Animated.View style={[a.dot, a.dot2, { opacity: ring3 }]} />
+      <Animated.View style={[a.dot, a.dot3, { opacity: ring1 }]} />
+    </View>
+  );
+}
+
+const a = StyleSheet.create({
+  container: {
+    width: 200,
+    height: 200,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ring: {
+    position: "absolute",
+    borderRadius: 999,
+    borderWidth: 1.5,
+  },
+  ring1: {
+    width: 80,
+    height: 80,
+    borderColor: "rgba(239,68,68,0.25)",
+  },
+  ring2: {
+    width: 130,
+    height: 130,
+    borderColor: "rgba(239,68,68,0.12)",
+  },
+  ring3: {
+    width: 180,
+    height: 180,
+    borderColor: "rgba(239,68,68,0.06)",
+  },
+  center: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#fff5f5",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  dot: {
+    position: "absolute",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(239,68,68,0.2)",
+  },
+  dot1: { top: 25, right: 40 },
+  dot2: { bottom: 35, left: 30 },
+  dot3: { top: 60, left: 25 },
+});
+
+/* ── Timeline icons (SVG, no emoji) ───────────────────── */
+function CheckIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+function BoltIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#fff" />
+    </Svg>
+  );
+}
+function CalendarIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Rect x="3" y="4" width="18" height="18" rx="2" stroke="#fff" strokeWidth={2} />
+      <Line x1="3" y1="10" x2="21" y2="10" stroke="#fff" strokeWidth={2} />
+      <Line x1="8" y1="2" x2="8" y2="6" stroke="#fff" strokeWidth={2} strokeLinecap="round" />
+      <Line x1="16" y1="2" x2="16" y2="6" stroke="#fff" strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/* ── Main Component ───────────────────────────────────── */
 export default function PremiumGate({
   isUserPremium,
   subChecking = false,
@@ -42,22 +163,19 @@ export default function PremiumGate({
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
   const [userId, setUserId] = useState<string>("");
-  const [ready, setReady] = useState(false);
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
 
   useEffect(() => {
-    if (!ready) return;
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 400, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, delay: 400, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
     ]).start();
-  }, [ready]);
+  }, []);
 
   useEffect(() => {
-    setTimeout(() => setReady(true), 150);
     AsyncStorage.getItem("user")
       .then((userStr) => {
         if (userStr) {
@@ -95,102 +213,75 @@ export default function PremiumGate({
   };
 
   return (
-    <View style={[s.root, { paddingBottom: insets.bottom }]}>
+    <View style={[s.root, { paddingTop: insets.top, paddingBottom: insets.bottom + 8 }]}>
 
-      {/* ── Purple/gradient hero area ─────────────────── */}
-      <LinearGradient
-        colors={["#1a1a2e", "#16213e", "#0f3460"]}
-        style={[s.heroSection, { paddingTop: insets.top + 12 }]}
-      >
-        {/* Close-ish area spacer */}
-        <View style={s.heroTopSpacer} />
+      {/* ── Top: animated illustration ──────────────── */}
+      <View style={s.illustrationArea}>
+        <AnimatedRings />
+      </View>
 
-        {/* Hero image */}
-        <Image source={HERO_IMG} style={s.heroImg} resizeMode="contain" />
-
-        {/* Title overlaid on gradient */}
-        <Text style={s.heroTitle}>Unlock Everything</Text>
-        <Text style={s.heroSubtitle}>
-          AI coaching, macro tracking & meal plans
+      {/* ── Title ───────────────────────────────────── */}
+      <Animated.View style={[s.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Text style={s.title}>Go Pro</Text>
+        <Text style={s.subtitle}>
+          Unlock AI coaching, tracking and meal plans
         </Text>
-      </LinearGradient>
 
-      {/* ── White bottom card ─────────────────────────── */}
-      <Animated.View style={[s.bottomCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-
-        {/* Timeline steps */}
+        {/* ── Timeline ────────────────────────────────── */}
         <View style={s.timeline}>
-          <TimelineStep
-            icon="✓"
-            iconBg="#10b981"
-            title="Sign Up"
-            desc="Create your account for free"
-            isLast={false}
-          />
-          <TimelineStep
-            icon="⚡"
-            iconBg="#ef4444"
-            title="Today: Get Instant Access"
-            desc="Unlock all premium features"
-            isLast={false}
-          />
-          <TimelineStep
-            icon="💳"
-            iconBg="#8b5cf6"
-            title="Payment Starts"
-            desc="$12.99/mo, cancel anytime in Settings"
-            isLast={true}
-          />
+          <View style={s.tlRow}>
+            <View style={[s.tlDot, { backgroundColor: "#10b981" }]}><CheckIcon /></View>
+            {/* line */}
+            <View style={s.tlLineWrap}><View style={s.tlLine} /></View>
+            <View style={s.tlText}>
+              <Text style={s.tlTitle}>Account Created</Text>
+              <Text style={s.tlDesc}>You're all set up</Text>
+            </View>
+          </View>
+
+          <View style={s.tlRow}>
+            <View style={[s.tlDot, { backgroundColor: "#ef4444" }]}><BoltIcon /></View>
+            <View style={s.tlLineWrap}><View style={s.tlLine} /></View>
+            <View style={s.tlText}>
+              <Text style={s.tlTitle}>Instant Access</Text>
+              <Text style={s.tlDesc}>All features unlocked today</Text>
+            </View>
+          </View>
+
+          <View style={s.tlRow}>
+            <View style={[s.tlDot, { backgroundColor: "#8b5cf6" }]}><CalendarIcon /></View>
+            <View style={s.tlLineWrap} />
+            <View style={s.tlText}>
+              <Text style={s.tlTitle}>Billed Monthly</Text>
+              <Text style={s.tlDesc}>$12.99/mo · Cancel anytime</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Pricing selector */}
-        <View style={s.planOption}>
-          <View style={s.planRadioOuter}>
-            <View style={s.planRadioInner} />
-          </View>
-          <View style={s.planInfo}>
-            <Text style={s.planLabel}>Monthly</Text>
-          </View>
-          <Text style={s.planPrice}>$12.99 / mo</Text>
-        </View>
-
-        {/* Error */}
+        {/* ── Error ────────────────────────────────────── */}
         {error ? (
           <View style={s.errorBox}>
             <Text style={s.errorText}>{error}</Text>
           </View>
         ) : null}
 
-        {/* CTA */}
+        {/* ── CTA ──────────────────────────────────────── */}
         <Pressable
           style={({ pressed }) => [s.cta, pressed && s.ctaPressed, isLoading && s.ctaDisabled]}
           onPress={handlePurchase}
           disabled={isLoading}
         >
-          <LinearGradient
-            colors={["#ef4444", "#dc2626"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={s.ctaGradient}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={s.ctaText}>Subscribe Now</Text>
-            )}
-          </LinearGradient>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={s.ctaText}>Continue — $12.99/mo</Text>
+          )}
         </Pressable>
 
-        {/* Footer */}
+        {/* ── Footer ───────────────────────────────────── */}
         <Pressable onPress={handleRestore} disabled={isLoading}>
-          <Text style={[s.restoreText, isLoading && { opacity: 0.4 }]}>
-            Restore purchase
-          </Text>
+          <Text style={[s.restoreText, isLoading && { opacity: 0.4 }]}>Restore purchase</Text>
         </Pressable>
-
-        <Text style={s.disclosure}>
-          Auto-renews at $12.99/mo. Cancel in Settings {">"} Apple ID {">"} Subscriptions.
-        </Text>
 
         <View style={s.legalRow}>
           <Text style={s.legalLink} onPress={() => Linking.openURL(TERMS_URL)}>Terms</Text>
@@ -202,165 +293,94 @@ export default function PremiumGate({
   );
 }
 
-/* ── Timeline Step Component ──────────────────────────── */
-function TimelineStep({ icon, iconBg, title, desc, isLast }: {
-  icon: string; iconBg: string; title: string; desc: string; isLast: boolean;
-}) {
-  return (
-    <View style={ts.row}>
-      <View style={ts.iconCol}>
-        <View style={[ts.iconCircle, { backgroundColor: iconBg }]}>
-          <Text style={ts.iconText}>{icon}</Text>
-        </View>
-        {!isLast && <View style={ts.line} />}
-      </View>
-      <View style={ts.textCol}>
-        <Text style={ts.title}>{title}</Text>
-        <Text style={ts.desc}>{desc}</Text>
-      </View>
-    </View>
-  );
-}
-
-const ts = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    minHeight: 56,
+const s = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#fafafa",
   },
-  iconCol: {
-    width: 36,
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: "#fafafa",
     alignItems: "center",
+    justifyContent: "center",
   },
-  iconCircle: {
+
+  /* ── Illustration ────────────────────────────────── */
+  illustrationArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+
+  /* ── Content ─────────────────────────────────────── */
+  content: {
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: "flex-end",
+    paddingBottom: 4,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#111111",
+    textAlign: "center",
+    letterSpacing: -0.8,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: "#999999",
+    textAlign: "center",
+    fontWeight: "500",
+    marginBottom: 28,
+    lineHeight: 21,
+  },
+
+  /* ── Timeline ────────────────────────────────────── */
+  timeline: {
+    marginBottom: 24,
+    gap: 0,
+  },
+  tlRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    minHeight: 52,
+  },
+  tlDot: {
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  iconText: {
-    fontSize: 13,
-    color: "#ffffff",
-  },
-  line: {
-    flex: 1,
+  tlLineWrap: {
+    position: "absolute",
+    left: 13,
+    top: 28,
+    bottom: 0,
     width: 2,
-    backgroundColor: "#e5e7eb",
-    marginVertical: 4,
   },
-  textCol: {
+  tlLine: {
     flex: 1,
-    marginLeft: 12,
-    paddingBottom: 16,
+    backgroundColor: "#e8e8e8",
+    borderRadius: 1,
   },
-  title: {
+  tlText: {
+    flex: 1,
+    marginLeft: 14,
+    paddingBottom: 12,
+  },
+  tlTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111111",
-    marginBottom: 3,
+    color: "#222222",
+    marginBottom: 2,
   },
-  desc: {
+  tlDesc: {
     fontSize: 12,
-    color: "#888888",
-    lineHeight: 17,
-  },
-});
-
-const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  loadingScreen: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  /* ── Hero ────────────────────────────────────────── */
-  heroSection: {
-    alignItems: "center",
-    paddingBottom: 28,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-  },
-  heroTopSpacer: {
-    height: 8,
-  },
-  heroImg: {
-    width: SCREEN_W * 0.75,
-    height: SCREEN_H * 0.26,
-    marginBottom: 16,
-  },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#ffffff",
-    textAlign: "center",
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.7)",
-    textAlign: "center",
+    color: "#aaaaaa",
     fontWeight: "500",
-    paddingHorizontal: 40,
-  },
-
-  /* ── Bottom card ─────────────────────────────────── */
-  bottomCard: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-  },
-
-  /* ── Timeline ────────────────────────────────────── */
-  timeline: {
-    marginBottom: 20,
-  },
-
-  /* ── Plan option ─────────────────────────────────── */
-  planOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#ef4444",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: "#fef7f7",
-  },
-  planRadioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#ef4444",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  planRadioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#ef4444",
-  },
-  planInfo: {
-    flex: 1,
-  },
-  planLabel: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111111",
-  },
-  planPrice: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111111",
   },
 
   /* ── Error ───────────────────────────────────────── */
@@ -379,48 +399,32 @@ const s = StyleSheet.create({
 
   /* ── CTA ─────────────────────────────────────────── */
   cta: {
+    backgroundColor: "#111111",
     borderRadius: 14,
-    overflow: "hidden",
-    marginBottom: 14,
-    shadowColor: "#ef4444",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  ctaGradient: {
     paddingVertical: 17,
     alignItems: "center",
+    marginBottom: 14,
   },
   ctaPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    backgroundColor: "#333333",
   },
   ctaDisabled: {
     opacity: 0.5,
   },
   ctaText: {
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "700",
     color: "#ffffff",
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
 
   /* ── Footer ──────────────────────────────────────── */
   restoreText: {
     fontSize: 13,
-    color: "#ef4444",
-    textAlign: "center",
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  disclosure: {
-    fontSize: 10,
     color: "#bbbbbb",
     textAlign: "center",
-    lineHeight: 14,
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    fontWeight: "600",
+    marginBottom: 10,
   },
   legalRow: {
     flexDirection: "row",
@@ -428,13 +432,13 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   legalLink: {
-    fontSize: 10,
-    color: "#bbbbbb",
+    fontSize: 11,
+    color: "#cccccc",
     fontWeight: "500",
   },
   legalDot: {
-    fontSize: 10,
-    color: "#cccccc",
+    fontSize: 11,
+    color: "#dddddd",
     marginHorizontal: 6,
   },
 });
