@@ -207,17 +207,13 @@ export default function PremiumGate({
           </View>
 
           {/* Plan selector */}
-          <View style={s.plan}>
-            <View style={s.planLeft}>
-              <View style={s.planRadio}>
-                <View style={s.planRadioInner} />
-              </View>
-              <Text style={s.planName}>Monthly</Text>
-            </View>
-            <View style={s.planPrice}>
+          <View style={s.planCard}>
+            <Text style={s.planName}>Monthly</Text>
+            <View style={s.planPriceBlock}>
               <Text style={s.planAmount}>$12.99</Text>
               <Text style={s.planPeriod}>per month</Text>
             </View>
+            <Text style={s.planSubtext}>Billed monthly. Cancel anytime.</Text>
           </View>
 
           {/* Error */}
@@ -355,55 +351,44 @@ const s = StyleSheet.create({
     color: "#8e8e93",
     lineHeight: 18,
   },
-  plan: {
+  planCard: {
     width: "100%",
-    borderWidth: 2,
-    borderColor: "#000000",
     borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    flexDirection: "row",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  planLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  planRadio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#000000",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  planRadioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#000000",
+    borderColor: "#e5e7eb",
+    backgroundColor: "#fafafa",
+    marginBottom: 24,
   },
   planName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: "#000000",
+    marginBottom: 12,
   },
-  planPrice: {
-    alignItems: "flex-end",
+  planPriceBlock: {
+    alignItems: "center",
+    marginBottom: 10,
   },
   planAmount: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 28,
+    fontWeight: "800",
     color: "#000000",
+    lineHeight: 32,
   },
   planPeriod: {
     fontSize: 12,
     color: "#8e8e93",
     fontWeight: "500",
+    marginTop: 4,
+  },
+  planSubtext: {
+    fontSize: 12,
+    color: "#8e8e93",
+    textAlign: "center",
+    lineHeight: 16,
   },
   errorBox: {
     width: "100%",
