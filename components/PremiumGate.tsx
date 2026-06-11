@@ -98,6 +98,17 @@ export default function PremiumGate({
         Unlock AI coaching, macro tracking{"\n"}and personalized meal plans.
       </Text>
 
+      {/* Badge */}
+      <View style={s.badgeRow}>
+        <Text style={s.badgeLeaf}>🌿</Text>
+        <View style={s.badgeTextWrap}>
+          <Text style={s.badgeTop}>Featured on</Text>
+          <Text style={s.badgeMain}>App Store</Text>
+          <Text style={s.badgeBottom}>Health & Fitness</Text>
+        </View>
+        <Text style={s.badgeLeaf}>🌿</Text>
+      </View>
+
       {/* Review card */}
       <View style={s.reviewCard}>
         <Text style={s.reviewTitle}>Your AI fitness companion</Text>
@@ -193,6 +204,38 @@ const s = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
+  },
+
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    gap: 8,
+  },
+  badgeLeaf: {
+    fontSize: 16,
+  },
+  badgeTextWrap: {
+    alignItems: "center",
+  },
+  badgeTop: {
+    fontSize: 10,
+    color: "#aaaaaa",
+    fontWeight: "500",
+    fontStyle: "italic",
+  },
+  badgeMain: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    letterSpacing: -0.2,
+  },
+  badgeBottom: {
+    fontSize: 10,
+    color: "#aaaaaa",
+    fontWeight: "500",
+    fontStyle: "italic",
   },
 
   reviewCard: {
