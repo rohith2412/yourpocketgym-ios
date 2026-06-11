@@ -13,33 +13,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
-import Svg, { Path } from "react-native-svg";
-
-function LaurelLeft() {
-  return (
-    <Svg width={24} height={32} viewBox="0 0 24 32" fill="none">
-      <Path d="M20 4C18 5 16.5 7.5 16 10C15.5 7 14 5 12 4C14 6 15 8.5 15 11" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M19 9C17 9.5 15.5 11 15 13C14.5 10.5 13 9 11 8.5C13 10 14 12 14 14" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M18 14C16 14 14.5 15.5 14 17.5C13.5 15 12 13.5 10 13C12 14.5 13 16.5 13 18.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M17 19C15.5 18.5 14 19.5 13 21.5C12.5 19.5 11 18 9 17.5C11 19 12 20.5 12 22.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M16 23.5C14.5 23 13 24 12.5 25.5C12 24 11 22.5 9.5 22C11 23 11.5 24.5 11.5 26" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M14 27C13 26.5 12 27 11.5 28.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-    </Svg>
-  );
-}
-
-function LaurelRight() {
-  return (
-    <Svg width={24} height={32} viewBox="0 0 24 32" fill="none">
-      <Path d="M4 4C6 5 7.5 7.5 8 10C8.5 7 10 5 12 4C10 6 9 8.5 9 11" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M5 9C7 9.5 8.5 11 9 13C9.5 10.5 11 9 13 8.5C11 10 10 12 10 14" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M6 14C8 14 9.5 15.5 10 17.5C10.5 15 12 13.5 14 13C12 14.5 11 16.5 11 18.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M7 19C8.5 18.5 10 19.5 11 21.5C11.5 19.5 13 18 15 17.5C13 19 12 20.5 12 22.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M8 23.5C9.5 23 11 24 11.5 25.5C12 24 13 22.5 14.5 22C13 23 12.5 24.5 12.5 26" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-      <Path d="M10 27C11 26.5 12 27 12.5 28.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
-    </Svg>
-  );
-}
+const LAUREL_LEFT  = require("@/assets/images/laurel-left.webp");
+const LAUREL_RIGHT = require("@/assets/images/laurel-right.webp");
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -127,13 +102,13 @@ export default function PremiumGate({
 
       {/* Badge */}
       <View style={s.badgeRow}>
-        <LaurelLeft />
+        <Image source={LAUREL_LEFT} style={s.laurelImg} resizeMode="contain" />
         <View style={s.badgeTextWrap}>
           <Text style={s.badgeTop}>Available on the</Text>
           <Text style={s.badgeMain}>App Store</Text>
           <Text style={s.badgeBottom}>Health & Fitness</Text>
         </View>
-        <LaurelRight />
+        <Image source={LAUREL_RIGHT} style={s.laurelImg} resizeMode="contain" />
       </View>
 
       {/* Review card */}
@@ -239,6 +214,10 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 24,
     gap: 8,
+  },
+  laurelImg: {
+    width: 22,
+    height: 36,
   },
   badgeTextWrap: {
     alignItems: "center",
