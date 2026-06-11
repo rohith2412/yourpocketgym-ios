@@ -17,28 +17,26 @@ import Svg, { Path } from "react-native-svg";
 
 function LaurelLeft() {
   return (
-    <Svg width={20} height={28} viewBox="0 0 20 28" fill="none">
-      <Path d="M18 2C14 4 12 8 12 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M16 6C12 6 10 9 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M18 10C14 9 11 11 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M18 14C14 12 11 13 10 15" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M17 18C14 16 11 16 10 18" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M16 22C13 20 11 20 10 22" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M14 26C12 24 11 24 10 26" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+    <Svg width={24} height={32} viewBox="0 0 24 32" fill="none">
+      <Path d="M20 4C18 5 16.5 7.5 16 10C15.5 7 14 5 12 4C14 6 15 8.5 15 11" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M19 9C17 9.5 15.5 11 15 13C14.5 10.5 13 9 11 8.5C13 10 14 12 14 14" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M18 14C16 14 14.5 15.5 14 17.5C13.5 15 12 13.5 10 13C12 14.5 13 16.5 13 18.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M17 19C15.5 18.5 14 19.5 13 21.5C12.5 19.5 11 18 9 17.5C11 19 12 20.5 12 22.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M16 23.5C14.5 23 13 24 12.5 25.5C12 24 11 22.5 9.5 22C11 23 11.5 24.5 11.5 26" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M14 27C13 26.5 12 27 11.5 28.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
     </Svg>
   );
 }
 
 function LaurelRight() {
   return (
-    <Svg width={20} height={28} viewBox="0 0 20 28" fill="none">
-      <Path d="M2 2C6 4 8 8 8 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M4 6C8 6 10 9 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M2 10C6 9 9 11 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M2 14C6 12 9 13 10 15" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M3 18C6 16 9 16 10 18" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M4 22C7 20 9 20 10 22" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
-      <Path d="M6 26C8 24 9 24 10 26" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+    <Svg width={24} height={32} viewBox="0 0 24 32" fill="none">
+      <Path d="M4 4C6 5 7.5 7.5 8 10C8.5 7 10 5 12 4C10 6 9 8.5 9 11" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M5 9C7 9.5 8.5 11 9 13C9.5 10.5 11 9 13 8.5C11 10 10 12 10 14" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M6 14C8 14 9.5 15.5 10 17.5C10.5 15 12 13.5 14 13C12 14.5 11 16.5 11 18.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M7 19C8.5 18.5 10 19.5 11 21.5C11.5 19.5 13 18 15 17.5C13 19 12 20.5 12 22.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M8 23.5C9.5 23 11 24 11.5 25.5C12 24 13 22.5 14.5 22C13 23 12.5 24.5 12.5 26" stroke="#c0c0c0" strokeWidth={1} fill="none" />
+      <Path d="M10 27C11 26.5 12 27 12.5 28.5" stroke="#c0c0c0" strokeWidth={1} fill="none" />
     </Svg>
   );
 }
@@ -301,11 +299,11 @@ const s = StyleSheet.create({
     marginBottom: 16,
   },
   priceBox: {
-    width: "100%",
+    paddingVertical: 14,
+    paddingHorizontal: 32,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#e5e5e5",
-    paddingVertical: 16,
     alignItems: "center",
   },
   priceBoxSelected: {
