@@ -13,6 +13,35 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
+import Svg, { Path } from "react-native-svg";
+
+function LaurelLeft() {
+  return (
+    <Svg width={20} height={28} viewBox="0 0 20 28" fill="none">
+      <Path d="M18 2C14 4 12 8 12 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M16 6C12 6 10 9 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M18 10C14 9 11 11 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M18 14C14 12 11 13 10 15" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M17 18C14 16 11 16 10 18" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M16 22C13 20 11 20 10 22" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M14 26C12 24 11 24 10 26" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function LaurelRight() {
+  return (
+    <Svg width={20} height={28} viewBox="0 0 20 28" fill="none">
+      <Path d="M2 2C6 4 8 8 8 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M4 6C8 6 10 9 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M2 10C6 9 9 11 10 14" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M2 14C6 12 9 13 10 15" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M3 18C6 16 9 16 10 18" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M4 22C7 20 9 20 10 22" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M6 26C8 24 9 24 10 26" stroke="#c7c7c7" strokeWidth={1.2} strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -100,13 +129,13 @@ export default function PremiumGate({
 
       {/* Badge */}
       <View style={s.badgeRow}>
-        <Text style={s.badgeLeaf}>🌿</Text>
+        <LaurelLeft />
         <View style={s.badgeTextWrap}>
-          <Text style={s.badgeTop}>Featured on</Text>
+          <Text style={s.badgeTop}>Available on the</Text>
           <Text style={s.badgeMain}>App Store</Text>
           <Text style={s.badgeBottom}>Health & Fitness</Text>
         </View>
-        <Text style={s.badgeLeaf}>🌿</Text>
+        <LaurelRight />
       </View>
 
       {/* Review card */}
@@ -212,9 +241,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 24,
     gap: 8,
-  },
-  badgeLeaf: {
-    fontSize: 16,
   },
   badgeTextWrap: {
     alignItems: "center",
