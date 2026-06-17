@@ -616,7 +616,7 @@ function buildDemoLogs(): any[] {
 const DEMO_LOGS: any[] = buildDemoLogs();
 
 // ─── VolumeLineChart ──────────────────────────────────────────────────────────
-const ORANGE = "#FF6B1A";
+const ORANGE = "#e8380d";
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function buildVolumeSeries(logs: any[], days: number) {

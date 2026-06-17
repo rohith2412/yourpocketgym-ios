@@ -1,5 +1,6 @@
 import AvatarButton from "@/components/AvatarButton";
 import PremiumGate from "@/components/PremiumGate";
+import PhysiqueRating from "@/components/PhysiqueRating";
 import { useSubscription } from "@/src/hooks/useSubscription";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -1830,7 +1831,7 @@ export default function AITrainerScreen() {
           <AvatarButton />
         </View>
         <View style={s.tabRow}>
-          {[["plan","Plan"],["chat","Chat"]].map(([key, label]) => (
+          {[["plan","Plan"],["chat","Chat"],["physique","Body Score"]].map(([key, label]) => (
             <Pressable key={key} onPress={() => setMainTab(key)} style={s.tabItem}>
               <Text style={[s.tabText, mainTab===key && s.tabTextActive]}>{label}</Text>
               <View style={[s.tabLine, mainTab===key && s.tabLineActive]} />
@@ -1924,6 +1925,11 @@ export default function AITrainerScreen() {
         {/* ── CHAT TAB ── */}
         {mainTab === "chat" && (
           <ChatView profile={profile} token={token} />
+        )}
+
+        {/* ── PHYSIQUE TAB ── */}
+        {mainTab === "physique" && (
+          <PhysiqueRating token={token} userId={userId} />
         )}
       </View>
 

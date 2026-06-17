@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getCustomerInfo, isPremium } from "../services/iapService";
+import { getCustomerInfo, isPremium, addPremiumStatusListener } from "../services/iapService";
 
 export function useSubscription() {
   const [isPremiumUser, setIsPremiumUser] = useState<boolean | null>(null);
@@ -20,13 +20,11 @@ export function useSubscription() {
       console.error("[useSubscription] Error checking subscription:", msg);
       console.error("[useSubscription] Error code:", err?.code);
 
-      // If it's an API key error, log it clearly
       if (msg.includes("API Key") || msg.includes("credentials") || msg.includes("Invalid")) {
         console.error("[useSubscription] API KEY ISSUE - Check RevenueCat dashboard and iapService.ts");
       }
 
       setError(msg);
-      // On error, default to NOT premium (show paywall)
       setIsPremiumUser(false);
     } finally {
       setLoading(false);
@@ -34,6 +32,15 @@ export function useSubscription() {
   }, []);
 
   useEffect(() => { check(); }, []);
+
+  useEffect(() => {
+    const unsub = addPremiumStatusListener((info) => {
+      const premium = isPremium(info);
+      console.log("[useSubscription] Real-time update — premium:", premium);
+      setIsPremiumUser(premium);
+    });
+    return unsub;
+  }, []);
 
   return {
     isPremium:                 isPremiumUser === true,

@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketGym: AI Fitness Tracker",
     "slug": "yourpocketgym",
-    "version": "1.4.0",
+    "version": "1.6.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
