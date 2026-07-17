@@ -12,6 +12,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path } from "react-native-svg";
 
+//tabs
+
 type IconProps = { active: boolean };
 type Tab = { id: string; label: string; href: string; Icon: React.FC<IconProps> };
 

@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { saveToken } from "../src/auth/storage";
+import { signInWithGoogle, isCancelled } from "../src/auth/google";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -26,6 +27,7 @@ export default function Login() {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
@@ -73,6 +75,41 @@ export default function Login() {
       alert("Something went wrong. Check your connection.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const google = await signInWithGoogle();
+      if (!google) { alert("Google sign-in failed. Please try again."); return; }
+
+      const res  = await fetch("https://yourpocketgym.com/api/auth/google", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ idToken: google.idToken }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) { alert(data.error || "Google login failed"); return; }
+
+      await saveToken(data.token);
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user",  JSON.stringify(data.user));
+
+      const allKeys = await AsyncStorage.getAllKeys();
+      const staleKeys = allKeys.filter(
+        (k) => k.startsWith("subscriptionStatus_") || k.startsWith("subscriptionStatusTime_")
+      );
+      if (staleKeys.length > 0) await AsyncStorage.multiRemove(staleKeys);
+
+      if (!data.user.hasIntro) router.replace("/startersIntro");
+      else                     router.replace("/(tabs)/tracking");
+    } catch (err) {
+      if (isCancelled(err)) return;
+      console.warn("Google sign-in error:", err?.code, err?.message, err);
+      alert(`Google sign-in failed: ${err?.code || ""} ${err?.message || err}`);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -143,6 +180,25 @@ export default function Login() {
                 style={({ pressed }) => [s.primaryBtn, (!isValid || loading) && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
               >
                 <Text style={s.primaryBtnText}>{loading ? "Signing in…" : "Sign in"}</Text>
+              </Pressable>
+
+              <View style={s.dividerRow}>
+                <View style={s.dividerLine} />
+                <Text style={s.dividerText}>or</Text>
+                <View style={s.dividerLine} />
+              </View>
+
+              <Pressable
+                onPress={handleGoogleLogin}
+                disabled={googleLoading || loading}
+                style={({ pressed }) => [s.googleBtn, (googleLoading || loading) && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
+              >
+                <Image
+                  source={require("../assets/images/google.png")}
+                  style={s.googleIcon}
+                  resizeMode="contain"
+                />
+                <Text style={s.googleBtnText}>{googleLoading ? "Signing in…" : "Continue with Google"}</Text>
               </Pressable>
             </View>
 
@@ -230,6 +286,24 @@ const s = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.06)",
   },
   secondaryBtnText: { fontSize: 16, fontWeight: "600", color: "#0e0e0e" },
+
+  // Divider + Google
+  dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 2 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#e8e5de" },
+  dividerText: { fontSize: 12, color: "rgba(0,0,0,0.3)", fontWeight: "600" },
+  googleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    paddingVertical: 17,
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+  },
+  googleIcon: { width: 20, height: 20 },
+  googleBtnText: { fontSize: 16, fontWeight: "600", color: "#0e0e0e" },
 
   // Footer
   footer: { gap: 12 },

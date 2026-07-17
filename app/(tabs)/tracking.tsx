@@ -2349,20 +2349,6 @@ export default function TrackingPage() {
                             </Text>
                           )}
                         </View>
-                        <View style={[t.badge, streakCount >= 3 && t.badgeActive]}>
-                          <Text
-                            style={[
-                              t.badgeText,
-                              streakCount >= 3 && t.badgeTextActive,
-                            ]}
-                          >
-                            {streakCount >= 5
-                              ? "On fire"
-                              : streakCount >= 3
-                                ? "Good week"
-                                : "Keep going"}
-                          </Text>
-                        </View>
                       </View>
                       <View style={t.weekDots}>
                         {weekDays.map((d, i) => (
