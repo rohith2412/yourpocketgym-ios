@@ -2,6 +2,7 @@ import AvatarButton from "@/components/AvatarButton";
 import MealPlanView from "@/components/MealPlanView";
 import PremiumGate from "@/components/PremiumGate";
 import { useSubscription } from "@/src/hooks/useSubscription";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -128,10 +129,12 @@ function BookmarkIcon({ filled, size = 20 }: { filled: boolean; size?: number })
   );
 }
 
+// themed
 function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onToggleSave }: {
   recipe: any; onBack: () => void; onRegenerate: () => void;
   isGenerating: boolean; isSaved: boolean; onToggleSave: () => void;
 }) {
+  const { colors } = useTheme();
   const [tab, setTab] = useState("ingredients");
   const meta = goalMeta(recipe.goal);
 
@@ -143,7 +146,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating, isSaved, onT
           <Text style={s.actionBtnText}>← Back</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onRegenerate} disabled={isGenerating} style={[s.actionBtn, { opacity: isGenerating ? 0.5 : 1 }]}>
-          <Text style={[s.actionBtnText, { color: "#111112" }]}>{isGenerating ? "Finding…" : "↺ Try another"}</Text>
+          <Text style={[s.actionBtnText, { color: colors.text }]}>{isGenerating ? "Finding…" : "↺ Try another"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -492,6 +495,8 @@ function FilterModal({ visible, libGoal, libMeal, onGoalChange, onMealChange, on
 }
 
 export default function RecipesScreen() {
+  const { colors } = useTheme();
+  s = makeS(colors); rc = makeRc(colors);
   const { token, userName, userId } = useAuth();
   const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
 
@@ -745,7 +750,7 @@ export default function RecipesScreen() {
                     disabled={!customInput.trim()}
                     style={[s.darkAddBtn, customInput.trim() && s.darkAddBtnActive]}
                   >
-                    <Text style={[s.darkAddBtnText, customInput.trim() && { color: "#1a1a1a" }]}>+</Text>
+                    <Text style={[s.darkAddBtnText, customInput.trim() && { color: colors.text }]}>+</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -894,8 +899,8 @@ export default function RecipesScreen() {
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                   <Text style={[s.subToggleText, allSubTab === "saved" && s.subToggleTextActive]}>Saved</Text>
                   {savedRecipes.length > 0 && (
-                    <View style={[s.savedTabBadge, allSubTab === "saved" && { backgroundColor: "#fff" }]}>
-                      <Text style={[s.savedTabBadgeText, allSubTab === "saved" && { color: "#1a1a1a" }]}>{savedRecipes.length}</Text>
+                    <View style={[s.savedTabBadge, allSubTab === "saved" && { backgroundColor: colors.card }]}>
+                      <Text style={[s.savedTabBadgeText, allSubTab === "saved" && { color: colors.text }]}>{savedRecipes.length}</Text>
                     </View>
                   )}
                 </View>
@@ -968,7 +973,7 @@ export default function RecipesScreen() {
                             <View style={[s.skeleton, { height: 18, width: "80%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.1)" }]} />
                             <View style={[s.skeleton, { height: 14, width: "55%", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.07)" }]} />
                           </View>
-                          <View style={[rc.footer, { backgroundColor: "#f4f2ed" }]}>
+                          <View style={[rc.footer, { backgroundColor: colors.cardAlt }]}>
                             {[1,2,3,4].map((_, j) => (
                               <View key={j} style={[rc.stat, j < 3 && rc.statBorder, { gap: 4 }]}>
                                 <View style={[s.skeleton, { height: 13, width: 40, borderRadius: 4 }]} />
@@ -1202,8 +1207,8 @@ export default function RecipesScreen() {
   );
 }
 //libCard
-const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#ffffff" },
+const makeS = (c) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
   header: {
     paddingHorizontal: 20,
     paddingTop: 10,
@@ -1212,12 +1217,12 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.5)",
   },
-  greeting: { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
-  headerTitle: { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1, lineHeight: 30 },
+  greeting: { fontSize: 12, color: c.textMuted, fontWeight: "400", marginBottom: 2 },
+  headerTitle: { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -1, lineHeight: 30 },
   tabsRow: { flexDirection: "row", gap: 4, marginTop: 4 },
   mainTab: { flex: 1, paddingVertical: 10, alignItems: "center", position: "relative" },
-  mainTabText: { fontSize: 13, fontWeight: "700", color: "#aaa" },
-  mainTabTextActive: { color: "#1a1a1a" },
+  mainTabText: { fontSize: 13, fontWeight: "700", color: c.textMuted },
+  mainTabTextActive: { color: c.text },
   mainTabLine: { position: "absolute", bottom: 0, left: 8, right: 8, height: 2, borderRadius: 2, backgroundColor: "transparent" },
   mainTabLineActive: { backgroundColor: "#000000" },
 
@@ -1282,7 +1287,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   darkAddBtnActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.card,
   },
   darkAddBtnText: {
     fontSize: 20,
@@ -1320,24 +1325,24 @@ darkInputImage: {
     pointerEvents: "none",
   },
 
-  label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: "#aaa", marginBottom: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: "#e8e5de", backgroundColor: "#fff" },
+  label: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase", color: c.textMuted, marginBottom: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: c.border, backgroundColor: c.card },
   chipActive: { backgroundColor: "#1a1a1a", borderWidth: 0 },
-  chipText: { fontSize: 12, fontWeight: "600", color: "#555" },
+  chipText: { fontSize: 12, fontWeight: "600", color: c.textMuted },
   chipTextActive: { color: "#fff" },
-  skeleton: { backgroundColor: "#e8e5de", borderRadius: 20 },
+  skeleton: { backgroundColor: c.border, borderRadius: 20 },
   actionRow: { flexDirection: "row", gap: 8 },
-  actionBtn: { flex: 1, padding: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 12, alignItems: "center" },
-  actionBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-  card: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 20, padding: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  recipeTitle: { fontSize: 17, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5, lineHeight: 22 },
+  actionBtn: { flex: 1, padding: 12, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 12, alignItems: "center" },
+  actionBtnText: { fontSize: 13, fontWeight: "700", color: c.text },
+  card: { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 20, padding: 20, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  recipeTitle: { fontSize: 17, fontWeight: "800", color: c.text, letterSpacing: -0.5, lineHeight: 22 },
   tagBadge: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   tagBadgeText: { fontSize: 9, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
-  tagBadgeGray: { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  tagBadgeGrayText: { fontSize: 9, fontWeight: "700", color: "#aaa", textTransform: "uppercase", letterSpacing: 0.8 },
-  timeStat: { flex: 1, backgroundColor: "#f4f2ed", borderRadius: 12, padding: 8, alignItems: "center" },
-  timeStatVal: { fontSize: 13, fontWeight: "800", color: "#1a1a1a" },
-  timeStatLabel: { fontSize: 9, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.6 },
+  tagBadgeGray: { backgroundColor: c.cardAlt, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
+  tagBadgeGrayText: { fontSize: 9, fontWeight: "700", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.8 },
+  timeStat: { flex: 1, backgroundColor: c.cardAlt, borderRadius: 12, padding: 8, alignItems: "center" },
+  timeStatVal: { fontSize: 13, fontWeight: "800", color: c.text },
+  timeStatLabel: { fontSize: 9, fontWeight: "700", color: c.textFaint, textTransform: "uppercase", letterSpacing: 0.6 },
   calorieHero: { backgroundColor: "#1a1a1a", borderRadius: 14, padding: 14, marginBottom: 12 },
   calorieEyebrow: { fontSize: 9, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 2 },
   calorieNum: { fontSize: 28, fontWeight: "800", color: "#fff", letterSpacing: -1, lineHeight: 32 },
@@ -1351,66 +1356,66 @@ darkInputImage: {
   macroFill: { height: "100%", borderRadius: 99 },
   proteinTag: { backgroundColor: "rgba(124,58,237,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4 },
   proteinTagText: { fontSize: 11, fontWeight: "700", color: "#e8380d" },
-  tabBar: { flexDirection: "row", backgroundColor: "#f4f2ed", borderRadius: 14, padding: 4, gap: 4 },
+  tabBar: { flexDirection: "row", backgroundColor: c.cardAlt, borderRadius: 14, padding: 4, gap: 4 },
   tabBtn: { flex: 1, padding: 10, borderRadius: 10, alignItems: "center" },
-  tabBtnActive: { backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
-  tabBtnText: { fontSize: 12, fontWeight: "700", color: "#aaa", textTransform: "capitalize" },
-  tabBtnTextActive: { color: "#1a1a1a" },
+  tabBtnActive: { backgroundColor: c.card, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  tabBtnText: { fontSize: 12, fontWeight: "700", color: c.textMuted, textTransform: "capitalize" },
+  tabBtnTextActive: { color: c.text },
   ingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 },
-  ingRowBorder: { borderBottomWidth: 1, borderBottomColor: "#f0ede8" },
-  ingName: { fontSize: 13, fontWeight: "600", color: "#1a1a1a" },
-  ingAmount: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  ingRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
+  ingName: { fontSize: 13, fontWeight: "600", color: c.text },
+  ingAmount: { fontSize: 12, fontWeight: "700", color: c.textMuted },
   stepNum: { width: 28, height: 28, borderRadius: 9, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   stepNumText: { fontSize: 12, fontWeight: "800", color: "#fff" },
-  stepText: { fontSize: 13, fontWeight: "500", color: "#1a1a1a", lineHeight: 21, flex: 1, paddingTop: 3 },
+  stepText: { fontSize: 13, fontWeight: "500", color: c.text, lineHeight: 21, flex: 1, paddingTop: 3 },
   tipCard: { backgroundColor: "rgba(124,58,237,0.05)", borderWidth: 1, borderColor: "rgba(124,58,237,0.15)", borderRadius: 16, padding: 14 },
   tipTitle: { fontSize: 12, fontWeight: "700", color: "#e8380d", marginBottom: 4 },
-  tipText: { fontSize: 13, color: "#888", lineHeight: 20 },
+  tipText: { fontSize: 13, color: c.textMuted, lineHeight: 20 },
 
-libCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-libGoalBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: "#f4f2ed", flexShrink: 0 },
-libGoalText: { fontSize: 10, fontWeight: "700", color: "#aaa", textTransform: "capitalize" },
-libName: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
-libProtein: { fontSize: 10, fontWeight: "700", color: "#1a1a1a" },
-libMeta: { fontSize: 10, color: "#aaa" },
-libDot: { fontSize: 10, color: "#ccc" },
-  catCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 16, overflow: "hidden" },
+libCard: { flexDirection: "row", alignItems: "center", backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+libGoalBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: c.cardAlt, flexShrink: 0 },
+libGoalText: { fontSize: 10, fontWeight: "700", color: c.textMuted, textTransform: "capitalize" },
+libName: { fontSize: 13, fontWeight: "700", color: c.text },
+libProtein: { fontSize: 10, fontWeight: "700", color: c.text },
+libMeta: { fontSize: 10, color: c.textMuted },
+libDot: { fontSize: 10, color: c.textFaint },
+  catCard: { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 16, overflow: "hidden" },
   catHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 14 },
-  catLabel: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
+  catLabel: { fontSize: 14, fontWeight: "700", color: c.text },
   catCount: { backgroundColor: "rgba(232,56,13,0.1)", borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2 },
   catCountText: { fontSize: 10, fontWeight: "800", color: "#e8380d" },
-  catItems: { flexDirection: "row", flexWrap: "wrap", gap: 6, padding: 12, borderTopWidth: 1, borderTopColor: "#f0ede8" },
-  chevron: { fontSize: 18, color: "#ccc" },
+  catItems: { flexDirection: "row", flexWrap: "wrap", gap: 6, padding: 12, borderTopWidth: 1, borderTopColor: c.border },
+  chevron: { fontSize: 18, color: c.textFaint },
   chevronOpen: { transform: [{ rotate: "90deg" }] },
   goalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  goalBtn: { width: "47%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  goalBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  goalBtnText: { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
-  mealBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  mealBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  mealBtnText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  goalBtn: { width: "47%", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card },
+  goalBtnActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
+  goalBtnText: { fontSize: 12, fontWeight: "700", color: c.text },
+  mealBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card },
+  mealBtnActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
+  mealBtnText: { fontSize: 12, fontWeight: "700", color: c.textMuted },
   errorText: { fontSize: 12, color: "#e53e3e", fontWeight: "600" },
   generateBtn: { padding: 16, backgroundColor: "#1a1a1a", borderRadius: 14, alignItems: "center" },
   generateBtnText: { fontSize: 15, fontWeight: "700", color: "#fafaf8" },
-  pageBtn: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 10 },
-  pageBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  pageBtn: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 10 },
+  pageBtnText: { fontSize: 13, fontWeight: "700", color: c.text },
   pageIndicator: { alignItems: "center", justifyContent: "center" },
-  pageIndicatorText: { fontSize: 12, color: "#aaa", fontWeight: "600" },
-  pageNumBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  pageNumBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  pageNumBtnText: { fontSize: 13, fontWeight: "700", color: "#aaa" },
+  pageIndicatorText: { fontSize: 12, color: c.textMuted, fontWeight: "600" },
+  pageNumBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card, alignItems: "center", justifyContent: "center" },
+  pageNumBtnActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
+  pageNumBtnText: { fontSize: 13, fontWeight: "700", color: c.textMuted },
   pageNumBtnTextActive: { color: "#fff" },
-  recipeList: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 18, overflow: "hidden" },
+  recipeList: { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 18, overflow: "hidden" },
   recipeListRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 16 },
-  recipeListRowBorder: { borderBottomWidth: 1, borderBottomColor: "#f0ede8" },
-  recipeListName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  recipeListProtein: { fontSize: 11, fontWeight: "700", color: "#1a1a1a" },
-  recipeListMeta: { fontSize: 11, color: "#aaa" },
-  recipeListDot: { fontSize: 11, color: "#ccc" },
+  recipeListRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
+  recipeListName: { fontSize: 14, fontWeight: "700", color: c.text },
+  recipeListProtein: { fontSize: 11, fontWeight: "700", color: c.text },
+  recipeListMeta: { fontSize: 11, color: c.textMuted },
+  recipeListDot: { fontSize: 11, color: c.textFaint },
   recipeListBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   recipeListBadgeText: { fontSize: 9, fontWeight: "700", textTransform: "capitalize", letterSpacing: 0.4 },
-  filterIconBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#e8e5de", borderRadius: 10 },
-  filterIconBtnText: { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
+  filterIconBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, borderRadius: 10 },
+  filterIconBtnText: { fontSize: 12, fontWeight: "700", color: c.text },
   allTopBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1423,16 +1428,16 @@ libDot: { fontSize: 10, color: "#ccc" },
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1.5,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
   },
   searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, fontSize: 14, color: "#1a1a1a", paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: c.text, paddingVertical: 0 },
   filterBtn2: {
     flexDirection: "row",
     alignItems: "center",
@@ -1458,27 +1463,27 @@ libDot: { fontSize: 10, color: "#ccc" },
   activeChipText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   sheetSectionLabel: {
     fontSize: 11, fontWeight: "700", letterSpacing: 1.1,
-    textTransform: "uppercase", color: "#aaa", marginBottom: 10,
+    textTransform: "uppercase", color: c.textMuted, marginBottom: 10,
   },
   sheetChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   sheetChip: {
     paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 99, borderWidth: 1.5,
-    borderColor: "#e8e5de", backgroundColor: "#fff",
+    borderColor: c.border, backgroundColor: c.card,
   },
-  sheetChipActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  sheetChipText: { fontSize: 13, fontWeight: "600", color: "#555" },
+  sheetChipActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
+  sheetChipText: { fontSize: 13, fontWeight: "600", color: c.textMuted },
   sheetChipTextActive: { color: "#fff" },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: "#1a1a1a", marginBottom: 6 },
-  emptyDesc: { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
+  emptyTitle: { fontSize: 15, fontWeight: "700", color: c.text, marginBottom: 6 },
+  emptyDesc: { fontSize: 13, color: c.textMuted, lineHeight: 20, textAlign: "center" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
-  bottomSheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#fafaf8", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 16, maxHeight: "80%", shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#e0ddd6", alignSelf: "center", marginBottom: 16 },
-  sheetTitle: { fontSize: 18, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5, marginBottom: 16 },
+  bottomSheet: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: c.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 16, maxHeight: "80%", shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 20 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: c.cardAlt, alignSelf: "center", marginBottom: 16 },
+  sheetTitle: { fontSize: 18, fontWeight: "800", color: c.text, letterSpacing: -0.5, marginBottom: 16 },
   filterGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-  filterBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
-  filterBtnActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  filterBtnText: { fontSize: 12, fontWeight: "700", color: "#1a1a1a" },
+  filterBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card },
+  filterBtnActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
+  filterBtnText: { fontSize: 12, fontWeight: "700", color: c.text },
   saveBtn: { width: "100%", paddingVertical: 16, backgroundColor: "#1a1a1a", borderRadius: 14, alignItems: "center" },
   saveBtnText: { fontSize: 14, fontWeight: "700", color: "#fafaf8" },
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -1489,7 +1494,7 @@ libDot: { fontSize: 10, color: "#ccc" },
     marginHorizontal: 20,
     marginTop: 14,
     marginBottom: 4,
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     borderRadius: 14,
     padding: 3,
     gap: 3,
@@ -1509,32 +1514,33 @@ libDot: { fontSize: 10, color: "#ccc" },
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  subToggleText: { fontSize: 13, fontWeight: "700", color: "#aaa" },
+  subToggleText: { fontSize: 13, fontWeight: "700", color: c.textMuted },
   subToggleTextActive: { color: "#fff" },
   actionBtnSaved: { borderColor: "rgba(232,56,13,0.3)", backgroundColor: "rgba(232,56,13,0.05)" },
   detailSaveBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#e8e5de",
+    backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border,
     borderRadius: 16, padding: 16, marginTop: 4,
   },
   detailSaveBtnSaved: { borderColor: "rgba(232,56,13,0.3)", backgroundColor: "rgba(232,56,13,0.04)" },
-  detailSaveBtnIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
-  detailSaveBtnTitle: { fontSize: 14, fontWeight: "800", color: "#1a1a1a", marginBottom: 2 },
-  detailSaveBtnSub: { fontSize: 11, color: "#aaa", fontWeight: "500" },
+  detailSaveBtnIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
+  detailSaveBtnTitle: { fontSize: 14, fontWeight: "800", color: c.text, marginBottom: 2 },
+  detailSaveBtnSub: { fontSize: 11, color: c.textMuted, fontWeight: "500" },
   savedEmpty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 20, gap: 12 },
-  savedEmptyIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  savedEmptyTitle: { fontSize: 17, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.4 },
-  savedEmptyDesc: { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
+  savedEmptyIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  savedEmptyTitle: { fontSize: 17, fontWeight: "800", color: c.text, letterSpacing: -0.4 },
+  savedEmptyDesc: { fontSize: 13, color: c.textMuted, lineHeight: 20, textAlign: "center" },
   savedEmptyBtn: { marginTop: 8, paddingHorizontal: 22, paddingVertical: 12, backgroundColor: "#1a1a1a", borderRadius: 12 },
   savedEmptyBtnText: { fontSize: 13, fontWeight: "700", color: "#fff" },
 });
+let s = makeS(LIGHT);
 
 // ── Recipe card styles ──
-const rc = StyleSheet.create({
+const makeRc = (c) => StyleSheet.create({
   card: {
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     shadowColor: "#000",
     shadowOpacity: 0.10,
     shadowRadius: 14,
@@ -1574,11 +1580,11 @@ const rc = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: "#f0ede8",
-    backgroundColor: "#fafaf8",
+    borderTopColor: c.border,
+    backgroundColor: c.bg,
   },
   saveRowSaved: { backgroundColor: "rgba(232,56,13,0.04)" },
-  saveRowText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  saveRowText: { fontSize: 12, fontWeight: "700", color: c.textMuted },
   saveRowTextSaved: { color: "#e8380d" },
   emojiWrap: {
     width: 52,
@@ -1623,9 +1629,9 @@ const rc = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderTopWidth: 1,
-    borderTopColor: "#f0ede8",
+    borderTopColor: c.border,
   },
   stat: {
     flex: 1,
@@ -1640,14 +1646,15 @@ const rc = StyleSheet.create({
   statVal: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.2,
   },
   statLabel: {
     fontSize: 9,
     fontWeight: "600",
-    color: "#bbb",
+    color: c.textFaint,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
 });
+let rc = makeRc(LIGHT);

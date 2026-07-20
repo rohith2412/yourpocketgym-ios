@@ -7,6 +7,7 @@ import {
     Text,
     View,
 } from "react-native";
+import { useTheme, LIGHT } from "../../src/theme/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SECTIONS = [
@@ -122,11 +123,13 @@ To delete your account, tap "Delete Account" on the Profile screen or email us a
 ];
 
 export default function PrivacyScreen() {
+  const { colors } = useTheme();
+  s = makeS(colors);
   const router = useRouter();
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
       <View style={s.header}>
         <Pressable style={s.backBtn} onPress={() => router.back()}>
@@ -161,15 +164,15 @@ export default function PrivacyScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fafaf8" },
+const makeS = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "rgba(250,250,248,0.95)",
+    backgroundColor: c.bg,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.5)",
   },
@@ -178,39 +181,40 @@ const s = StyleSheet.create({
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#e8e5de",
-    backgroundColor: "#fff",
+    borderColor: c.border,
+    backgroundColor: c.card,
     alignItems: "center",
     justifyContent: "center",
   },
-  backBtnText: { fontSize: 18, color: "#1a1a1a" },
-  headerTitle: { fontSize: 16, fontWeight: "800", color: "#1a1a1a" },
+  backBtnText: { fontSize: 18, color: c.text },
+  headerTitle: { fontSize: 16, fontWeight: "800", color: c.text },
   content: { padding: 20 },
-  updated: { fontSize: 11, color: "#bbb", fontWeight: "500", marginBottom: 12 },
+  updated: { fontSize: 11, color: c.textFaint, fontWeight: "500", marginBottom: 12 },
   intro: {
     fontSize: 14,
-    color: "#555",
+    color: c.textMuted,
     lineHeight: 22,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     marginBottom: 16,
   },
   section: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     marginBottom: 8,
   },
-  sectionBody: { fontSize: 13, color: "#555", lineHeight: 21 },
+  sectionBody: { fontSize: 13, color: c.textMuted, lineHeight: 21 },
 });
+let s = makeS(LIGHT);

@@ -11,6 +11,7 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { DEFAULT_PREFERENCES, MealPreferences } from "../src/utils/mealPlanGenerator";
 
 const { width: W } = Dimensions.get("window");
@@ -115,6 +116,8 @@ function ProgressDots({ step }: { step: number }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function MealPlanOnboarding({ onComplete }: Props) {
+  const { colors } = useTheme();
+  s = makeS(colors);
   const [step, setStep] = useState(1);
   const [prefs, setPrefs] = useState<MealPreferences>({ ...DEFAULT_PREFERENCES });
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -424,36 +427,36 @@ export default function MealPlanOnboarding({ onComplete }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#ffffff" },
+const makeS = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
 
   nav: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12,
   },
   navBack: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  navBackText: { fontSize: 22, color: "#0e0e0e" },
-  navCloseText: { fontSize: 18, color: "rgba(0,0,0,0.3)" },
+  navBackText: { fontSize: 22, color: c.text },
+  navCloseText: { fontSize: 18, color: c.textFaint },
   navSkip: { paddingVertical: 8, paddingHorizontal: 4 },
-  navSkipText: { fontSize: 14, color: "rgba(0,0,0,0.3)", fontWeight: "500" },
+  navSkipText: { fontSize: 14, color: c.textFaint, fontWeight: "500" },
 
   dots: { flexDirection: "row", gap: 6 },
-  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: "#e8e5de" },
+  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: c.border },
   dotActive: { backgroundColor: "#0e0e0e" },
 
   // Typography
   eyebrow: {
-    fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)",
+    fontSize: 11, fontWeight: "700", color: c.textFaint,
     letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 12,
   },
   bigTitle: {
-    fontSize: 46, fontWeight: "900", color: "#0e0e0e",
+    fontSize: 46, fontWeight: "900", color: c.text,
     letterSpacing: -2, lineHeight: 50, marginBottom: 12,
   },
   accent: { color: "#e8380d" },
-  bigSub:  { fontSize: 15, color: "rgba(0,0,0,0.38)", lineHeight: 22, marginBottom: 24 },
+  bigSub:  { fontSize: 15, color: c.textMuted, lineHeight: 22, marginBottom: 24 },
   sectionLabel: {
-    fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)",
+    fontSize: 11, fontWeight: "700", color: c.textFaint,
     letterSpacing: 1.5, textTransform: "uppercase", marginTop: 28, marginBottom: 12,
   },
 
@@ -469,7 +472,7 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     borderWidth: 2, borderColor: "transparent",
   },
-  goalCardActive: { borderColor: "#0e0e0e" },
+  goalCardActive: { borderColor: c.text },
   goalCheck: {
     position: "absolute", top: 12, right: 12,
     width: 26, height: 26, borderRadius: 13,
@@ -484,13 +487,13 @@ const s = StyleSheet.create({
   bigCardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   bigChipCard: {
     width: CARD_W,
-    backgroundColor: "#f7f7f5", borderRadius: 18,
+    backgroundColor: c.cardAlt, borderRadius: 18,
     padding: 18, borderWidth: 1.5, borderColor: "transparent", gap: 4,
   },
-  bigChipCardActive:  { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  bigChipLabel:       { fontSize: 16, fontWeight: "700", color: "rgba(0,0,0,0.5)" },
-  bigChipLabelActive: { color: "#0e0e0e" },
-  bigChipSub:         { fontSize: 12, color: "rgba(0,0,0,0.3)" },
+  bigChipCardActive:  { borderColor: c.text, backgroundColor: c.card },
+  bigChipLabel:       { fontSize: 16, fontWeight: "700", color: c.textMuted },
+  bigChipLabelActive: { color: c.text },
+  bigChipSub:         { fontSize: 12, color: c.textFaint },
   bigChipCheck: {
     position: "absolute", top: 12, right: 12,
     width: 22, height: 22, borderRadius: 11,
@@ -500,11 +503,11 @@ const s = StyleSheet.create({
   allergyRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   allergyChip: {
     paddingVertical: 10, paddingHorizontal: 18, borderRadius: 24,
-    backgroundColor: "#f4f4f2", borderWidth: 1.5, borderColor: "transparent",
+    backgroundColor: c.cardAlt, borderWidth: 1.5, borderColor: "transparent",
   },
-  allergyChipActive: { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  allergyText:       { fontSize: 14, fontWeight: "600", color: "rgba(0,0,0,0.5)" },
-  allergyTextActive: { color: "#0e0e0e" },
+  allergyChipActive: { borderColor: c.text, backgroundColor: c.card },
+  allergyText:       { fontSize: 14, fontWeight: "600", color: c.textMuted },
+  allergyTextActive: { color: c.text },
 
   // ── Step 3: Cuisine — scrollable 2-column grid ──
   cuisineGrid: { gap: 12, paddingTop: 4, paddingBottom: 16 },
@@ -530,43 +533,43 @@ const s = StyleSheet.create({
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   presetCard: {
     flex: 1, minWidth: "44%",
-    backgroundColor: "#f7f7f5", borderRadius: 16, padding: 16, gap: 4,
+    backgroundColor: c.cardAlt, borderRadius: 16, padding: 16, gap: 4,
     borderWidth: 1.5, borderColor: "transparent",
   },
-  presetCardActive:  { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  presetLabel:       { fontSize: 17, fontWeight: "700", color: "rgba(0,0,0,0.4)" },
-  presetLabelActive: { color: "#0e0e0e" },
-  presetSub:         { fontSize: 12, color: "rgba(0,0,0,0.3)" },
+  presetCardActive:  { borderColor: c.text, backgroundColor: c.card },
+  presetLabel:       { fontSize: 17, fontWeight: "700", color: c.textMuted },
+  presetLabelActive: { color: c.text },
+  presetSub:         { fontSize: 12, color: c.textFaint },
 
   customCalRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 },
   calInput: {
-    flex: 1, backgroundColor: "#f7f7f5", borderRadius: 14,
+    flex: 1, backgroundColor: c.cardAlt, borderRadius: 14,
     paddingVertical: 16, paddingHorizontal: 18,
-    fontSize: 18, fontWeight: "700", color: "#0e0e0e",
-    borderWidth: 1, borderColor: "#e8e5de",
+    fontSize: 18, fontWeight: "700", color: c.text,
+    borderWidth: 1, borderColor: c.border,
   },
-  calUnit: { fontSize: 14, color: "rgba(0,0,0,0.35)", fontWeight: "600" },
+  calUnit: { fontSize: 14, color: c.textMuted, fontWeight: "600" },
 
   snackRow: { gap: 10 },
   snackBtn: {
     paddingVertical: 18, borderRadius: 14, alignItems: "center",
-    backgroundColor: "#f7f7f5", borderWidth: 1.5, borderColor: "transparent",
+    backgroundColor: c.cardAlt, borderWidth: 1.5, borderColor: "transparent",
   },
-  snackBtnActive:     { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  snackBtnText:       { fontSize: 16, fontWeight: "600", color: "rgba(0,0,0,0.4)" },
-  snackBtnTextActive: { color: "#0e0e0e" },
+  snackBtnActive:     { borderColor: c.text, backgroundColor: c.card },
+  snackBtnText:       { fontSize: 16, fontWeight: "600", color: c.textMuted },
+  snackBtnTextActive: { color: c.text },
 
   // ── Step 5: Cook time ──
   cookTimeGrid: { flex: 1, gap: 14, paddingTop: 4 },
   cookTimeCard: {
-    flex: 1, backgroundColor: "#f7f7f5",
+    flex: 1, backgroundColor: c.cardAlt,
     borderRadius: 22, padding: 24, gap: 6,
     borderWidth: 2, borderColor: "transparent",
   },
-  cookTimeCardActive:  { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  cookTimeLabel:       { fontSize: 22, fontWeight: "800", color: "rgba(0,0,0,0.4)" },
-  cookTimeLabelActive: { color: "#0e0e0e" },
-  cookTimeSub:         { fontSize: 14, fontWeight: "600", color: "rgba(0,0,0,0.3)" },
+  cookTimeCardActive:  { borderColor: c.text, backgroundColor: c.card },
+  cookTimeLabel:       { fontSize: 22, fontWeight: "800", color: c.textMuted },
+  cookTimeLabelActive: { color: c.text },
+  cookTimeSub:         { fontSize: 14, fontWeight: "600", color: c.textFaint },
   cookTimeDesc:        { fontSize: 13, color: "rgba(0,0,0,0.25)", lineHeight: 20, marginTop: 4 },
   cookTimeCheck: {
     position: "absolute", top: 18, right: 18,
@@ -582,3 +585,4 @@ const s = StyleSheet.create({
   },
   nextBtnText: { fontSize: 17, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
 });
+let s = makeS(LIGHT);

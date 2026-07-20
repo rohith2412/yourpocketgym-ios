@@ -2,6 +2,7 @@ import AvatarButton from "@/components/AvatarButton";
 import PremiumGate from "@/components/PremiumGate";
 import PhysiqueRating from "@/components/PhysiqueRating";
 import { useSubscription } from "@/src/hooks/useSubscription";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -463,6 +464,7 @@ function useGymProfile(userId: string) {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ height = 80, radius = 16 }) {
+  const { colors } = useTheme();
   const anim = useRef(new Animated.Value(0.5)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -470,7 +472,7 @@ function Skeleton({ height = 80, radius = 16 }) {
       Animated.timing(anim, { toValue: 0.5, duration: 700, useNativeDriver: true }),
     ])).start();
   }, []);
-  return <Animated.View style={{ height, borderRadius: radius, backgroundColor: "#ece9e3", opacity: anim, marginBottom: 8 }} />;
+  return <Animated.View style={{ height, borderRadius: radius, backgroundColor: colors.cardAlt, opacity: anim, marginBottom: 8 }} />;
 }
 
 // ─── Chip ─────────────────────────────────────────────────────────────────────
@@ -1125,13 +1127,14 @@ const ExerciseCard = React.memo(function ExerciseCard({ ex, index, checked, onTo
 // ─── Day Card ─────────────────────────────────────────────────────────────────
 type DayCardProps = { day: WorkoutDay; checkedArr: boolean[]; onToggleEx: (i: number) => void | Promise<void>; isDone?: boolean; onToggle?: () => void | Promise<void>; };
 const DayCard = React.memo(function DayCard({ day, checkedArr, onToggleEx }: DayCardProps) {
+  const { colors } = useTheme();
   if (day.restDay) {
     return (
       <View style={[s.dayCard, { flexDirection: "row", alignItems: "center", gap: 14, padding: 18 }]}>
         <Text style={{ fontSize: 28 }}>🛌</Text>
         <View>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#1a1a1a" }}>Rest Day</Text>
-          <Text style={{ fontSize: 13, color: "#aaa", marginTop: 2 }}>Recovery is part of the programme.</Text>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text }}>Rest Day</Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>Recovery is part of the programme.</Text>
         </View>
       </View>
     );
@@ -1295,6 +1298,7 @@ const PlanView = React.memo(function PlanView({ plan, onBack, onRegen, onSave, i
 
 // ─── Chat View ────────────────────────────────────────────────────────────────
 function ChatView({ profile, token }: any) {
+  const { colors } = useTheme();
   const intro = profile ? `Goal: ${profile.goal}, ${profile.experience}, ${profile.equipment}` : null;
   const [messages, setMessages] = useState([{
     role: "assistant",
@@ -1359,7 +1363,7 @@ function ChatView({ profile, token }: any) {
           </View>
         )}
         {/* Medical disclaimer — always visible */}
-        <View style={{ backgroundColor: "#f5f3ee", borderRadius: 10, padding: 12, marginBottom: 4 }}>
+        <View style={{ backgroundColor: colors.cardAlt, borderRadius: 10, padding: 12, marginBottom: 4 }}>
           <Text style={{ fontSize: 11, color: "#8a8578", lineHeight: 16 }}>
             Health and nutrition information provided here is for general informational purposes only and is not a substitute for professional medical advice. BMI classifications follow WHO guidelines (who.int). Nutrition guidance references USDA Dietary Guidelines (dietaryguidelines.gov) and ACE (acefitness.org). Always consult a qualified healthcare professional before making changes to your diet or exercise routine.
           </Text>
@@ -1571,32 +1575,36 @@ function EditPrefsSheet({ visible, initial, onSave, onClose }: any) {
   );
 }
 
-const ep = StyleSheet.create({
-  navBar:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", paddingHorizontal: 16, paddingTop: Platform.OS === "ios" ? 58 : 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#c6c6c8" },
+const makeEp = (c) => StyleSheet.create({
+  navBar:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: c.card, paddingHorizontal: 16, paddingTop: Platform.OS === "ios" ? 58 : 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   navSide:    { minWidth: 72 },
-  navCancel:  { fontSize: 17, color: "#8e8e93" },
-  navTitle:   { fontSize: 17, fontWeight: "700", color: "#000", letterSpacing: -0.3 },
+  navCancel:  { fontSize: 17, color: c.textMuted },
+  navTitle:   { fontSize: 17, fontWeight: "700", color: c.text, letterSpacing: -0.3 },
   navSave:    { fontSize: 17, fontWeight: "600", color: "#e8380d", textAlign: "right" },
-  scroll:     { flex: 1, backgroundColor: "#f2f2f7" },
+  scroll:     { flex: 1, backgroundColor: c.bg },
   sectionLabel: { fontSize: 13, color: "#6c6c70", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 28, marginBottom: 4, marginHorizontal: 20 },
-  sectionSub:  { fontSize: 13, color: "#aaa", marginBottom: 10, marginHorizontal: 20 },
-  card:       { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, overflow: "hidden" },
+  sectionSub:  { fontSize: 13, color: c.textMuted, marginBottom: 10, marginHorizontal: 20 },
+  card:       { backgroundColor: c.card, marginHorizontal: 16, borderRadius: 12, overflow: "hidden" },
   row:        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, minHeight: 54 },
-  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#c6c6c8" },
-  rowTitle:   { fontSize: 17, color: "#000", flex: 1 },
-  rowSub:     { fontSize: 13, color: "#8e8e93", marginTop: 2 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+  rowTitle:   { fontSize: 17, color: c.text, flex: 1 },
+  rowSub:     { fontSize: 13, color: c.textMuted, marginTop: 2 },
   check:      { fontSize: 18, color: "#e8380d", fontWeight: "700", marginLeft: 8 },
-  textInput:  { paddingHorizontal: 16, paddingVertical: 14, fontSize: 17, color: "#000", minHeight: 100, textAlignVertical: "top" },
+  textInput:  { paddingHorizontal: 16, paddingVertical: 14, fontSize: 17, color: c.text, minHeight: 100, textAlignVertical: "top" },
   dayGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10, marginHorizontal: 16, marginBottom: 4 },
-  dayChip:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderWidth: 1.5, borderColor: "#e5e5e5" },
+  dayChip:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: c.card, borderWidth: 1.5, borderColor: "#e5e5e5" },
   dayChipActive:   { backgroundColor: "#e8380d", borderColor: "#e8380d" },
   dayChipDisabled: { opacity: 0.35 },
-  dayChipText:     { fontSize: 12, fontWeight: "600", color: "#555" },
+  dayChipText:     { fontSize: 12, fontWeight: "600", color: c.textMuted },
   dayChipTextActive: { color: "#fff" },
 });
+let ep = makeEp(LIGHT);
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AITrainerScreen() {
+  const { colors } = useTheme();
+  ep = makeEp(colors); s = makeS(colors); pc = makePc(colors); ec = makeEc(colors);
+  wc = makeWc(colors); p = makeP(colors); pi = makePi(colors);
   const router = useRouter();
   const { session, ready, userName, userId } = useAuth();
   const { profile, loaded: profileLoaded, saveProfile } = useGymProfile(userId);
@@ -1955,19 +1963,19 @@ export default function AITrainerScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  screen:      { flex: 1, backgroundColor: "#ffffff" },
+const makeS = (c) => StyleSheet.create({
+  screen:      { flex: 1, backgroundColor: c.bg },
   header:      { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: "rgba(232,229,222,0.6)" },
   headerRow:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  greeting:    { fontSize: 12, color: "#323131", fontWeight: "400", marginBottom: 2 },
-  headerTitle: { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1 },
+  greeting:    { fontSize: 12, color: c.textMuted, fontWeight: "400", marginBottom: 2 },
+  headerTitle: { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -1 },
   tabRow:      { flexDirection: "row" },
   tabItem:     { flex: 1, paddingVertical: 10, alignItems: "center", position: "relative" },
-  tabText:     { fontSize: 14, fontWeight: "600", color: "#bbb" },
-  tabTextActive: { color: "#1a1a1a", fontWeight: "700" },
+  tabText:     { fontSize: 14, fontWeight: "600", color: c.textFaint },
+  tabTextActive: { color: c.text, fontWeight: "700" },
   tabLine:     { position: "absolute", bottom: 0, left: 12, right: 12, height: 2, borderRadius: 2, backgroundColor: "transparent" },
   tabLineActive: { backgroundColor: "#1a1a1a" },
-  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
+  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textMuted },
   setupCard:   { backgroundColor: "#1a1a1a", borderRadius: 22, padding: 24, alignItems: "center" },
   setupTitle:  { fontSize: 20, fontWeight: "800", color: "#fff", letterSpacing: -0.5, marginBottom: 8, textAlign: "center" },
   setupDesc:   { fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 22, marginBottom: 20, textAlign: "center" },
@@ -1975,15 +1983,15 @@ const s = StyleSheet.create({
   setupBtnText: { fontSize: 14, fontWeight: "700", color: "#fff" },
   generateBtn: { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   generateBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  editPrefsBtn: { borderWidth: 1.5, borderColor: "#e8e5de", borderRadius: 20, paddingVertical: 14, alignItems: "center", backgroundColor: "#fff" },
+  editPrefsBtn: { borderWidth: 1.5, borderColor: c.border, borderRadius: 20, paddingVertical: 14, alignItems: "center", backgroundColor: c.card },
   editPrefsBtnText: { fontSize: 14, fontWeight: "600", color: "#888" },
   completeBtn: { backgroundColor: "#1a1a1a", borderRadius: 20, paddingVertical: 16, alignItems: "center" },
   completeBtnDone: { backgroundColor: "#e8380d" },
   completeBtnText: { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.2 },
   errorBox:    { backgroundColor: "#fef2f2", borderRadius: 12, padding: 12, borderLeftWidth: 3, borderLeftColor: "#ef4444" },
   errorText:   { fontSize: 13, color: "#ef4444", fontWeight: "600" },
-  card:        { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "#e8e5de", padding: 18 },
-  emptyTitle:  { fontSize: 15, fontWeight: "700", color: "#1a1a1a", textAlign: "center" },
+  card:        { backgroundColor: c.card, borderRadius: 18, borderWidth: 1, borderColor: c.border, padding: 18 },
+  emptyTitle:  { fontSize: 15, fontWeight: "700", color: c.text, textAlign: "center" },
   // Plan
   planHeader:   { backgroundColor: "#1a1a1a", borderRadius: 20, padding: 20 },
   planEyebrow:  { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
@@ -1996,76 +2004,77 @@ const s = StyleSheet.create({
   planActionBtn: { flex: 1, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 10, alignItems: "center" },
   planActionBtnText: { fontSize: 13, fontWeight: "700", color: "rgba(255,255,255,0.8)" },
   actionRow:    { flexDirection: "row", gap: 8, marginTop: 4 },
-  actionBtn:    { flex: 1, paddingVertical: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 12, alignItems: "center" },
-  actionBtnText: { fontSize: 13, fontWeight: "700", color: "#1a1a1a" },
+  actionBtn:    { flex: 1, paddingVertical: 12, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 12, alignItems: "center" },
+  actionBtnText: { fontSize: 13, fontWeight: "700", color: c.text },
   actionBtnPrimary: { flex: 1, paddingVertical: 12, backgroundColor: "#1a1a1a", borderRadius: 12, alignItems: "center", justifyContent: "center" },
   actionBtnPrimaryText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   savedBadge:   { flex: 1, paddingVertical: 12, backgroundColor: "rgba(34,197,94,0.08)", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)", borderRadius: 12, alignItems: "center" },
   savedBadgeText: { fontSize: 13, fontWeight: "700", color: "#22c55e" },
-  segControl:   { flexDirection: "row", backgroundColor: "#f0ede8", borderRadius: 12, padding: 4, gap: 4 },
+  segControl:   { flexDirection: "row", backgroundColor: c.cardAlt, borderRadius: 12, padding: 4, gap: 4 },
   segBtn:       { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: "center" },
-  segBtnActive: { backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
-  segBtnText:   { fontSize: 13, fontWeight: "600", color: "#aaa" },
-  segBtnTextActive: { color: "#1a1a1a", fontWeight: "700" },
+  segBtnActive: { backgroundColor: c.card, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  segBtnText:   { fontSize: 13, fontWeight: "600", color: c.textMuted },
+  segBtnTextActive: { color: c.text, fontWeight: "700" },
   // Day card
-  dayCard:      { backgroundColor: "#fff", borderRadius: 28, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 4, overflow: "hidden" },
-  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: "#fff" },
-  dayBox:       { width: 42, height: 42, borderRadius: 13, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center" },
+  dayCard:      { backgroundColor: c.card, borderRadius: 28, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 20, shadowOffset: { width: 0, height: 6 }, elevation: 4, overflow: "hidden" },
+  dayCardHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.card },
+  dayBox:       { width: 42, height: 42, borderRadius: 13, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
   dayBoxOpen:   { width: 42, height: 42, borderRadius: 13, backgroundColor: "#1a1a1a", alignItems: "center", justifyContent: "center" },
   dayBoxLabel:  { fontSize: 8, fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: 0.8 },
   dayBoxNum:    { fontSize: 16, fontWeight: "800", color: "#fff" },
   dayHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4, paddingHorizontal: 2 },
-  dayLabel:     { fontSize: 20, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5 },
-  dayMeta:      { fontSize: 12, color: "#aaa", fontWeight: "500" },
+  dayLabel:     { fontSize: 20, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+  dayMeta:      { fontSize: 12, color: c.textMuted, fontWeight: "500" },
   focusBadge:   { backgroundColor: "rgba(232,56,13,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   focusBadgeText: { fontSize: 10, fontWeight: "700", color: "#e8380d" },
-  progressBadge: { alignItems: "center", backgroundColor: "#fff", borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  progressBadge: { alignItems: "center", backgroundColor: c.card, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   progressBadgeDone: { backgroundColor: "#e8380d", borderColor: "#e8380d" },
-  progressNum:  { fontSize: 15, fontWeight: "800", color: "#1a1a1a", lineHeight: 18 },
+  progressNum:  { fontSize: 15, fontWeight: "800", color: c.text, lineHeight: 18 },
   progressNumDone: { color: "#fff" },
-  progressLbl:  { fontSize: 9, fontWeight: "600", color: "#aaa", textTransform: "uppercase", letterSpacing: 0.5 },
+  progressLbl:  { fontSize: 9, fontWeight: "600", color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
   progressLblDone: { color: "rgba(255,255,255,0.85)" },
-  chevron:      { fontSize: 20, color: "#ccc" },
-  dayBody:      { backgroundColor: "#f7f6f3", padding: 10, gap: 0 },
-  warmupBox:    { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#ece9e3" },
+  chevron:      { fontSize: 20, color: c.textFaint },
+  dayBody:      { backgroundColor: c.cardAlt, padding: 10, gap: 0 },
+  warmupBox:    { backgroundColor: c.card, borderRadius: 18, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: c.border },
   warmupLabel:  { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
-  warmupText:   { fontSize: 13, color: "#666", lineHeight: 19 },
-  cooldownBox:  { backgroundColor: "#fff", borderRadius: 18, padding: 14, marginTop: 4, borderWidth: 1, borderColor: "#ece9e3" },
+  warmupText:   { fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  cooldownBox:  { backgroundColor: c.card, borderRadius: 18, padding: 14, marginTop: 4, borderWidth: 1, borderColor: c.border },
   cooldownLabel: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, color: "#e8380d", marginBottom: 4 },
-  cooldownText: { fontSize: 13, color: "#666", lineHeight: 19 },
+  cooldownText: { fontSize: 13, color: c.textMuted, lineHeight: 19 },
   // Exercise card
   dot:          { width: 7, height: 7, borderRadius: 4 },
-  exDetail:     { borderTopWidth: 1, borderTopColor: "#f4f2ed", padding: 12, backgroundColor: "#fafaf8" },
-  tempoLabel:   { fontSize: 10, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8 },
+  exDetail:     { borderTopWidth: 1, borderTopColor: "#f4f2ed", padding: 12, backgroundColor: c.bg },
+  tempoLabel:   { fontSize: 10, fontWeight: "700", color: c.textFaint, textTransform: "uppercase", letterSpacing: 0.8 },
   tempoBadge:   { backgroundColor: "rgba(124,58,237,0.08)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   tempoBadgeText: { fontSize: 12, fontWeight: "700", color: "#e8380d" },
-  exNotes:      { fontSize: 13, color: "#666", lineHeight: 20 },
+  exNotes:      { fontSize: 13, color: c.textMuted, lineHeight: 20 },
   // Tips
-  tipSectionTitle: { fontSize: 14, fontWeight: "800", color: "#1a1a1a", marginBottom: 12 },
+  tipSectionTitle: { fontSize: 14, fontWeight: "800", color: c.text, marginBottom: 12 },
   tipRow:       { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 10 },
   tipNum:       { width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(124,58,237,0.08)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   tipNumText:   { fontSize: 11, fontWeight: "800", color: "#e8380d" },
-  tipText:      { fontSize: 14, color: "#555", lineHeight: 21, flex: 1 },
-  eyebrow:      { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 10 },
+  tipText:      { fontSize: 14, color: c.textMuted, lineHeight: 21, flex: 1 },
+  eyebrow:      { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textFaint, marginBottom: 10 },
   // Chat
-  promptBtn:    { paddingHorizontal: 16, paddingVertical: 13, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 14 },
-  promptText:   { fontSize: 14, fontWeight: "500", color: "#1a1a1a", lineHeight: 20 },
+  promptBtn:    { paddingHorizontal: 16, paddingVertical: 13, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 14 },
+  promptText:   { fontSize: 14, fontWeight: "500", color: c.text, lineHeight: 20 },
   msgRow:       { flexDirection: "row", alignItems: "flex-end" },
   botDot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: "#1a1a1a", marginRight: 10, marginBottom: 6, flexShrink: 0 },
   bubble:       { maxWidth: "80%", paddingHorizontal: 14, paddingVertical: 10 },
   bubbleUser:   { backgroundColor: "#1a1a1a", borderRadius: 18, borderBottomRightRadius: 4 },
-  bubbleBot:    { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e8e5de", borderRadius: 18, borderBottomLeftRadius: 4 },
-  bubbleText:   { fontSize: 14, lineHeight: 22, color: "#1a1a1a" },
-  typingDot:    { width: 7, height: 7, borderRadius: 4, backgroundColor: "#ccc" },
+  bubbleBot:    { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 18, borderBottomLeftRadius: 4 },
+  bubbleText:   { fontSize: 14, lineHeight: 22, color: c.text },
+  typingDot:    { width: 7, height: 7, borderRadius: 4, backgroundColor: c.border },
   inputRow:     { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === "ios" ? 6 : 10, borderTopWidth: 1, borderTopColor: "#e8e5de" },
-  chatInput:    { flex: 1, paddingHorizontal: 16, paddingVertical: 11, borderWidth: 1.5, borderColor: "#e8e5de", borderRadius: 14, fontSize: 15, color: "#1a1a1a", backgroundColor: "#fff", maxHeight: 100 },
-  sendBtn:      { width: 44, height: 44, borderRadius: 14, backgroundColor: "#f0ede8", alignItems: "center", justifyContent: "center" },
+  chatInput:    { flex: 1, paddingHorizontal: 16, paddingVertical: 11, borderWidth: 1.5, borderColor: c.border, borderRadius: 14, fontSize: 15, color: c.text, backgroundColor: c.card, maxHeight: 100 },
+  sendBtn:      { width: 44, height: 44, borderRadius: 14, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
   sendBtnActive: { backgroundColor: "#1a1a1a" },
-  sendBtnIcon:  { fontSize: 18, color: "#ccc", fontWeight: "700" },
+  sendBtnIcon:  { fontSize: 18, color: c.textFaint, fontWeight: "700" },
 });
+let s = makeS(LIGHT);
 
 // ─── Profile Card Styles ──────────────────────────────────────────────────────
-const pc = StyleSheet.create({
+const makePc = (c) => StyleSheet.create({
   card:        { backgroundColor: "#1a1a1a", borderRadius: 22, padding: 20 },
   topRow:      { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
   eyebrow:     { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 4 },
@@ -2080,82 +2089,86 @@ const pc = StyleSheet.create({
   focusLabel:  { fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: "600" },
   focusText:   { fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: "600" },
 });
+let pc = makePc(LIGHT);
 
 // ─── Exercise Card Styles (matches MealPlanView MealCard) ────────────────────
 const ORANGE = "#e8380d";
-const ec = StyleSheet.create({
+const makeEc = (c) => StyleSheet.create({
   card: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "#fff", borderRadius: 28,
+    backgroundColor: c.card, borderRadius: 28,
     paddingRight: 16, paddingVertical: 14,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    borderWidth: 1, borderColor: c.border,
     shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden",
   },
-  cardDone:   { backgroundColor: "#fafaf8", borderColor: "rgba(0,0,0,0.03)" },
+  cardDone:   { backgroundColor: c.bg, borderColor: "rgba(0,0,0,0.03)" },
   thumbWrap:  { width: 88, height: 96, alignSelf: "center", borderRadius: 20, overflow: "hidden", marginLeft: 14 },
   thumb:      { width: 88, height: 96 },
   thumbDim:   { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.45)" },
   inner:      { flex: 1, paddingLeft: 14, gap: 6 },
   topRow:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: "rgba(0,0,0,0.06)" },
+  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: c.cardAlt },
   badgeText:  { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: "rgba(0,0,0,0.45)" },
-  name:       { fontSize: 16, fontWeight: "700", color: "#0e0e0e", lineHeight: 21, letterSpacing: -0.3 },
+  name:       { fontSize: 16, fontWeight: "700", color: c.text, lineHeight: 21, letterSpacing: -0.3 },
   nameDone:   { color: "rgba(0,0,0,0.28)", textDecorationLine: "line-through" },
   macroRow:   { flexDirection: "row", alignItems: "center", gap: 6 },
-  setPillAccent: { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
-  setValAccent:  { fontSize: 11, fontWeight: "800", color: "#0e0e0e" },
-  repPill:    { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: "rgba(0,0,0,0.06)", borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
-  repVal:     { fontSize: 11, fontWeight: "700", color: "#0e0e0e" },
-  macroLbl:   { fontSize: 9, fontWeight: "500", color: "rgba(0,0,0,0.38)" },
+  setPillAccent: { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: c.cardAlt, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  setValAccent:  { fontSize: 11, fontWeight: "800", color: c.text },
+  repPill:    { flexDirection: "row", alignItems: "baseline", gap: 2, backgroundColor: c.cardAlt, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4 },
+  repVal:     { fontSize: 11, fontWeight: "700", color: c.text },
+  macroLbl:   { fontSize: 9, fontWeight: "500", color: c.textMuted },
 });
+let ec = makeEc(LIGHT);
 
 // ─── Week Calendar Styles ─────────────────────────────────────────────────────
-const wc = StyleSheet.create({
-  container:  { flexDirection: "row", backgroundColor: "#fff", borderRadius: 28, paddingVertical: 14, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden" },
+const makeWc = (c) => StyleSheet.create({
+  container:  { flexDirection: "row", backgroundColor: c.card, borderRadius: 28, paddingVertical: 14, borderWidth: 1, borderColor: c.border, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3, overflow: "hidden" },
   pill:       { position: "absolute", top: 7, bottom: 7, borderRadius: 20, overflow: "hidden" },
   col:        { flex: 1, alignItems: "center", gap: 6, paddingVertical: 2, zIndex: 1 },
-  abbr:       { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.3)", letterSpacing: 0.2 },
+  abbr:       { fontSize: 11, fontWeight: "600", color: c.textFaint, letterSpacing: 0.2 },
   abbrSel:    { color: "#fff", fontWeight: "800" },
   circleWrap: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   circle:     { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  num:        { fontSize: 13, fontWeight: "700", color: "#0e0e0e" },
+  num:        { fontSize: 13, fontWeight: "700", color: c.text },
   numSel:     { color: "#fff" },
   circleDone: { backgroundColor: "#e8380d" },
   numDone:    { fontSize: 14, fontWeight: "900", color: "#fff" },
   workoutDot: { position: "absolute", bottom: -1, width: 6, height: 6, borderRadius: 3, backgroundColor: "#e8380d" },
   todayDot:   { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
 });
+let wc = makeWc(LIGHT);
 
 // ─── Chip Styles ──────────────────────────────────────────────────────────────
-const p = StyleSheet.create({
-  chip:        { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff" },
+const makeP = (c) => StyleSheet.create({
+  chip:        { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card },
   chipActive:  { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  chipText:    { fontSize: 13, fontWeight: "600", color: "#555" },
+  chipText:    { fontSize: 13, fontWeight: "600", color: c.textMuted },
   chipTextActive: { color: "#fff" },
 });
+let p = makeP(LIGHT);
 
 // ─── Profile Intro Wizard Styles (matches MealPlanOnboarding) ────────────────
-const pi = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#ffffff" },
+const makePi = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
 
   // Nav
   nav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12 },
   navBack: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  navBackText: { fontSize: 22, color: "#0e0e0e" },
+  navBackText: { fontSize: 22, color: c.text },
   navSkip: { paddingVertical: 8, paddingHorizontal: 4 },
-  navSkipText: { fontSize: 14, color: "rgba(0,0,0,0.3)", fontWeight: "500" },
+  navSkipText: { fontSize: 14, color: c.textFaint, fontWeight: "500" },
 
   // Progress dots
-  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: "#e8e5de" },
+  dot: { width: 28, height: 4, borderRadius: 2, backgroundColor: c.border },
   dotActive: { backgroundColor: "#0e0e0e" },
 
   // Typography
-  eyebrow: { fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 12 },
-  bigTitle: { fontSize: 46, fontWeight: "900", color: "#0e0e0e", letterSpacing: -2, lineHeight: 50, marginBottom: 12 },
+  eyebrow: { fontSize: 11, fontWeight: "700", color: c.textFaint, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 12 },
+  bigTitle: { fontSize: 46, fontWeight: "900", color: c.text, letterSpacing: -2, lineHeight: 50, marginBottom: 12 },
   accent: { color: "#e8380d" },
-  bigSub: { fontSize: 15, color: "rgba(0,0,0,0.38)", lineHeight: 22, marginBottom: 24 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.3)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 28, marginBottom: 12 },
+  bigSub: { fontSize: 15, color: c.textMuted, lineHeight: 22, marginBottom: 24 },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: c.textFaint, letterSpacing: 1.5, textTransform: "uppercase", marginTop: 28, marginBottom: 12 },
 
   headWrap: { paddingTop: 4 },
   scrollStep: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -2163,7 +2176,7 @@ const pi = StyleSheet.create({
   // Goal image cards (step 1)
   goalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingTop: 4, paddingBottom: 20 },
   goalCard: { width: PI_CARD_W, height: 185, borderRadius: 20, overflow: "hidden", justifyContent: "flex-end", borderWidth: 2, borderColor: "transparent" },
-  goalCardActive: { borderColor: "#0e0e0e" },
+  goalCardActive: { borderColor: c.text },
   goalCheck: { position: "absolute", top: 12, right: 12, width: 26, height: 26, borderRadius: 13, backgroundColor: "#0e0e0e", alignItems: "center", justifyContent: "center" },
   goalCardContent: { padding: 14 },
   goalLabel: { fontSize: 16, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
@@ -2171,43 +2184,44 @@ const pi = StyleSheet.create({
 
   // Chip cards (experience, equipment, session length)
   bigCardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  bigChipCard: { width: PI_CARD_W, backgroundColor: "#f7f7f5", borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: "transparent", gap: 4 },
-  bigChipCardActive: { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  bigChipLabel: { fontSize: 16, fontWeight: "700", color: "rgba(0,0,0,0.5)" },
-  bigChipLabelActive: { color: "#0e0e0e" },
-  bigChipSub: { fontSize: 12, color: "rgba(0,0,0,0.3)" },
+  bigChipCard: { width: PI_CARD_W, backgroundColor: c.cardAlt, borderRadius: 18, padding: 18, borderWidth: 1.5, borderColor: "transparent", gap: 4 },
+  bigChipCardActive: { borderColor: c.text, backgroundColor: c.card },
+  bigChipLabel: { fontSize: 16, fontWeight: "700", color: c.textMuted },
+  bigChipLabelActive: { color: c.text },
+  bigChipSub: { fontSize: 12, color: c.textFaint },
   bigChipCheck: { position: "absolute", top: 12, right: 12, width: 22, height: 22, borderRadius: 11, backgroundColor: "#0e0e0e", alignItems: "center", justifyContent: "center" },
 
   // Numeric stepper (age, weight, height)
   numRow: { flexDirection: "row", alignItems: "center", gap: 20, marginBottom: 20 },
-  bigNum: { fontSize: 64, fontWeight: "800", color: "#0e0e0e", letterSpacing: -2, lineHeight: 72 },
-  numUnit: { fontSize: 14, color: "rgba(0,0,0,0.3)", marginTop: 4 },
+  bigNum: { fontSize: 64, fontWeight: "800", color: c.text, letterSpacing: -2, lineHeight: 72 },
+  numUnit: { fontSize: 14, color: c.textFaint, marginTop: 4 },
   stepperCol: { gap: 8 },
-  stepperBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5", alignItems: "center", justifyContent: "center" },
-  stepperBtnText: { fontSize: 22, color: "#0e0e0e", fontWeight: "300", lineHeight: 26 },
+  stepperBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
+  stepperBtnText: { fontSize: 22, color: c.text, fontWeight: "300", lineHeight: 26 },
   presetsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
-  presetBtn: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5" },
-  presetBtnActive: { backgroundColor: "#0e0e0e", borderColor: "#0e0e0e" },
-  presetBtnText: { fontSize: 13, color: "rgba(0,0,0,0.4)", fontWeight: "600" },
+  presetBtn: { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.cardAlt },
+  presetBtnActive: { backgroundColor: "#0e0e0e", borderColor: c.text },
+  presetBtnText: { fontSize: 13, color: c.textMuted, fontWeight: "600" },
   presetBtnTextActive: { color: "#fff" },
 
   // Day selector (step 7)
   daysGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-  dayBtn: { flex: 1, minWidth: 42, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#f7f7f5", borderRadius: 14, paddingVertical: 14, alignItems: "center" },
-  daySelected: { backgroundColor: "#0e0e0e", borderColor: "#0e0e0e" },
-  dayBtnText: { fontSize: 12, fontWeight: "600", color: "rgba(0,0,0,0.4)" },
+  dayBtn: { flex: 1, minWidth: 42, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.cardAlt, borderRadius: 14, paddingVertical: 14, alignItems: "center" },
+  daySelected: { backgroundColor: "#0e0e0e", borderColor: c.text },
+  dayBtnText: { fontSize: 12, fontWeight: "600", color: c.textMuted },
   dayBtnTextSel: { color: "#fff" },
-  daysHint: { fontSize: 14, color: "rgba(0,0,0,0.3)", marginBottom: 8 },
+  daysHint: { fontSize: 14, color: c.textFaint, marginBottom: 8 },
 
   // Focus area chips (step 8)
   focusRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  focusChip: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 24, backgroundColor: "#f4f4f2", borderWidth: 1.5, borderColor: "transparent" },
-  focusChipActive: { borderColor: "#0e0e0e", backgroundColor: "#fff" },
-  focusChipText: { fontSize: 14, fontWeight: "600", color: "rgba(0,0,0,0.5)" },
-  focusChipTextActive: { color: "#0e0e0e" },
+  focusChip: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 24, backgroundColor: c.cardAlt, borderWidth: 1.5, borderColor: "transparent" },
+  focusChipActive: { borderColor: c.text, backgroundColor: c.card },
+  focusChipText: { fontSize: 14, fontWeight: "600", color: c.textMuted },
+  focusChipTextActive: { color: c.text },
 
   // Footer CTA
   footer: { padding: 20, paddingBottom: 44 },
   nextBtn: { backgroundColor: "#0e0e0e", borderRadius: 18, paddingVertical: 20, alignItems: "center" },
   nextBtnText: { fontSize: 17, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
 });
+let pi = makePi(LIGHT);

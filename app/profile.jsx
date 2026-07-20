@@ -1,11 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useTheme, LIGHT } from "../src/theme/ThemeContext";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -20,7 +22,6 @@ import Svg, {
   LinearGradient as SvgGradient, Path, Rect, Stop,
 } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
-import PageBackground from "@/components/PageBackground";
 import { getToken, removeToken } from "../src/auth/storage";
 
 const API = "https://yourpocketgym.com/api";
@@ -205,27 +206,8 @@ const av = StyleSheet.create({
 });
 
 // ── Primitives ────────────────────────────────────────────────────────────────
-function SectionLabel({ children }) {
-  return <Text style={s.sectionLabel}>{children}</Text>;
-}
-function Card({ children, style }) {
-  return <View style={[s.card, style]}>{children}</View>;
-}
-function Divider() {
-  return <View style={s.divider} />;
-}
-function MenuRow({ label, labelStyle, right, onPress, disabled }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [s.menuRow, pressed && { opacity: 0.55 }]}
-    >
-      <Text style={[s.menuLabel, labelStyle]}>{label}</Text>
-      {right ?? <Text style={s.menuChevron}>›</Text>}
-    </Pressable>
-  );
-}
+// SectionLabel / Card / Divider / MenuRow are defined inside ProfileScreen so
+// they close over the active theme's stylesheet.
 
 // ── Edit Sheet load ────────────────────────────────────────────────────────────────
 const GOALS_META = [
@@ -240,6 +222,8 @@ const EXP_META = [
 ];
 
 function EditSheet({ profile, token, onClose, onSaved }) {
+  const { colors } = useTheme();
+  es = makeEs(colors);
   const [form, setForm] = useState({
     gender:             profile.gender             ?? "male",
     age:                profile.age                ?? 25,
@@ -412,10 +396,10 @@ function EditSheet({ profile, token, onClose, onSaved }) {
   );
 }
 
-const es = StyleSheet.create({
+const makeEs = (c) => StyleSheet.create({
   sheet: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#f2f2f7",
+    backgroundColor: c.cardAlt,
     borderTopLeftRadius: 12, borderTopRightRadius: 12,
     maxHeight: "94%",
     shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 24,
@@ -424,22 +408,22 @@ const es = StyleSheet.create({
 
   // Native nav bar
   navBar: {
-    backgroundColor: "#f2f2f7",
+    backgroundColor: c.cardAlt,
     borderTopLeftRadius: 12, borderTopRightRadius: 12,
     paddingHorizontal: 16,
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(60,60,67,0.18)",
+    borderBottomColor: c.border,
   },
   handle: {
-    width: 36, height: 5, backgroundColor: "rgba(60,60,67,0.3)",
+    width: 36, height: 5, backgroundColor: c.textFaint,
     borderRadius: 99, alignSelf: "center", marginTop: 8, marginBottom: 12,
   },
   navRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingBottom: 4,
   },
-  navTitle:  { fontSize: 17, fontWeight: "600", color: "#000" },
+  navTitle:  { fontSize: 17, fontWeight: "600", color: c.text },
   navCancel: { fontSize: 17, color: "#007AFF" },
   navDone:   { fontSize: 17, fontWeight: "600", color: "#007AFF" },
 
@@ -448,12 +432,12 @@ const es = StyleSheet.create({
   // Grouped section
   section: { marginBottom: 28, paddingHorizontal: 16 },
   sectionLabel: {
-    fontSize: 12, fontWeight: "400", color: "#6c6c70",
+    fontSize: 12, fontWeight: "400", color: c.textMuted,
     letterSpacing: 0.1, textTransform: "uppercase",
     marginBottom: 6, marginLeft: 16,
   },
   sectionGroup: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.card,
     borderRadius: 10,
     overflow: "hidden",
   },
@@ -461,33 +445,52 @@ const es = StyleSheet.create({
   // Row
   row: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 13, backgroundColor: "#fff",
+    paddingHorizontal: 16, paddingVertical: 13, backgroundColor: c.card,
     minHeight: 44,
   },
   rowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(60,60,67,0.18)",
+    borderBottomColor: c.border,
   },
-  rowLabel: { fontSize: 17, color: "#000" },
+  rowLabel: { fontSize: 17, color: c.text },
   checkmark: { fontSize: 17, color: "#007AFF", fontWeight: "600" },
 
   // Inline stepper
   stepperInline: { flexDirection: "row", alignItems: "center", gap: 12 },
   stepperBtn: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: "#e5e5ea",
+    backgroundColor: c.cardAlt,
     alignItems: "center", justifyContent: "center",
   },
-  stepperBtnText: { fontSize: 20, color: "#000", fontWeight: "400", lineHeight: 24 },
-  stepperVal: { fontSize: 17, color: "#000", minWidth: 56, textAlign: "center" },
-  stepperUnit: { fontSize: 13, color: "#8e8e93" },
+  stepperBtnText: { fontSize: 20, color: c.text, fontWeight: "400", lineHeight: 24 },
+  stepperVal: { fontSize: 17, color: c.text, minWidth: 56, textAlign: "center" },
+  stepperUnit: { fontSize: 13, color: c.textMuted },
 });
+let es = makeEs(LIGHT);
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const router = useRouter();
+  const { colors, mode, setMode } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
+
+  // Theme-aware primitives (close over the active stylesheet)
+  const SectionLabel = ({ children }) => <Text style={s.sectionLabel}>{children}</Text>;
+  const Card = ({ children, style }) => <View style={[s.card, style]}>{children}</View>;
+  const Divider = () => <View style={s.divider} />;
+  const MenuRow = ({ label, labelStyle, right, onPress, disabled }) => (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [s.menuRow, pressed && { opacity: 0.55 }]}
+    >
+      <Text style={[s.menuLabel, labelStyle]}>{label}</Text>
+      {right ?? <Text style={s.menuChevron}>›</Text>}
+    </Pressable>
+  );
   const [token, setToken]             = useState(null);
   const [profile, setProfile]         = useState(null);
+  const [photo, setPhoto]             = useState(null);
   const [loading, setLoading]         = useState(true);
   const [showEdit, setShowEdit]       = useState(false);
   const [signingOut, setSigningOut]   = useState(false);
@@ -505,6 +508,16 @@ export default function ProfileScreen() {
         const json = await res.json();
         if (!json.success) { router.replace("/login"); return; }
         setProfile(json.data);
+
+        // Prefer a Google profile photo if we have one (server data, then local)
+        let pic = json.data?.photo || null;
+        if (!pic) {
+          const raw = await AsyncStorage.getItem("user");
+          if (raw) {
+            try { pic = JSON.parse(raw)?.photo || null; } catch (_) {}
+          }
+        }
+        if (pic) setPhoto(pic);
       } catch (_) {}
       setLoading(false);
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
@@ -530,8 +543,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
-      <PageBackground variant="profile" />
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
       {/* Header */}
       <View style={s.header}>
@@ -549,7 +561,11 @@ export default function ProfileScreen() {
       >
         {/* Hero */}
         <View style={s.hero}>
-          <FaceAvatar size={88} />
+          {photo ? (
+            <Image source={{ uri: photo }} style={s.heroPhoto} />
+          ) : (
+            <FaceAvatar size={88} />
+          )}
           <View style={s.heroTextWrap}>
             <View style={s.heroNameRow}>
               <Text style={s.heroName}>{profile?.name ?? "Athlete"}</Text>
@@ -663,6 +679,25 @@ export default function ProfileScreen() {
           </Card>
         )}
 
+        {/* Appearance */}
+        <SectionLabel>Appearance</SectionLabel>
+        <Card style={{ padding: 6 }}>
+          <View style={s.segment}>
+            <Pressable
+              style={[s.segmentBtn, mode === "light" && s.segmentBtnActive]}
+              onPress={() => setMode("light")}
+            >
+              <Text style={[s.segmentText, mode === "light" && s.segmentTextActive]}>☀︎  Light</Text>
+            </Pressable>
+            <Pressable
+              style={[s.segmentBtn, mode === "dark" && s.segmentBtnActive]}
+              onPress={() => setMode("dark")}
+            >
+              <Text style={[s.segmentText, mode === "dark" && s.segmentTextActive]}>☾  Dark</Text>
+            </Pressable>
+          </View>
+        </Card>
+
         {/* Account */}
         <SectionLabel>Account</SectionLabel>
         <Card style={s.menuCard}>
@@ -705,9 +740,9 @@ export default function ProfileScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fafaf8" },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
+const makeStyles = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20 },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
@@ -716,23 +751,31 @@ const s = StyleSheet.create({
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 10,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.1)",
-    backgroundColor: "rgba(0,0,0,0.06)",
+    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.pill,
     alignItems: "center", justifyContent: "center",
   },
-  backBtnText: { fontSize: 18, color: "#1a1a1a" },
-  headerTitle: { fontSize: 16, fontWeight: "800", color: "#1a1a1a" },
+  backBtnText: { fontSize: 18, color: c.text },
+  headerTitle: { fontSize: 16, fontWeight: "800", color: c.text },
 
   // Hero
   hero: { alignItems: "center", paddingVertical: 24, gap: 12 },
+  heroPhoto: { width: 88, height: 88, borderRadius: 44, backgroundColor: "#ede9fe" },
   heroTextWrap: { alignItems: "center", gap: 3 },
   heroNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  heroName: { fontSize: 22, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5 },
-  heroEmail: { fontSize: 13, color: "#666" },
-  memberSince: { fontSize: 11, color: "#aaa" },
+  heroName: { fontSize: 22, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+  heroEmail: { fontSize: 13, color: c.textMuted },
+  memberSince: { fontSize: 11, color: c.textFaint },
   pillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, justifyContent: "center" },
-  pill: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 99, backgroundColor: "rgba(0,0,0,0.06)", borderWidth: 1, borderColor: "rgba(0,0,0,0.08)" },
-  pillText: { fontSize: 12, color: "#444", fontWeight: "500", textTransform: "capitalize" },
+  pill: { paddingVertical: 4, paddingHorizontal: 12, borderRadius: 99, backgroundColor: c.pill, borderWidth: 1, borderColor: c.border },
+  pillText: { fontSize: 12, color: c.text, fontWeight: "500", textTransform: "capitalize" },
+
+  // Appearance segmented control
+  segment: { flexDirection: "row", backgroundColor: c.cardAlt, borderRadius: 12, padding: 4, gap: 4 },
+  segmentBtn: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 9 },
+  segmentBtnActive: { backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
+  segmentText: { fontSize: 14, fontWeight: "600", color: c.textMuted },
+  segmentTextActive: { color: c.text },
 
   proBadge: { backgroundColor: "rgba(124,58,237,0.1)", borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8, borderWidth: 1, borderColor: "rgba(124,58,237,0.2)" },
   proBadgeText: { fontSize: 10, fontWeight: "700", color: "#7c3aed" },
@@ -762,36 +805,36 @@ const s = StyleSheet.create({
   cancelNoticeText: { fontSize: 12, color: "#d97706", fontWeight: "600", lineHeight: 18 },
 
   // Stats
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: "#aaa", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8, marginTop: 4 },
-  card: { backgroundColor: "#fff", borderRadius: 20, padding: 16, borderWidth: 1, borderColor: "#e8e5de", marginBottom: 10 },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: c.textFaint, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 8, marginTop: 4 },
+  card: { backgroundColor: c.card, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: c.border, marginBottom: 10 },
   statGrid: { flexDirection: "row", gap: 8, marginBottom: 10 },
   statCard: { flex: 1, padding: 16 },
-  statValue: { fontSize: 22, fontWeight: "800", color: "#1a1a1a", marginBottom: 2 },
-  statUnit: { fontSize: 11, fontWeight: "400", color: "#aaa" },
-  statLabel: { fontSize: 11, fontWeight: "700", color: "#aaa", letterSpacing: 0.8, textTransform: "uppercase" },
-  topExercise: { fontSize: 15, fontWeight: "700", color: "#1a1a1a", marginTop: 4 },
+  statValue: { fontSize: 22, fontWeight: "800", color: c.text, marginBottom: 2 },
+  statUnit: { fontSize: 11, fontWeight: "400", color: c.textFaint },
+  statLabel: { fontSize: 11, fontWeight: "700", color: c.textFaint, letterSpacing: 0.8, textTransform: "uppercase" },
+  topExercise: { fontSize: 15, fontWeight: "700", color: c.text, marginTop: 4 },
   bmiTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   bmiBadge: { borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9 },
   bmiBadgeText: { fontSize: 10, fontWeight: "700" },
-  bmiValue: { fontSize: 26, fontWeight: "800", color: "#1a1a1a", marginBottom: 10 },
+  bmiValue: { fontSize: 26, fontWeight: "800", color: c.text, marginBottom: 10 },
   bmiBar: { flexDirection: "row", gap: 2, marginBottom: 5 },
   bmiScale: { flexDirection: "row", justifyContent: "space-between" },
-  bmiScaleText: { fontSize: 9, color: "#ccc" },
+  bmiScaleText: { fontSize: 9, color: c.textFaint },
   trainingCard: { flex: 1, padding: 16, gap: 4 },
-  trainingLabel: { fontSize: 14, fontWeight: "700", color: "#1a1a1a", marginTop: 4 },
+  trainingLabel: { fontSize: 14, fontWeight: "700", color: c.text, marginTop: 4 },
   noIntroCard: { alignItems: "center", padding: 32, marginBottom: 10 },
-  noIntroTitle: { fontSize: 15, fontWeight: "700", color: "#1a1a1a", marginBottom: 6 },
-  noIntroSub: { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center", marginBottom: 20 },
-  ctaBtn: { width: "100%", backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 14, alignItems: "center" },
-  ctaBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  noIntroTitle: { fontSize: 15, fontWeight: "700", color: c.text, marginBottom: 6 },
+  noIntroSub: { fontSize: 13, color: c.textFaint, lineHeight: 20, textAlign: "center", marginBottom: 20 },
+  ctaBtn: { width: "100%", backgroundColor: c.text, borderRadius: 14, paddingVertical: 14, alignItems: "center" },
+  ctaBtnText: { color: c.bg, fontSize: 14, fontWeight: "700" },
 
   // Menu
   menuCard: { padding: 0, overflow: "hidden", marginBottom: 10 },
   menuRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 16 },
-  menuLabel: { flex: 1, fontSize: 14, fontWeight: "500", color: "#1a1a1a" },
-  menuChevron: { fontSize: 18, color: "#ddd" },
-  divider: { height: 1, backgroundColor: "#f0ede8", marginHorizontal: 16 },
-  planBadge: { backgroundColor: "#f4f2ed", borderRadius: 99, paddingVertical: 3, paddingHorizontal: 8 },
+  menuLabel: { flex: 1, fontSize: 14, fontWeight: "500", color: c.text },
+  menuChevron: { fontSize: 18, color: c.textFaint },
+  divider: { height: 1, backgroundColor: c.border, marginHorizontal: 16 },
+  planBadge: { backgroundColor: c.cardAlt, borderRadius: 99, paddingVertical: 3, paddingHorizontal: 8 },
   planBadgePro: { backgroundColor: "rgba(124,58,237,0.1)" },
   planBadgeText: { fontSize: 10, fontWeight: "700", color: "#aaa" },
   planBadgeTextPro: { color: "#7c3aed" },
@@ -799,5 +842,5 @@ const s = StyleSheet.create({
   cancelWarningTitle: { fontSize: 12, fontWeight: "700", color: "#ef4444", marginBottom: 4 },
   cancelWarningDate: { fontSize: 15, fontWeight: "800", color: "#1a1a1a" },
   cancelWarningSub: { fontSize: 11, color: "#aaa", marginTop: 3 },
-  version: { textAlign: "center", fontSize: 10, color: "#ccc", fontWeight: "500", letterSpacing: 1, marginTop: 8 },
+  version: { textAlign: "center", fontSize: 10, color: c.textFaint, fontWeight: "500", letterSpacing: 1, marginTop: 8 },
 });

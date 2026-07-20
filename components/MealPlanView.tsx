@@ -18,6 +18,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import Svg, { Circle, Path } from "react-native-svg";
 import foodImageCache from "../src/data/foodImageCache.json";
 import { Recipe } from "../src/data/mealPlanRecipes";
@@ -299,13 +300,14 @@ function AnimatedCheckbox({ done, onToggle, color = ORANGE }: {
   );
 }
 
-const cb = StyleSheet.create({
+const makeCb = (p) => StyleSheet.create({
   box: {
     width: 28, height: 28,
     borderRadius: 8, borderWidth: 2,
     alignItems: "center", justifyContent: "center",
   },
 });
+let cb = makeCb(LIGHT);
 
 // ── Week strip ────────────────────────────────────────────────────────────────
 function WeekStrip({
@@ -518,6 +520,8 @@ function RecipeModal({ recipe, onClose }: { recipe: Recipe | null; onClose: () =
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MealPlanView({ enabled = true }: { enabled?: boolean }) {
+  const { colors } = useTheme();
+  cb = makeCb(colors); w = makeW(colors); c = makeC(colors); mo = makeMo(colors); m = makeM(colors);
   const [plan,           setPlan]           = useState<MealPlan | null>(null);
   const [preferences,    setPreferences]    = useState<MealPreferences | null>(null);
   const [showOnboard,    setShowOnboard]    = useState(false);
@@ -784,14 +788,14 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Week strip
-const w = StyleSheet.create({
+const makeW = (p) => StyleSheet.create({
   container: {
     flexDirection: "row",
     marginHorizontal: 16, marginTop: 14, marginBottom: 8,
-    backgroundColor: "#fff",
+    backgroundColor: p.card,
     borderRadius: 28,
     paddingVertical: 14,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    borderWidth: 1, borderColor: p.border,
     shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 }, elevation: 3,
     overflow: "hidden",
@@ -812,7 +816,7 @@ const w = StyleSheet.create({
   },
   abbr: {
     fontSize: 11, fontWeight: "600",
-    color: "rgba(0,0,0,0.3)", letterSpacing: 0.2,
+    color: p.textFaint, letterSpacing: 0.2,
   },
   abbrSel: { color: "#fff", fontWeight: "800" },
 
@@ -827,7 +831,7 @@ const w = StyleSheet.create({
   circleSel:  { /* no extra bg — pill behind it */ },
   circleDone: { /* progress ring handles it */ },
   dateNum: {
-    fontSize: 13, fontWeight: "700", color: INK,
+    fontSize: 13, fontWeight: "700", color: p.text,
   },
   dateNumSel:  { color: "#fff" },
   dateNumDone: { fontSize: 11, fontWeight: "900", color: ORANGE },
@@ -839,24 +843,25 @@ const w = StyleSheet.create({
     backgroundColor: ORANGE,
   },
 });
+let w = makeW(LIGHT);
 
 // Meal card
-const c = StyleSheet.create({
+const makeC = (p) => StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: p.card,
     borderRadius: 28,
     paddingRight: 16,
     paddingVertical: 14,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    borderWidth: 1, borderColor: p.border,
     shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 }, elevation: 3,
     overflow: "hidden",
   },
   cardDone: {
-    backgroundColor: "#fafaf8",
-    borderColor: "rgba(0,0,0,0.03)",
+    backgroundColor: p.bg,
+    borderColor: p.border,
   },
   thumbWrap: {
     width: 88,
@@ -883,20 +888,20 @@ const c = StyleSheet.create({
   badge: {
     borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 4,
-    backgroundColor: "rgba(0,0,0,0.05)",
+    backgroundColor: p.cardAlt,
   },
   badgeText: {
     fontSize: 10, fontWeight: "800",
-    color: "rgba(0,0,0,0.4)",
+    color: p.textMuted,
     letterSpacing: 0.8,
   },
   name: {
     fontSize: 16, fontWeight: "700",
-    color: INK, lineHeight: 21,
+    color: p.text, lineHeight: 21,
     letterSpacing: -0.3,
   },
   nameDone: {
-    color: "rgba(0,0,0,0.28)",
+    color: p.textFaint,
     textDecorationLine: "line-through",
   },
   macroRow: {
@@ -919,30 +924,31 @@ const c = StyleSheet.create({
     flexDirection: "row",
     alignItems: "baseline",
     gap: 2,
-    backgroundColor: "rgba(0,0,0,0.04)",
+    backgroundColor: p.cardAlt,
     borderRadius: 20,
     paddingHorizontal: 9, paddingVertical: 4,
   },
   macroVal: {
-    fontSize: 11, fontWeight: "700", color: INK,
+    fontSize: 11, fontWeight: "700", color: p.text,
   },
   macroLbl: {
     fontSize: 9, fontWeight: "500",
-    color: "rgba(0,0,0,0.32)",
+    color: p.textMuted,
   },
   prepTime: {
-    fontSize: 11, color: "rgba(0,0,0,0.28)",
+    fontSize: 11, color: p.textFaint,
     fontWeight: "500",
   },
   arrow: {
-    fontSize: 20, color: "rgba(0,0,0,0.13)",
+    fontSize: 20, color: p.textFaint,
     marginLeft: 2,
   },
 });
+let c = makeC(LIGHT);
 
 // Recipe modal
-const mo = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: "#fff" },
+const makeMo = (p) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: p.card },
   heroWrap: { width: "100%", height: 260 },
   hero:     { width: "100%", height: 260 },
   closeBtn: {
@@ -955,31 +961,31 @@ const mo = StyleSheet.create({
   body: { padding: 24, gap: 4 },
   tag: {
     fontSize: 11, fontWeight: "600",
-    color: MUTED, letterSpacing: 0.5,
+    color: p.textMuted, letterSpacing: 0.5,
     textTransform: "uppercase", marginBottom: 4,
   },
   title: {
     fontSize: 26, fontWeight: "800",
-    color: INK, letterSpacing: -0.5, marginBottom: 16,
+    color: p.text, letterSpacing: -0.5, marginBottom: 16,
   },
   macroRow: { flexDirection: "row", gap: 8, marginBottom: 22 },
   macroPill: {
     flex: 1, borderRadius: 18,
     paddingVertical: 12, alignItems: "center", gap: 2,
-    backgroundColor: "rgba(0,0,0,0.04)",
+    backgroundColor: p.cardAlt,
   },
   macroPillAccent: {
     backgroundColor: `${ORANGE}12`,
   },
-  macroVal:  { fontSize: 14, fontWeight: "800", color: INK },
+  macroVal:  { fontSize: 14, fontWeight: "800", color: p.text },
   macroValAccent: { color: ORANGE },
-  macroLbl:  { fontSize: 10, fontWeight: "600", color: MUTED },
+  macroLbl:  { fontSize: 10, fontWeight: "600", color: p.textMuted },
   sectionHead: {
-    fontSize: 11, fontWeight: "700", color: MUTED,
+    fontSize: 11, fontWeight: "700", color: p.textMuted,
     letterSpacing: 0.5, textTransform: "uppercase",
     marginTop: 20, marginBottom: 10,
   },
-  ingItem: { fontSize: 14, color: INK, lineHeight: 26 },
+  ingItem: { fontSize: 14, color: p.text, lineHeight: 26 },
   stepRow: { flexDirection: "row", gap: 12, marginBottom: 12, alignItems: "flex-start" },
   stepNum: {
     width: 26, height: 26, borderRadius: 13,
@@ -987,20 +993,21 @@ const mo = StyleSheet.create({
     backgroundColor: ORANGE,
   },
   stepNumText: { fontSize: 11, fontWeight: "800", color: "#fff" },
-  stepText: { flex: 1, fontSize: 14, color: INK, lineHeight: 22 },
+  stepText: { flex: 1, fontSize: 14, color: p.text, lineHeight: 22 },
   tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
   tagChip: {
     borderRadius: 20, paddingVertical: 5, paddingHorizontal: 12,
-    backgroundColor: "rgba(0,0,0,0.05)",
+    backgroundColor: p.cardAlt,
   },
-  tagText: { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.5)" },
+  tagText: { fontSize: 11, fontWeight: "600", color: p.textMuted },
 });
+let mo = makeMo(LIGHT);
 
 // Main
-const m = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: "#ffffff" },
+const makeM = (p) => StyleSheet.create({
+  root:        { flex: 1, backgroundColor: p.card },
   center:      { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { fontSize: 14, color: MUTED, fontWeight: "500" },
+  loadingText: { fontSize: 14, color: p.textMuted, fontWeight: "500" },
   listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120, gap: 12 },
 
   dayHeader: {
@@ -1014,7 +1021,7 @@ const m = StyleSheet.create({
     right: 20,
     width: 50, height: 50,
     borderRadius: 25,
-    backgroundColor: INK,
+    backgroundColor: p.text,
     alignItems: "center", justifyContent: "center",
     shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 }, elevation: 6,
@@ -1022,18 +1029,18 @@ const m = StyleSheet.create({
   cartFabIcon: { fontSize: 22 },
   dayTitle: {
     fontSize: 20, fontWeight: "800",
-    color: INK, letterSpacing: -0.5,
+    color: p.text, letterSpacing: -0.5,
   },
   daySub: {
-    fontSize: 12, color: MUTED,
+    fontSize: 12, color: p.textMuted,
     fontWeight: "500", marginTop: 3,
   },
   progressBadge: {
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: p.card,
     borderRadius: 18,
     paddingHorizontal: 16, paddingVertical: 9,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.06)",
+    borderWidth: 1, borderColor: p.border,
     shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
@@ -1042,12 +1049,12 @@ const m = StyleSheet.create({
     borderColor: ORANGE,
   },
   progressNum: {
-    fontSize: 15, fontWeight: "800", color: INK, lineHeight: 18,
+    fontSize: 15, fontWeight: "800", color: p.text, lineHeight: 18,
   },
   progressNumDone: { color: "#fff" },
   progressLbl: {
     fontSize: 9, fontWeight: "600",
-    color: MUTED,
+    color: p.textMuted,
     textTransform: "uppercase", letterSpacing: 0.5,
   },
   progressLblDone: { color: "rgba(255,255,255,0.85)" },
@@ -1062,10 +1069,11 @@ const m = StyleSheet.create({
   regenText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   editBtn: {
     flex: 1, paddingVertical: 15, borderRadius: 22,
-    backgroundColor: "#fff", alignItems: "center",
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.07)",
+    backgroundColor: p.card, alignItems: "center",
+    borderWidth: 1, borderColor: p.border,
   },
-  editText: { fontSize: 13, fontWeight: "700", color: INK },
+  editText: { fontSize: 13, fontWeight: "700", color: p.text },
   resetBtn: { alignItems: "center", paddingVertical: 12 },
-  resetText: { fontSize: 12, color: "rgba(0,0,0,0.2)", fontWeight: "500" },
+  resetText: { fontSize: 12, color: p.textFaint, fontWeight: "500" },
 });
+let m = makeM(LIGHT);

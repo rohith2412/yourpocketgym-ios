@@ -30,6 +30,7 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 import { getToken } from "../../src/auth/storage";
+import { useTheme, LIGHT } from "../../src/theme/ThemeContext";
 
 // ─── helpers progress 7d 30d ──────────────────────────────────────────────────────────────────
 const totalVol = (sets) => sets.reduce((s, x) => s + x.reps * x.weight, 0);
@@ -105,12 +106,12 @@ function buildYearGrid(logs) {
 }
 
 function cellColor(vol, maxVol, hasLog) {
-  if (!hasLog) return "rgba(255,255,255,0.07)";
+  if (!hasLog) return "#ebedf0";
   const i = vol / maxVol;
-  if (i < 0.25) return "rgba(200,208,220,0.35)";
-  if (i < 0.5) return "rgba(200,208,220,0.55)";
-  if (i < 0.75) return "rgba(200,208,220,0.78)";
-  return "#c8d0dc";
+  if (i < 0.25) return "rgba(232,56,13,0.28)";
+  if (i < 0.5) return "rgba(232,56,13,0.48)";
+  if (i < 0.75) return "rgba(232,56,13,0.72)";
+  return "#e8380d";
 }
 
 function buildMuscleStats(logs) {
@@ -389,11 +390,11 @@ function YearChart({ logs }) {
       <View style={yc.legend}>
         <Text style={yc.legendLabel}>Less</Text>
         {[
-          "rgba(255,255,255,0.07)",
-          "rgba(200,208,220,0.35)",
-          "rgba(200,208,220,0.55)",
-          "rgba(200,208,220,0.78)",
-          "#c8d0dc",
+          "#ebedf0",
+          "rgba(232,56,13,0.28)",
+          "rgba(232,56,13,0.48)",
+          "rgba(232,56,13,0.72)",
+          "#e8380d",
         ].map((c) => (
           <View key={c} style={[yc.legendCell, { backgroundColor: c }]} />
         ))}
@@ -402,61 +403,61 @@ function YearChart({ logs }) {
     </View>
   );
 }
-const yc = StyleSheet.create({
+const makeYc = (c) => StyleSheet.create({
   container: { marginTop: 4 },
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   statCard: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: c.cardAlt,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: c.border,
   },
   statLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.3)",
+    color: c.textMuted,
     marginBottom: 3,
   },
   statValue: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#ffffff",
+    color: c.text,
     letterSpacing: -0.5,
   },
-  statUnit: { fontSize: 12, fontWeight: "400", color: "rgba(255,255,255,0.3)" },
+  statUnit: { fontSize: 12, fontWeight: "400", color: c.textMuted },
   dayLabel: {
     fontSize: 8,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.25)",
+    color: c.textFaint,
     lineHeight: CELL,
   },
   monthLabel: {
     position: "absolute",
     fontSize: 9,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.3)",
+    color: c.textMuted,
     letterSpacing: 0.4,
     width: 30,
   },
   cell: { width: CELL, height: CELL, borderRadius: 3 },
   tooltip: {
     marginTop: 10,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: c.cardAlt,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     alignSelf: "flex-start",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: c.border,
   },
   tooltipDate: {
     fontSize: 12,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.55)",
+    color: c.textMuted,
     marginBottom: 2,
   },
   tooltipVol: { fontSize: 14, fontWeight: "800", color: "#e8380d" },
@@ -469,11 +470,12 @@ const yc = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.25)",
+    color: c.textFaint,
     fontWeight: "600",
   },
   legendCell: { width: 11, height: 11, borderRadius: 2 },
 });
+let yc = makeYc(LIGHT);
 
 // ─── DEMO MODE ────────────────────────────────────────────────────────────────
 // true  → static pre-filled data for App Store screenshots
@@ -617,7 +619,7 @@ const DEMO_LOGS: any[] = buildDemoLogs();
 
 // ─── VolumeLineChart ──────────────────────────────────────────────────────────
 const ORANGE = "#e8380d";
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const LINE_ORANGE = "#f7a072"; // soft light-orange for the line stroke
 
 function buildVolumeSeries(logs: any[], days: number) {
   const cutoff = new Date();
@@ -674,18 +676,6 @@ function VolumeLineChart({
   slideWidth: number;
 }) {
   const [period, setPeriod] = useState(0); // 0 = 7d, 1 = 30d
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: false }),
-        Animated.timing(pulseAnim, { toValue: 0, duration: 1200, useNativeDriver: false }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulseAnim]);
 
   const series7 = useMemo(() => buildVolumeSeries(logs, 7), [logs]);
   const series30 = useMemo(() => buildVolumeSeries(logs, 30), [logs]);
@@ -765,42 +755,19 @@ function VolumeLineChart({
           {areaPath ? <Path d={areaPath} fill="url(#vg)" /> : null}
 
           {linePath ? (
-            <>
-              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={18} opacity={0.04} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={10} opacity={0.10} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={5}  opacity={0.25} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d={linePath} fill="none" stroke={ORANGE} strokeWidth={2.5} opacity={0.70} strokeLinecap="round" strokeLinejoin="round" />
-              <Path d={linePath} fill="none" stroke="#fff"   strokeWidth={1.5} opacity={0.90} strokeLinecap="round" strokeLinejoin="round" />
-            </>
+            <Path d={linePath} fill="none" stroke={LINE_ORANGE} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
           ) : null}
 
           {/* Regular mid-line dots */}
           {pts.map((pt, i) => {
             if (series[i]?.vol <= 0) return null;
-            if (i === pts.length - 1) return null; // tip drawn separately with glow
-            return <Circle key={i} cx={pt.x} cy={pt.y} r={2.5} fill={ORANGE} opacity={0.7} />;
+            if (i === pts.length - 1) return null; // tip drawn separately
+            return <Circle key={i} cx={pt.x} cy={pt.y} r={2.5} fill={LINE_ORANGE} opacity={0.9} />;
           })}
 
-          {/* Last active point — subtle glow + pulse */}
+          {/* Last active point — simple dot, no glow/pulse */}
           {lastActivePt && (
-            <>
-              {/* Single soft glow halo */}
-              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={10} fill={ORANGE} opacity={0.15} />
-              {/* Animated pulse ring */}
-              <AnimatedCircle
-                cx={lastActivePt.x}
-                cy={lastActivePt.y}
-                r={pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [5, 11] })}
-                fill="none"
-                stroke={ORANGE}
-                strokeWidth={1}
-                opacity={pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] })}
-              />
-              {/* Main dot */}
-              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={4}   fill={ORANGE} opacity={1} />
-              {/* White centre */}
-              <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={2}   fill="#fff"   opacity={0.9} />
-            </>
+            <Circle cx={lastActivePt.x} cy={lastActivePt.y} r={3.5} fill={LINE_ORANGE} opacity={1} />
           )}
 
           {series.map((p, i) =>
@@ -812,7 +779,7 @@ function VolumeLineChart({
                 textAnchor="middle"
                 fontSize={8}
                 fontWeight="600"
-                fill="rgba(255,255,255,0.28)"
+                fill="#a1a1aa"
               >
                 {p.label}
               </SvgText>
@@ -828,7 +795,7 @@ function VolumeLineChart({
   );
 }
 
-const vc = StyleSheet.create({
+const makeVc = (c) => StyleSheet.create({
   inner: {
     paddingTop: 14,
     paddingBottom: 2,
@@ -843,7 +810,7 @@ const vc = StyleSheet.create({
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 1.1,
-    color: "rgba(255,255,255,0.3)",
+    color: c.textMuted,
   },
   pillRow: {
     flexDirection: "row",
@@ -853,29 +820,30 @@ const vc = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 99,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: c.cardAlt,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderColor: c.border,
   },
   pillActive: {
-    backgroundColor: "rgba(232,56,13,0.18)",
+    backgroundColor: "rgba(232,56,13,0.12)",
     borderColor: "rgba(232,56,13,0.35)",
   },
   pillText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.3)",
+    color: c.textMuted,
   },
   pillTextActive: { color: ORANGE },
   empty: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.18)",
+    color: c.textFaint,
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 20,
     marginBottom: 10,
   },
 });
+let vc = makeVc(LIGHT);
 
 // ─── DeltaBadge ───────────────────────────────────────────────────────────────
 function DeltaBadge({ delta }) {
@@ -900,7 +868,7 @@ function DeltaBadge({ delta }) {
     </View>
   );
 }
-const bs = StyleSheet.create({
+const makeBs = (c) => StyleSheet.create({
   base: {
     borderRadius: 99,
     paddingHorizontal: 10,
@@ -909,9 +877,10 @@ const bs = StyleSheet.create({
   },
   up: { backgroundColor: "rgba(34,197,94,0.1)" },
   down: { backgroundColor: "rgba(244,63,94,0.09)" },
-  neutral: { backgroundColor: "#f4f2ed" },
+  neutral: { backgroundColor: c.cardAlt },
   text: { fontSize: 12, fontWeight: "700" },
 });
+let bs = makeBs(LIGHT);
 
 // ─── MuscleAccordionRow ───────────────────────────────────────────────────────
 function MuscleAccordionRow({
@@ -979,12 +948,12 @@ function MuscleAccordionRow({
     </View>
   );
 }
-const ms = StyleSheet.create({
+const makeMs = (c) => StyleSheet.create({
   card: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e8e5de",
-    backgroundColor: "#fff",
+    borderColor: c.border,
+    backgroundColor: c.card,
     overflow: "hidden",
   },
   row: {
@@ -993,20 +962,20 @@ const ms = StyleSheet.create({
     justifyContent: "space-between",
     padding: 18,
   },
-  mgName: { fontSize: 16, fontWeight: "700", color: "#1a1a1a" },
-  mgSub: { fontSize: 12, color: "#aaa", marginTop: 3 },
+  mgName: { fontSize: 16, fontWeight: "700", color: c.text },
+  mgSub: { fontSize: 12, color: c.textMuted, marginTop: 3 },
   rowRight: { flexDirection: "row", alignItems: "center", gap: 10 },
   bestWeight: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.5,
   },
-  lbs: { fontSize: 12, fontWeight: "400", color: "#aaa" },
-  chevron: { fontSize: 18, color: "#ccc", marginLeft: 4 },
+  lbs: { fontSize: 12, fontWeight: "400", color: c.textMuted },
+  chevron: { fontSize: 18, color: c.textFaint, marginLeft: 4 },
   expanded: {
     borderTopWidth: 1,
-    borderTopColor: "#f0ede8",
+    borderTopColor: c.border,
     padding: 18,
     gap: 10,
   },
@@ -1016,8 +985,8 @@ const ms = StyleSheet.create({
     alignItems: "baseline",
     paddingVertical: 6,
   },
-  exName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  exMax: { fontSize: 12, color: "#aaa" },
+  exName: { fontSize: 14, fontWeight: "700", color: c.text },
+  exMax: { fontSize: 12, color: c.textMuted },
   setRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1027,15 +996,16 @@ const ms = StyleSheet.create({
   },
   setNum: {
     width: 18,
-    color: "#ccc",
+    color: c.textFaint,
     fontWeight: "700",
     textAlign: "center",
     fontSize: 13,
   },
-  setDetail: { color: "#888", fontSize: 13 },
-  setVol: { marginLeft: "auto", color: "#bbb", fontSize: 13 },
-  divider: { height: 1, backgroundColor: "#f0ede8", marginVertical: 8 },
+  setDetail: { color: c.textMuted, fontSize: 13 },
+  setVol: { marginLeft: "auto", color: c.textFaint, fontSize: 13 },
+  divider: { height: 1, backgroundColor: c.border, marginVertical: 8 },
 });
+let ms = makeMs(LIGHT);
 
 // ─── LogSheet ─────────────────────────────────────────────────────────────────
 const MG_META: Record<string, { color: string }> = {
@@ -1638,7 +1608,7 @@ function LogSheet({
   );
 }
 
-const lg = StyleSheet.create({
+const makeLg = (c) => StyleSheet.create({
   flex: { flex: 1 },
 
   backdrop: {
@@ -1652,7 +1622,7 @@ const lg = StyleSheet.create({
     left: 0,
     right: 0,
     height: "92%",
-    backgroundColor: "#fafaf8",
+    backgroundColor: c.bg,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     overflow: "hidden",
@@ -1666,7 +1636,7 @@ const lg = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: "#e0ddd6",
+    backgroundColor: c.cardAlt,
     borderRadius: 99,
     alignSelf: "center",
     marginTop: 14,
@@ -1693,7 +1663,7 @@ const lg = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.5,
   },
 
@@ -1701,28 +1671,28 @@ const lg = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     alignItems: "center",
     justifyContent: "center",
   },
-  closeBtnText: { fontSize: 12, color: "#999", fontWeight: "700" },
+  closeBtnText: { fontSize: 12, color: c.textMuted, fontWeight: "700" },
 
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 11,
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     alignItems: "center",
     justifyContent: "center",
   },
-  backBtnText: { fontSize: 18, color: "#555", fontWeight: "500" },
+  backBtnText: { fontSize: 18, color: c.textMuted, fontWeight: "500" },
 
   stepRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.5)",
   },
@@ -1731,19 +1701,19 @@ const lg = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 6,
   },
   stepDotActive: { backgroundColor: "#e8380d" },
-  stepDotText: { fontSize: 10, fontWeight: "800", color: "#bbb" },
-  stepLabel: { fontSize: 11, fontWeight: "600", color: "#bbb" },
-  stepLabelActive: { color: "#1a1a1a" },
+  stepDotText: { fontSize: 10, fontWeight: "800", color: c.textFaint },
+  stepLabel: { fontSize: 11, fontWeight: "600", color: c.textFaint },
+  stepLabelActive: { color: c.text },
   stepLine: {
     flex: 1,
     height: 2,
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     marginHorizontal: 6,
     borderRadius: 99,
   },
@@ -1754,7 +1724,7 @@ const lg = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#bbb",
+    color: c.textFaint,
     marginBottom: 10,
   },
 
@@ -1771,9 +1741,9 @@ const lg = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 16,
     borderRadius: 18,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1.5,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -1783,9 +1753,9 @@ const lg = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  muscleCardActive: { backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
+  muscleCardActive: { backgroundColor: "#1a1a1a", borderColor: c.text },
   muscleDot: { width: 10, height: 10, borderRadius: 5 },
-  muscleName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a", flex: 1 },
+  muscleName: { fontSize: 14, fontWeight: "700", color: c.text, flex: 1 },
   muscleBadge: {
     backgroundColor: "#e8380d",
     borderRadius: 99,
@@ -1802,10 +1772,10 @@ const lg = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     paddingVertical: 12,
     paddingHorizontal: 0,
     marginBottom: 8,
@@ -1821,20 +1791,20 @@ const lg = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 2,
   },
-  addedName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
+  addedName: { fontSize: 14, fontWeight: "700", color: c.text },
   addedSets: {
     fontSize: 13,
-    color: "#aaa",
+    color: c.textMuted,
     fontWeight: "700",
     paddingRight: 4,
   },
   addedEditBtn: {
-    backgroundColor: "#f4f2ed",
+    backgroundColor: c.cardAlt,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  addedEditText: { fontSize: 12, fontWeight: "700", color: "#555" },
+  addedEditText: { fontSize: 12, fontWeight: "700", color: c.textMuted },
   addedDelBtn: {
     width: 28,
     height: 28,
@@ -1848,13 +1818,13 @@ const lg = StyleSheet.create({
 
   notesSection: { marginBottom: 10 },
   notesInput: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1.5,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     borderRadius: 14,
     padding: 14,
     fontSize: 14,
-    color: "#1a1a1a",
+    color: c.text,
     minHeight: 76,
     textAlignVertical: "top",
   },
@@ -1863,9 +1833,9 @@ const lg = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 36 : 20,
-    backgroundColor: "#fafaf8",
+    backgroundColor: c.bg,
     borderTopWidth: 1,
-    borderTopColor: "#f0ede8",
+    borderTopColor: c.border,
   },
   saveBtn: {
     backgroundColor: "#1a1a1a",
@@ -1883,10 +1853,10 @@ const lg = StyleSheet.create({
   exItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     paddingVertical: 15,
     paddingHorizontal: 16,
     marginBottom: 8,
@@ -1898,15 +1868,15 @@ const lg = StyleSheet.create({
     backgroundColor: "rgba(124,58,237,0.03)",
   },
   exAccent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 3 },
-  exItemName: { flex: 1, fontSize: 15, fontWeight: "600", color: "#1a1a1a" },
+  exItemName: { flex: 1, fontSize: 15, fontWeight: "600", color: c.text },
   exBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: "#f4f2ed",
+    backgroundColor: c.cardAlt,
   },
   exBadgeAdded: { backgroundColor: "rgba(124,58,237,0.1)" },
-  exBadgeText: { fontSize: 12, fontWeight: "700", color: "#aaa" },
+  exBadgeText: { fontSize: 12, fontWeight: "700", color: c.textMuted },
 
   setHeaderRow: {
     flexDirection: "row",
@@ -1914,9 +1884,9 @@ const lg = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0ede8",
+    borderBottomColor: c.border,
   },
-  setHeaderLabel: { fontSize: 12, fontWeight: "700", color: "#bbb" },
+  setHeaderLabel: { fontSize: 12, fontWeight: "700", color: c.textFaint },
 
   setRow: {
     flexDirection: "row",
@@ -1925,25 +1895,25 @@ const lg = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f4f2ed",
+    borderBottomColor: c.border,
   },
   setNum: {
     width: 40,
     alignItems: "center",
   },
-  setNumText: { fontSize: 15, fontWeight: "700", color: "#bbb" },
+  setNumText: { fontSize: 15, fontWeight: "700", color: c.textFaint },
 
   setInput: {
     flex: 1,
     height: 48,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1.5,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     borderRadius: 12,
     fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
-    color: "#1a1a1a",
+    color: c.text,
   },
 
   delSetBtn: {
@@ -1968,11 +1938,11 @@ const lg = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "#e0ddd6",
+    borderColor: c.border,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
   },
-  addSetText: { fontSize: 14, fontWeight: "700", color: "#000000" },
+  addSetText: { fontSize: 14, fontWeight: "700", color: c.text },
 
   doneBtn: {
     backgroundColor: "#010101",
@@ -2004,11 +1974,12 @@ const lg = StyleSheet.create({
   savedTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.5,
   },
-  savedSub: { fontSize: 15, color: "#aaa" },
+  savedSub: { fontSize: 15, color: c.textMuted },
 });
+let lg = makeLg(LIGHT);
 
 // ─── ProgressScreen ───────────────────────────────────────────────────────────
 function ProgressScreen({ logs }) {
@@ -2043,14 +2014,14 @@ function ProgressScreen({ logs }) {
     </ScrollView>
   );
 }
-const ps = StyleSheet.create({
+const makePs = (c) => StyleSheet.create({
   scroll: { padding: 18 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.2,
     textTransform: "uppercase",
-    color: "#aaa",
+    color: c.textMuted,
     marginBottom: 12,
   },
   empty: {
@@ -2059,14 +2030,15 @@ const ps = StyleSheet.create({
     padding: 80,
     gap: 14,
   },
-  emptyTitle: { fontSize: 22, fontWeight: "800", color: "#1a1a1a" },
+  emptyTitle: { fontSize: 22, fontWeight: "800", color: c.text },
   emptySub: {
     fontSize: 14,
-    color: "#aaa",
+    color: c.textMuted,
     textAlign: "center",
     lineHeight: 22,
   },
 });
+let ps = makePs(LIGHT);
 
 // ─── HistoryScreen ────────────────────────────────────────────────────────────
 function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
@@ -2137,16 +2109,16 @@ function HistoryScreen({ logs, loading, onDelete, confirmDeleteId }) {
   );
 }
 
-const hs = StyleSheet.create({
+const makeHs = (c) => StyleSheet.create({
   scroll: { padding: 18 },
   empty: { alignItems: "center", padding: 80, gap: 14 },
-  emptyTitle: { fontSize: 18, fontWeight: "800", color: "#1a1a1a" },
-  emptySub: { fontSize: 14, color: "#aaa" },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: c.text },
+  emptySub: { fontSize: 14, color: c.textMuted },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     padding: 16,
     marginBottom: 12,
   },
@@ -2166,10 +2138,10 @@ const hs = StyleSheet.create({
     letterSpacing: 0.6,
   },
   dateDay: { fontSize: 18, fontWeight: "800", color: "#fff", lineHeight: 20 },
-  weekday: { flex: 1, fontSize: 16, fontWeight: "800", color: "#1a1a1a" },
+  weekday: { flex: 1, fontSize: 16, fontWeight: "800", color: c.text },
   deleteBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8 },
   deleteBtnPending: { backgroundColor: "rgba(244,63,94,0.08)" },
-  deleteBtnText: { fontSize: 12, fontWeight: "700", color: "#ccc" },
+  deleteBtnText: { fontSize: 12, fontWeight: "700", color: c.textFaint },
   deleteBtnTextPending: { color: "#f43f5e" },
   exRow: {
     flexDirection: "row",
@@ -2177,21 +2149,27 @@ const hs = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
-  exName: { fontSize: 14, fontWeight: "700", color: "#1a1a1a", flex: 1 },
-  exStats: { fontSize: 12, color: "#aaa", flexShrink: 0 },
+  exName: { fontSize: 14, fontWeight: "700", color: c.text, flex: 1 },
+  exStats: { fontSize: 12, color: c.textMuted, flexShrink: 0 },
   notes: {
     fontSize: 13,
-    color: "#aaa",
+    color: c.textMuted,
     fontStyle: "italic",
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#e8e5de",
+    borderTopColor: c.border,
   },
 });
+let hs = makeHs(LIGHT);
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function TrackingPage() {
+  const { colors } = useTheme();
+  // Rebuild the themed stylesheets for this render; child components read these module bindings.
+  t = makeT(colors); yc = makeYc(colors); vc = makeVc(colors);
+  bs = makeBs(colors); ms = makeMs(colors); ps = makePs(colors); hs = makeHs(colors);
+  lg = makeLg(colors);
   const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
   const [tab, setTab] = useState("progress");
   const [logs, setLogs] = useState([]);
@@ -2291,7 +2269,7 @@ export default function TrackingPage() {
   return (
     <SafeAreaView style={t.root} edges={["top"]}>
 
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
       <View style={t.header}>
         <View style={t.titleRow}>
@@ -2456,14 +2434,14 @@ export default function TrackingPage() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const t = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#ffffff" },
+const makeT = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     backgroundColor: "transparent",
     paddingHorizontal: 20,
     paddingTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    borderBottomColor: c.border,
   },
   titleRow: {
     flexDirection: "row",
@@ -2473,14 +2451,14 @@ const t = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: "#323131",
+    color: c.textMuted,
     marginBottom: 2,
     fontWeight: "400",
   },
   title: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -1,
   },
   headerButtons: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -2488,7 +2466,7 @@ const t = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: c.text,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -2497,14 +2475,14 @@ const t = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  addBtnText: { fontSize: 22, color: "#fff", fontWeight: "300" },
+  addBtnText: { fontSize: 22, color: c.bg, fontWeight: "300" },
   avatarBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1.5,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2517,7 +2495,7 @@ const t = StyleSheet.create({
     marginTop: 8,
     marginBottom: 2,
     alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.18)",
+    backgroundColor: c.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 99,
@@ -2526,39 +2504,37 @@ const t = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 99,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: c.textFaint,
   },
   pageDotActive: {
     backgroundColor: ORANGE,
     width: 14,
   },
-  // Outer wrapper: handles border radius + clipping so the black bg
-  // is correctly masked to rounded corners on iOS
   calCardWrap: {
     borderRadius: 22,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    backgroundColor: "#111111",
+    borderColor: c.border,
+    backgroundColor: c.card,
     shadowColor: "#000",
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.06,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    elevation: 3,
   },
   // Individual slide — just padding, background inherited from wrapper
   calSlide: {
-    backgroundColor: "#111111",
+    backgroundColor: c.card,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 6,
   },
   // Keep calCard for any remaining references
   calCard: {
-    backgroundColor: "#111111",
+    backgroundColor: c.card,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: c.border,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 6,
@@ -2572,22 +2548,22 @@ const t = StyleSheet.create({
   streakCount: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#ffffff",
+    color: c.text,
     letterSpacing: -1,
   },
-  streakOf: { fontSize: 13, color: "rgba(255,255,255,0.35)" },
-  weekVol: { fontSize: 12, color: "rgba(255,255,255,0.3)" },
+  streakOf: { fontSize: 13, color: c.textMuted },
+  weekVol: { fontSize: 12, color: c.textMuted },
   badge: {
     borderRadius: 99,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: c.cardAlt,
   },
-  badgeActive: { backgroundColor: "rgba(124,58,237,0.25)" },
+  badgeActive: { backgroundColor: "rgba(232,56,13,0.12)" },
   badgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.35)",
+    color: c.textMuted,
     letterSpacing: 0.3,
   },
   badgeTextActive: { color: "#e8380d" },
@@ -2597,23 +2573,23 @@ const t = StyleSheet.create({
     width: "100%",
     aspectRatio: 1,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.07)",
+    backgroundColor: c.cardAlt,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: c.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  dotActive: { backgroundColor: "#ffffff", borderColor: "#ffffff" },
-  dotToday: { borderWidth: 2, borderColor: "rgba(255,255,255,0.5)" },
-  dotCheck: { color: "#111111", fontWeight: "800", fontSize: 13 },
-  dotCheckToday: { color: "#111111" },
+  dotActive: { backgroundColor: "#e8380d", borderColor: "#e8380d" },
+  dotToday: { borderWidth: 2, borderColor: "#e8380d" },
+  dotCheck: { color: "#ffffff", fontWeight: "800", fontSize: 13 },
+  dotCheckToday: { color: "#ffffff" },
   dayLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.3)",
+    color: c.textFaint,
     letterSpacing: 0.3,
   },
-  dayLabelToday: { color: "rgba(255,255,255,0.8)" },
+  dayLabelToday: { color: c.text },
   tabs: { flexDirection: "row", gap: 4 },
   tab: {
     flex: 1,
@@ -2622,13 +2598,13 @@ const t = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: { borderBottomColor: "#000000" },
-  tabText: { fontSize: 15, fontWeight: "700", color: "#aaa" },
-  tabTextActive: { color: "#1a1a1a" },
+  tabActive: { borderBottomColor: c.text },
+  tabText: { fontSize: 15, fontWeight: "700", color: c.textMuted },
+  tabTextActive: { color: c.text },
   chartToggle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.2)",
+    color: c.textFaint,
     letterSpacing: 0.6,
     textTransform: "uppercase",
     textAlign: "right",
@@ -2638,7 +2614,7 @@ const t = StyleSheet.create({
   yearChartInner: { paddingBottom: 8 },
   yearChartDivider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: c.border,
     marginBottom: 14,
   },
   yearChartTitle: {
@@ -2646,7 +2622,7 @@ const t = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1.2,
     textTransform: "uppercase",
-    color: "rgba(255,255,255,0.3)",
+    color: c.textMuted,
     marginBottom: 10,
   },
 fab: {
@@ -2677,3 +2653,4 @@ fabBtnText: {
   lineHeight: 32,
 },
 });
+let t = makeT(LIGHT);

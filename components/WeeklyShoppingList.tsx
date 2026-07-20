@@ -12,6 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MealPlan } from "../src/utils/mealPlanGenerator";
 
@@ -110,6 +111,8 @@ interface Props {
 }
 
 export default function WeeklyShoppingList({ visible, onClose, plan, storageKey }: Props) {
+  const { colors } = useTheme();
+  s = makeS(colors);
   const insets = useSafeAreaInsets();
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
@@ -217,24 +220,24 @@ export default function WeeklyShoppingList({ visible, onClose, plan, storageKey 
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#f7f7f5" },
+const makeS = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.cardAlt },
 
   header: {
     flexDirection: "row", alignItems: "flex-start",
     justifyContent: "space-between",
     paddingHorizontal: 20, paddingBottom: 14,
   },
-  title: { fontSize: 26, fontWeight: "800", color: INK, letterSpacing: -0.5 },
-  sub:   { fontSize: 13, color: MUTED, marginTop: 3, fontWeight: "500" },
+  title: { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+  sub:   { fontSize: 13, color: c.textMuted, marginTop: 3, fontWeight: "500" },
   closeBtn: {
-    backgroundColor: INK, borderRadius: 20,
+    backgroundColor: c.text, borderRadius: 20,
     paddingHorizontal: 18, paddingVertical: 8, marginTop: 4,
   },
   closeText: { fontSize: 14, fontWeight: "700", color: "#fff" },
 
   progressTrack: {
-    height: 3, backgroundColor: "rgba(0,0,0,0.07)",
+    height: 3, backgroundColor: c.cardAlt,
     marginHorizontal: 20, borderRadius: 2, marginBottom: 16,
   },
   progressFill: {
@@ -245,7 +248,7 @@ const s = StyleSheet.create({
 
   sectionHeader: {
     fontSize: 11, fontWeight: "700",
-    color: MUTED, letterSpacing: 0.8,
+    color: c.textMuted, letterSpacing: 0.8,
     textTransform: "uppercase",
     marginTop: 20, marginBottom: 6,
     marginLeft: 2,
@@ -253,28 +256,29 @@ const s = StyleSheet.create({
 
   row: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "#fff", paddingHorizontal: 16, paddingVertical: 15,
+    backgroundColor: c.card, paddingHorizontal: 16, paddingVertical: 15,
     gap: 14,
   },
-  rowPressed: { backgroundColor: "#f5f3ef" },
+  rowPressed: { backgroundColor: c.cardAlt },
   rowBorder:  { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: SEP },
 
   circle: {
     width: 22, height: 22, borderRadius: 11,
-    borderWidth: 1.5, borderColor: "rgba(0,0,0,0.15)",
+    borderWidth: 1.5, borderColor: c.border,
     alignItems: "center", justifyContent: "center",
     flexShrink: 0,
   },
   circleDone: { backgroundColor: ORANGE, borderColor: ORANGE },
   tick:       { fontSize: 10, color: "#fff", fontWeight: "800" },
 
-  itemText: { flex: 1, fontSize: 16, color: INK, fontWeight: "500" },
-  itemDone: { color: "rgba(0,0,0,0.22)", textDecorationLine: "line-through" },
+  itemText: { flex: 1, fontSize: 16, color: c.text, fontWeight: "500" },
+  itemDone: { color: c.textFaint, textDecorationLine: "line-through" },
 
   clearBtn: {
     alignSelf: "center", marginTop: 20,
     paddingVertical: 10, paddingHorizontal: 24,
-    borderRadius: 22, backgroundColor: "rgba(0,0,0,0.06)",
+    borderRadius: 22, backgroundColor: c.cardAlt,
   },
-  clearText: { fontSize: 13, fontWeight: "600", color: MUTED },
+  clearText: { fontSize: 13, fontWeight: "600", color: c.textMuted },
 });
+let s = makeS(LIGHT);

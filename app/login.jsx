@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -16,18 +16,25 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { saveToken } from "../src/auth/storage";
 import { signInWithGoogle, isCancelled } from "../src/auth/google";
+import GoogleGLogo from "../components/GoogleGLogo";
+import { useTheme } from "../src/theme/ThemeContext";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
 export default function Login() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [focused, setFocused]   = useState(null);
+  const [showPw,  setShowPw]    = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
@@ -94,7 +101,10 @@ export default function Login() {
 
       await saveToken(data.token);
       await AsyncStorage.setItem("token", data.token);
-      await AsyncStorage.setItem("user",  JSON.stringify(data.user));
+      await AsyncStorage.setItem(
+        "user",
+        JSON.stringify({ ...data.user, photo: data.user.photo || google.photo }),
+      );
 
       const allKeys = await AsyncStorage.getAllKeys();
       const staleKeys = allKeys.filter(
@@ -117,7 +127,7 @@ export default function Login() {
 
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -152,32 +162,41 @@ export default function Login() {
               <View style={s.inputWrapper}>
                 <Text style={s.label}>Email</Text>
                 <TextInput
-                  style={s.input}
+                  style={[s.input, focused === "email" && s.inputFocused]}
                   placeholder="you@example.com"
-                  placeholderTextColor="#c0bdb5"
+                  placeholderTextColor={colors.textFaint}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={email}
                   onChangeText={setEmail}
+                  onFocus={() => setFocused("email")}
+                  onBlur={() => setFocused(null)}
                 />
               </View>
 
               <View style={s.inputWrapper}>
                 <Text style={s.label}>Password</Text>
-                <TextInput
-                  style={s.input}
-                  placeholder="Your password"
-                  placeholderTextColor="#c0bdb5"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
+                <View style={[s.inputField, focused === "password" && s.inputFocused]}>
+                  <TextInput
+                    style={s.inputInner}
+                    placeholder="Your password"
+                    placeholderTextColor={colors.textFaint}
+                    secureTextEntry={!showPw}
+                    value={password}
+                    onChangeText={setPassword}
+                    onFocus={() => setFocused("password")}
+                    onBlur={() => setFocused(null)}
+                  />
+                  <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={10}>
+                    <Ionicons name={showPw ? "eye-outline" : "eye-off-outline"} size={17} color={colors.textMuted} />
+                  </Pressable>
+                </View>
               </View>
 
               <Pressable
                 onPress={handleLogin}
                 disabled={!isValid || loading}
-                style={({ pressed }) => [s.primaryBtn, (!isValid || loading) && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [s.primaryBtn, (!isValid || loading) && s.primaryBtnDisabled, pressed && { opacity: 0.9 }]}
               >
                 <Text style={s.primaryBtnText}>{loading ? "Signing in…" : "Sign in"}</Text>
               </Pressable>
@@ -193,11 +212,7 @@ export default function Login() {
                 disabled={googleLoading || loading}
                 style={({ pressed }) => [s.googleBtn, (googleLoading || loading) && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
               >
-                <Image
-                  source={require("../assets/images/google.png")}
-                  style={s.googleIcon}
-                  resizeMode="contain"
-                />
+                <GoogleGLogo size={20} />
                 <Text style={s.googleBtnText}>{googleLoading ? "Signing in…" : "Continue with Google"}</Text>
               </Pressable>
             </View>
@@ -225,8 +240,8 @@ export default function Login() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#ffffff" },
+const makeStyles = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   inner: {
     flex: 1,
     paddingHorizontal: 24,
@@ -238,75 +253,102 @@ const s = StyleSheet.create({
   // Top bar
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backBtn: { padding: 8 },
-  backBtnText: { fontSize: 22, color: "#0e0e0e" },
+  backBtnText: { fontSize: 22, color: c.text },
   logoRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   logoSmall: { width: 26, height: 26 },
-  logoName: { fontSize: 14, fontWeight: "700", color: "#0e0e0e", letterSpacing: -0.3 },
+  logoName: { fontSize: 14, fontWeight: "700", color: c.text, letterSpacing: -0.3 },
 
   // Headline
   headSection: { gap: 8 },
-  title: { fontSize: 48, fontWeight: "800", color: "#0e0e0e", letterSpacing: -2, lineHeight: 52 },
-  titleAccent: { color: "#e8380d" },
-  subtitle: { fontSize: 15, color: "rgba(0,0,0,0.38)" },
+  title: { fontSize: 44, fontWeight: "800", color: c.text, letterSpacing: -1.6, lineHeight: 48 },
+  titleAccent: { color: c.textMuted },
+  subtitle: { fontSize: 14, color: c.textMuted },
 
-  // Form
+  // Form (shadcn)
   form: { gap: 16 },
-  inputWrapper: { gap: 7 },
+  inputWrapper: { gap: 8 },
   label: {
-    fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.35)",
-    letterSpacing: 1, textTransform: "uppercase",
+    fontSize: 14, fontWeight: "500", color: c.text,
   },
   input: {
-    backgroundColor: "#f7f7f5",
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    fontSize: 15,
-    color: "#0e0e0e",
+    height: 44,
+    backgroundColor: c.card,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: c.text,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
+  },
+  inputField: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 44,
+    backgroundColor: c.card,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  inputInner: { flex: 1, fontSize: 14, color: c.text },
+  inputFocused: {
+    borderColor: c.text,
+    shadowColor: c.text,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
-  // Buttons
+  // Buttons (shadcn)
   primaryBtn: {
-    backgroundColor: "#0e0e0e",
-    borderRadius: 16,
-    paddingVertical: 18,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 4,
+    gap: 8,
+    height: 44,
+    backgroundColor: c.text,
+    borderRadius: 8,
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  primaryBtnText: { fontSize: 16, fontWeight: "700", color: "#ffffff" },
+  primaryBtnDisabled: { opacity: 0.5, shadowOpacity: 0, elevation: 0 },
+  primaryBtnText: { fontSize: 14, fontWeight: "600", color: c.bg },
 
   secondaryBtn: {
-    backgroundColor: "#f4f4f4",
-    borderRadius: 16,
-    paddingVertical: 18,
+    backgroundColor: c.card,
+    borderRadius: 8,
+    height: 44,
+    justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: c.border,
   },
-  secondaryBtnText: { fontSize: 16, fontWeight: "600", color: "#0e0e0e" },
+  secondaryBtnText: { fontSize: 14, fontWeight: "500", color: c.text },
 
-  // Divider + Google
+  // Divider + Google (shadcn)
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 2 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#e8e5de" },
-  dividerText: { fontSize: 12, color: "rgba(0,0,0,0.3)", fontWeight: "600" },
+  dividerLine: { flex: 1, height: 1, backgroundColor: c.border },
+  dividerText: { fontSize: 12, color: c.textFaint, fontWeight: "400", textTransform: "uppercase", letterSpacing: 0.5 },
   googleBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    paddingVertical: 17,
+    height: 44,
+    backgroundColor: c.card,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
   },
-  googleIcon: { width: 20, height: 20 },
-  googleBtnText: { fontSize: 16, fontWeight: "600", color: "#0e0e0e" },
+  googleBtnText: { fontSize: 14, fontWeight: "500", color: c.text },
 
   // Footer
   footer: { gap: 12 },
-  terms: { fontSize: 12, color: "rgba(0,0,0,0.25)", textAlign: "center", lineHeight: 18 },
-  termsLink: { color: "rgba(0,0,0,0.45)", textDecorationLine: "underline" },
+  terms: { fontSize: 12, color: c.textFaint, textAlign: "center", lineHeight: 18 },
+  termsLink: { color: c.textMuted, textDecorationLine: "underline" },
 });

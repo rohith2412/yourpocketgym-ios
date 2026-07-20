@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { MealPreferences } from "../src/utils/mealPlanGenerator";
 
 const BLUE  = "#007AFF"; // classic iOS blue
@@ -116,6 +117,8 @@ interface Props {
 }
 
 export default function MealPlanEditPrefs({ visible, initial, onSave, onClose }: Props) {
+  const { colors } = useTheme();
+  s = makeS(colors);
   const [prefs,   setPrefs]   = useState<MealPreferences>({ ...initial });
   const [calText, setCalText] = useState(String(initial.calorieTarget));
 
@@ -308,7 +311,7 @@ export default function MealPlanEditPrefs({ visible, initial, onSave, onClose }:
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+const makeS = (c) => StyleSheet.create({
   root:        { flex: 1, backgroundColor: BG },
   scroll:      { flex: 1 },
   scrollContent: { paddingTop: 20, paddingBottom: 40 },
@@ -326,19 +329,19 @@ const s = StyleSheet.create({
     borderBottomColor: SEP,
   },
   navBtn:    { minWidth: 60 },
-  navTitle:  { fontSize: 17, fontWeight: "600", color: INK },
-  navCancel: { fontSize: 17, color: MUTED },
+  navTitle:  { fontSize: 17, fontWeight: "600", color: c.text },
+  navCancel: { fontSize: 17, color: c.textMuted },
   navSave:   { fontSize: 17, color: BLUE, fontWeight: "600", textAlign: "right" },
 
   // Section header / footer
   groupHeader: {
     fontSize: 12, fontWeight: "400",
-    color: MUTED, letterSpacing: 0.4,
+    color: c.textMuted, letterSpacing: 0.4,
     textTransform: "uppercase",
     marginLeft: 20, marginBottom: 6, marginTop: 22,
   },
   groupFooter: {
-    fontSize: 12, color: MUTED,
+    fontSize: 12, color: c.textMuted,
     marginLeft: 20, marginRight: 20,
     marginTop: 6, lineHeight: 16,
   },
@@ -361,10 +364,10 @@ const s = StyleSheet.create({
     backgroundColor: WHITE,
     minHeight: 44,
   },
-  rowPressed: { backgroundColor: "#e9e9eb" },
+  rowPressed: { backgroundColor: c.cardAlt },
   rowLeft: { flex: 1, gap: 2 },
-  rowLabel:  { fontSize: 16, color: INK },
-  rowDetail: { fontSize: 12, color: MUTED },
+  rowLabel:  { fontSize: 16, color: c.text },
+  rowDetail: { fontSize: 12, color: c.textMuted },
 
   // Checkmark
   checkmark: {
@@ -382,8 +385,9 @@ const s = StyleSheet.create({
   // Calorie input
   calInput: {
     flex: 1,
-    fontSize: 16, color: INK,
+    fontSize: 16, color: c.text,
     textAlign: "right",
     paddingVertical: 0,
   },
 });
+let s = makeS(LIGHT);

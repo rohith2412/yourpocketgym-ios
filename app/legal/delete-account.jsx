@@ -12,12 +12,15 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useTheme, LIGHT } from "../../src/theme/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getToken, removeToken } from "../../src/auth/storage";
 
 const BASE_URL = "https://yourpocketgym.com";
 
 export default function DeleteAccountScreen() {
+  const { colors } = useTheme();
+  s = makeS(colors);
   const router = useRouter();
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -70,7 +73,7 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
       {/* Header */}
       <View style={s.header}>
@@ -148,31 +151,31 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fafaf8" },
+const makeS = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "rgba(250,250,248,0.95)",
+    backgroundColor: c.bg,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(232,229,222,0.5)",
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 10,
-    borderWidth: 1, borderColor: "#e8e5de",
-    backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.card, alignItems: "center", justifyContent: "center",
   },
-  backBtnText: { fontSize: 18, color: "#0e0e0e" },
-  headerTitle: { fontSize: 16, fontWeight: "800", color: "#0e0e0e" },
+  backBtnText: { fontSize: 18, color: c.text },
+  headerTitle: { fontSize: 16, fontWeight: "800", color: c.text },
   content: { padding: 20, gap: 12 },
 
   warningCard: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: c.border,
     borderRadius: 28,
     padding: 20,
     shadowColor: "#000",
@@ -181,23 +184,23 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   warningIcon: { fontSize: 26, marginBottom: 10 },
-  warningTitle: { fontSize: 18, fontWeight: "800", color: "#0e0e0e", marginBottom: 6, letterSpacing: -0.5 },
-  warningBody: { fontSize: 13, color: "#888", marginBottom: 14 },
+  warningTitle: { fontSize: 18, fontWeight: "800", color: c.text, marginBottom: 6, letterSpacing: -0.5 },
+  warningBody: { fontSize: 13, color: c.textMuted, marginBottom: 14 },
   list: { gap: 8 },
   listRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
   listDot: {
     width: 18, height: 18, borderRadius: 9,
-    backgroundColor: "#f4f2ed",
+    backgroundColor: c.cardAlt,
     alignItems: "center", justifyContent: "center",
     marginTop: 1,
   },
-  listDotText: { fontSize: 9, color: "#888", fontWeight: "700" },
-  listText: { fontSize: 13, color: "#555", flex: 1, lineHeight: 20 },
+  listDotText: { fontSize: 9, color: c.textMuted, fontWeight: "700" },
+  listText: { fontSize: 13, color: c.textMuted, flex: 1, lineHeight: 20 },
 
   confirmCard: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: c.border,
     borderRadius: 28,
     padding: 20,
     shadowColor: "#000",
@@ -205,18 +208,18 @@ const s = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
   },
-  confirmLabel: { fontSize: 13, color: "#888", marginBottom: 12, lineHeight: 19 },
+  confirmLabel: { fontSize: 13, color: c.textMuted, marginBottom: 12, lineHeight: 19 },
   confirmWord: { fontWeight: "800", color: "#ef4444" },
   input: {
-    backgroundColor: "#f4f2ed",
+    backgroundColor: c.cardAlt,
     borderWidth: 1,
-    borderColor: "#e8e5de",
+    borderColor: c.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontWeight: "700",
-    color: "#0e0e0e",
+    color: c.text,
     letterSpacing: 2,
   },
   inputReady: { borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.04)" },
@@ -231,9 +234,10 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  deleteBtnDisabled: { backgroundColor: "#f4f2ed", shadowOpacity: 0 },
+  deleteBtnDisabled: { backgroundColor: c.cardAlt, shadowOpacity: 0 },
   deleteBtnText: { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
 
   cancelBtn: { alignItems: "center", paddingVertical: 14 },
-  cancelBtnText: { fontSize: 14, color: "#aaa", fontWeight: "500" },
+  cancelBtnText: { fontSize: 14, color: c.textMuted, fontWeight: "500" },
 });
+let s = makeS(LIGHT);

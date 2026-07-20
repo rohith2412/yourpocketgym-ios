@@ -13,10 +13,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePurchase } from "@/src/hooks/usePurchase";
 import Svg, { Path, Circle, Rect, Line, G } from "react-native-svg";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
-const PAYWALL_ENABLED = true;
+const PAYWALL_ENABLED = false;
 
 interface PremiumGateProps {
   isUserPremium: boolean;
@@ -29,47 +30,47 @@ interface PremiumGateProps {
 const LOGO = require("@/assets/images/logo.png");
 
 // Feature icons
-function InfinityIcon() {
+function InfinityIcon({ color = "#1a1a1a" }: { color?: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.74-8z" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function SparkleIcon() {
+function SparkleIcon({ color = "#1a1a1a" }: { color?: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" stroke="#1a1a1a" strokeWidth={1.5} strokeLinejoin="round" />
+      <Path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" stroke={color} strokeWidth={1.5} strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function ChartIcon() {
+function ChartIcon({ color = "#1a1a1a" }: { color?: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Rect x="3" y="12" width="4" height="9" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
-      <Rect x="10" y="7" width="4" height="14" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
-      <Rect x="17" y="3" width="4" height="18" rx="1" stroke="#1a1a1a" strokeWidth={1.8} />
+      <Rect x="3" y="12" width="4" height="9" rx="1" stroke={color} strokeWidth={1.8} />
+      <Rect x="10" y="7" width="4" height="14" rx="1" stroke={color} strokeWidth={1.8} />
+      <Rect x="17" y="3" width="4" height="18" rx="1" stroke={color} strokeWidth={1.8} />
     </Svg>
   );
 }
 
-function BrainIcon() {
+function BrainIcon({ color = "#1a1a1a" }: { color?: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Line x1="9" y1="21" x2="15" y2="21" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" />
-      <Line x1="10" y1="24" x2="14" y2="24" stroke="#1a1a1a" strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Line x1="9" y1="21" x2="15" y2="21" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Line x1="10" y1="24" x2="14" y2="24" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
 
-function CheckCircle() {
+function CheckCircle({ bg = "#1a1a1a", fg = "#fff" }: { bg?: string; fg?: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="10" fill="#1a1a1a" />
-      <Path d="M8 12.5l2.5 2.5 5-5" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Circle cx="12" cy="12" r="10" fill={bg} />
+      <Path d="M8 12.5l2.5 2.5 5-5" stroke={fg} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -89,6 +90,8 @@ export default function PremiumGate({
   onPurchaseSuccess,
 }: PremiumGateProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  s = makeS(colors);
   const [userId, setUserId] = useState<string>("");
   const { isLoading, error, purchaseMonthlySubscription, restorePurchases } =
     usePurchase();
@@ -111,7 +114,7 @@ export default function PremiumGate({
   if (subChecking) {
     return (
       <View style={s.loadingScreen}>
-        <ActivityIndicator size="large" color="#1a1a1a" />
+        <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
   }
@@ -149,13 +152,13 @@ export default function PremiumGate({
         {FEATURES.map((f, i) => (
           <View key={i} style={[s.featureRow, i < FEATURES.length - 1 && s.featureRowBorder]}>
             <View style={s.featureLeft}>
-              <f.icon />
+              <f.icon color={colors.text} />
               <View style={s.featureText}>
                 <Text style={s.featureTitle}>{f.title}</Text>
                 <Text style={s.featureDesc}>{f.desc}</Text>
               </View>
             </View>
-            <CheckCircle />
+            <CheckCircle bg={colors.accent} fg="#fff" />
           </View>
         ))}
       </View>
@@ -210,15 +213,15 @@ export default function PremiumGate({
   );
 }
 
-const s = StyleSheet.create({
+const makeS = (c) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#fafaf8",
+    backgroundColor: c.bg,
     paddingHorizontal: 20,
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: "#fafaf8",
+    backgroundColor: c.bg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -230,7 +233,7 @@ const s = StyleSheet.create({
   titleLine: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.5,
   },
   titleRow: {
@@ -244,19 +247,19 @@ const s = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     letterSpacing: -0.5,
   },
   titleSuper: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: c.text,
     marginTop: -8,
   },
 
   /* Feature list */
   featureCard: {
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 4,
@@ -270,7 +273,7 @@ const s = StyleSheet.create({
   },
   featureRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    borderBottomColor: c.border,
   },
   featureLeft: {
     flexDirection: "row",
@@ -284,45 +287,45 @@ const s = StyleSheet.create({
   featureTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: c.text,
     marginBottom: 2,
   },
   featureDesc: {
     fontSize: 12,
-    color: "#888888",
+    color: c.textMuted,
     fontWeight: "400",
   },
 
   /* Pricing */
   pricingCard: {
-    backgroundColor: "#f0ede8",
+    backgroundColor: c.cardAlt,
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
   },
   priceOption: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.card,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 18,
     borderWidth: 2,
-    borderColor: "#1a1a1a",
+    borderColor: c.text,
   },
   priceOptionLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: c.text,
     marginBottom: 2,
   },
   priceOptionAmount: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1a1a1a",
+    color: c.text,
     marginBottom: 2,
   },
   priceOptionSub: {
     fontSize: 12,
-    color: "#888888",
+    color: c.textMuted,
     fontWeight: "400",
   },
 
@@ -330,13 +333,13 @@ const s = StyleSheet.create({
   billingMain: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: c.text,
     textAlign: "center",
     marginBottom: 4,
   },
   billingDisclosure: {
     fontSize: 12,
-    color: "#aaaaaa",
+    color: c.textFaint,
     textAlign: "center",
     lineHeight: 17,
     fontStyle: "italic",
@@ -359,7 +362,7 @@ const s = StyleSheet.create({
 
   /* CTA */
   cta: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: c.text,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
@@ -374,7 +377,7 @@ const s = StyleSheet.create({
   ctaText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#ffffff",
+    color: c.bg,
     fontStyle: "italic",
   },
 
@@ -386,7 +389,8 @@ const s = StyleSheet.create({
   },
   footerLink: {
     fontSize: 12,
-    color: "#bbbbbb",
+    color: c.textFaint,
     fontWeight: "400",
   },
 });
+let s = makeS(LIGHT);

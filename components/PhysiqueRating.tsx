@@ -12,6 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { Image } from "expo-image";
 import { Image as RNImage } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -274,6 +275,8 @@ function HistoryCard({ result, onPress, onDelete }: { result: PhysiqueResult; on
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function PhysiqueRating({ token, userId }: { token: string; userId: string }) {
+  const { colors } = useTheme();
+  styles = makeStyles(colors);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PhysiqueResult | null>(null);
   const [history, setHistory] = useState<PhysiqueResult[]>([]);
@@ -457,7 +460,7 @@ export default function PhysiqueRating({ token, userId }: { token: string; userI
   // ── Result view ──
   if (activeResult) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <ResultView
           result={activeResult}
           onShare={handleShare}
@@ -474,7 +477,7 @@ export default function PhysiqueRating({ token, userId }: { token: string; userI
 
   // ── Upload + history view ──
   return (
-    <ScrollView style={{ backgroundColor: "#ffffff" }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 120, gap: 16 }}>
+    <ScrollView style={{ backgroundColor: colors.card }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 120, gap: 16 }}>
       {/* Upload card */}
       <View style={styles.uploadCard}>
         <Text style={styles.uploadTitle}>Rate My Body</Text>
@@ -513,13 +516,13 @@ export default function PhysiqueRating({ token, userId }: { token: string; userI
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (c) => StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
 
   // Analyzing
   analyzingCard: { alignItems: "center", gap: 16, padding: 40 },
-  analyzingTitle: { fontSize: 18, fontWeight: "800", color: "#1a1a1a", letterSpacing: -0.5 },
-  analyzingSub: { fontSize: 14, color: "#aaa" },
+  analyzingTitle: { fontSize: 18, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+  analyzingSub: { fontSize: 14, color: c.textMuted },
 
   // Upload
   uploadCard: { backgroundColor: "#1a1a1a", borderRadius: 24, padding: 28, alignItems: "center", gap: 12 },
@@ -532,16 +535,16 @@ const styles = StyleSheet.create({
 
   // Back
   backBtn: { paddingVertical: 8, alignSelf: "flex-start" },
-  backBtnText: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
+  backBtnText: { fontSize: 15, fontWeight: "700", color: c.text },
 
   // Result
   resultHeader: { },
-  resultTitle: { fontSize: 13, fontWeight: "600", color: "#999" },
-  resultSummary: { fontSize: 14, color: "#666", lineHeight: 22 },
+  resultTitle: { fontSize: 13, fontWeight: "600", color: c.textMuted },
+  resultSummary: { fontSize: 14, color: c.textMuted, lineHeight: 22 },
 
   // Categories
   catsCard: { flex: 1, paddingTop: 8, paddingBottom: 8 },
-  catsCardTitle: { fontSize: 11, fontWeight: "700", color: "#aaa", letterSpacing: 1.5, marginBottom: 8 },
+  catsCardTitle: { fontSize: 11, fontWeight: "700", color: c.textMuted, letterSpacing: 1.5, marginBottom: 8 },
   catName: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
   catBarBg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)", overflow: "hidden" },
   catBarFill: { height: 6, borderRadius: 3 },
@@ -549,42 +552,43 @@ const styles = StyleSheet.create({
   catScore: { fontSize: 13, fontWeight: "800", color: "#fff", width: 34, textAlign: "right" },
 
   // Tips
-  tipsCard: { backgroundColor: "#fff", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)" },
-  tipsTitle: { fontSize: 11, fontWeight: "700", color: "#aaa", letterSpacing: 1.5, marginBottom: 14 },
+  tipsCard: { backgroundColor: c.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: c.border },
+  tipsTitle: { fontSize: 11, fontWeight: "700", color: c.textMuted, letterSpacing: 1.5, marginBottom: 14 },
   tipRow: { flexDirection: "row", gap: 10, alignItems: "flex-start", marginBottom: 12 },
   tipNum: { width: 22, height: 22, borderRadius: 7, backgroundColor: "rgba(232,56,13,0.08)", alignItems: "center", justifyContent: "center" },
   tipNumText: { fontSize: 11, fontWeight: "800", color: "#e8380d" },
-  tipText: { fontSize: 14, color: "#555", lineHeight: 21, flex: 1 },
+  tipText: { fontSize: 14, color: c.textMuted, lineHeight: 21, flex: 1 },
 
   // Share button
   shareBtn: { backgroundColor: "#1a1a1a", borderRadius: 16, paddingVertical: 18, alignItems: "center" },
   shareBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
 
   // History
-  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
-  historyCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 20, padding: 12, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", gap: 14 },
+  sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textMuted },
+  historyCard: { flexDirection: "row", alignItems: "center", backgroundColor: c.card, borderRadius: 20, padding: 12, borderWidth: 1, borderColor: c.border, gap: 14 },
   historyPhoto: { width: 56, height: 72, borderRadius: 14 },
   historyInfo: { flex: 1, gap: 2 },
-  historyScore: { fontSize: 20, fontWeight: "900", color: "#1a1a1a" },
-  historyTitle: { fontSize: 14, fontWeight: "600", color: "#555" },
-  historyDate: { fontSize: 12, color: "#bbb" },
+  historyScore: { fontSize: 20, fontWeight: "900", color: c.text },
+  historyTitle: { fontSize: 14, fontWeight: "600", color: c.textMuted },
+  historyDate: { fontSize: 12, color: c.textFaint },
   historyDelete: { padding: 8 },
 
   // Shareable card
-  shareCard: { width: 360, backgroundColor: "#fff", borderRadius: 24, overflow: "hidden" },
-  shareHeader: { backgroundColor: "#fff", paddingVertical: 16, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)" },
-  shareHeaderText: { fontSize: 12, fontWeight: "800", color: "#aaa", letterSpacing: 2 },
-  shareBrand: { fontSize: 14, fontWeight: "800", color: "#1a1a1a" },
+  shareCard: { width: 360, backgroundColor: c.card, borderRadius: 24, overflow: "hidden" },
+  shareHeader: { backgroundColor: c.card, paddingVertical: 16, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: c.border },
+  shareHeaderText: { fontSize: 12, fontWeight: "800", color: c.textMuted, letterSpacing: 2 },
+  shareBrand: { fontSize: 14, fontWeight: "800", color: c.text },
   shareBody: { padding: 20, gap: 16 },
   sharePhotoRow: { flexDirection: "row", gap: 16, alignItems: "center" },
   sharePhoto: { width: 110, height: 140, borderRadius: 16 },
   shareScoreCol: { flex: 1, alignItems: "center", gap: 6 },
-  shareTitle: { fontSize: 16, fontWeight: "800", color: "#1a1a1a", textAlign: "center" },
+  shareTitle: { fontSize: 16, fontWeight: "800", color: c.text, textAlign: "center" },
   shareCats: { gap: 12 },
-  shareCatBarBg: { flex: 1, height: 8, borderRadius: 4, backgroundColor: "rgba(0,0,0,0.05)", overflow: "hidden" },
+  shareCatBarBg: { flex: 1, height: 8, borderRadius: 4, backgroundColor: c.cardAlt, overflow: "hidden" },
   shareCatBarFill: { height: 8, borderRadius: 4 },
-  shareCatScore: { fontSize: 12, fontWeight: "800", color: "#1a1a1a", width: 30, textAlign: "right" },
-  shareFooter: { backgroundColor: "#fafaf8", paddingVertical: 12, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between" },
-  shareFooterText: { fontSize: 11, fontWeight: "700", color: "#ccc" },
-  shareFooterDate: { fontSize: 11, color: "#ccc" },
+  shareCatScore: { fontSize: 12, fontWeight: "800", color: c.text, width: 30, textAlign: "right" },
+  shareFooter: { backgroundColor: c.bg, paddingVertical: 12, paddingHorizontal: 20, flexDirection: "row", justifyContent: "space-between" },
+  shareFooterText: { fontSize: 11, fontWeight: "700", color: c.textFaint },
+  shareFooterDate: { fontSize: 11, color: c.textFaint },
 });
+let styles = makeStyles(LIGHT);

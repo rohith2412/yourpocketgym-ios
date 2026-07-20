@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { getToken } from "../src/auth/storage";
+import { useTheme, LIGHT } from "../src/theme/ThemeContext";
 
 // ─── Constants ──────────────────────────────────────────────────────────────── kg
 const TOTAL_STEPS = 7;
@@ -71,6 +72,8 @@ const STEP_CFG = [
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function IntroPage() {
   const router = useRouter();
+  const { colors } = useTheme();
+  s = makeS(colors);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     age: 25, height: 170, weight: 70,
@@ -143,7 +146,7 @@ export default function IntroPage() {
   if (done) {
     return (
       <SafeAreaView style={s.root}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle={colors.statusBar} />
         <View style={s.doneScreen}>
           <View style={s.doneCircle}>
             <Text style={s.doneCheck}>✓</Text>
@@ -157,7 +160,7 @@ export default function IntroPage() {
 
   return (
     <SafeAreaView style={s.root}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
       {/* ── Header: back + segmented progress ── */}
       <View style={s.header}>
@@ -367,8 +370,8 @@ export default function IntroPage() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fff" },
+const makeS = (c) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
 
   header: {
     flexDirection: "row", alignItems: "center",
@@ -376,36 +379,36 @@ const s = StyleSheet.create({
   },
   closeBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "#f2f2f2", alignItems: "center", justifyContent: "center",
+    backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center",
   },
-  closeTxt: { fontSize: 14, color: INK, fontWeight: "500" },
+  closeTxt: { fontSize: 14, color: c.text, fontWeight: "500" },
   segs: { flex: 1, flexDirection: "row", gap: 5 },
-  seg: { flex: 1, height: 4, borderRadius: 99, backgroundColor: "#e8e6e1" },
-  segActive: { backgroundColor: INK },
+  seg: { flex: 1, height: 4, borderRadius: 99, backgroundColor: c.border },
+  segActive: { backgroundColor: c.text },
 
   scroll: { paddingHorizontal: H_PAD, paddingBottom: 24 },
 
   titleWrap: { marginBottom: 28 },
   stepLabel: {
-    fontSize: 11, fontWeight: "600", color: MUTED,
+    fontSize: 11, fontWeight: "600", color: c.textMuted,
     letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8,
   },
-  titleBlack:  { fontSize: 36, fontWeight: "800", color: INK, letterSpacing: -1, lineHeight: 42 },
-  titleOrange: { fontSize: 36, fontWeight: "800", color: ORANGE, letterSpacing: -1, lineHeight: 44, marginBottom: 12 },
-  subtitle:    { fontSize: 15, color: MUTED, lineHeight: 22 },
+  titleBlack:  { fontSize: 36, fontWeight: "800", color: c.text, letterSpacing: -1, lineHeight: 42 },
+  titleOrange: { fontSize: 36, fontWeight: "800", color: c.accent, letterSpacing: -1, lineHeight: 44, marginBottom: 12 },
+  subtitle:    { fontSize: 15, color: c.textMuted, lineHeight: 22 },
 
   // Gender
   genderGrid: { flexDirection: "row", gap: CARD_GAP },
   genderCard: {
     flex: 1, paddingVertical: 36, borderRadius: 24,
-    backgroundColor: "#f7f6f2", alignItems: "center", gap: 10,
+    backgroundColor: c.cardAlt, alignItems: "center", gap: 10,
     borderWidth: 2, borderColor: "transparent",
   },
-  genderCardActive: { borderColor: ORANGE, backgroundColor: "#fff" },
-  genderIcon: { fontSize: 48, color: MUTED },
-  genderIconActive: { color: ORANGE },
-  genderLabel: { fontSize: 16, fontWeight: "700", color: MUTED },
-  genderLabelActive: { color: INK },
+  genderCardActive: { borderColor: c.accent, backgroundColor: c.card },
+  genderIcon: { fontSize: 48, color: c.textMuted },
+  genderIconActive: { color: c.accent },
+  genderLabel: { fontSize: 16, fontWeight: "700", color: c.textMuted },
+  genderLabelActive: { color: c.text },
 
   // Image grid
   imgGrid:     { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
@@ -418,38 +421,38 @@ const s = StyleSheet.create({
     width: 30, height: 30, borderRadius: 15,
     backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
   },
-  checkMark:   { fontSize: 15, color: INK, fontWeight: "700" },
+  checkMark:   { fontSize: 15, color: "#1a1a1a", fontWeight: "700" },
   imgTextWrap: { position: "absolute", bottom: 14, left: 14, right: 14 },
   imgLabel:    { fontSize: 17, fontWeight: "700", color: "#fff" },
   imgSub:      { fontSize: 12, color: "rgba(255,255,255,0.82)", marginTop: 3 },
 
   // Stepper
   numBlock:    { alignItems: "center", paddingTop: 16, gap: 6 },
-  bigNum:      { fontSize: 88, fontWeight: "800", color: INK, letterSpacing: -4, lineHeight: 96 },
-  numUnit:     { fontSize: 16, color: MUTED, marginBottom: 20 },
+  bigNum:      { fontSize: 88, fontWeight: "800", color: c.text, letterSpacing: -4, lineHeight: 96 },
+  numUnit:     { fontSize: 16, color: c.textMuted, marginBottom: 20 },
   stepperRow:  { flexDirection: "row", gap: 16, marginBottom: 36 },
-  stepper:     { width: 60, height: 60, borderRadius: 30, backgroundColor: "#f2f2f2", alignItems: "center", justifyContent: "center" },
-  stepperTxt:  { fontSize: 30, color: INK, fontWeight: "300", lineHeight: 36 },
+  stepper:     { width: 60, height: 60, borderRadius: 30, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
+  stepperTxt:  { fontSize: 30, color: c.text, fontWeight: "300", lineHeight: 36 },
   presetsRow:  { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
-  preset:      { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: "#e8e6e1", backgroundColor: "#f7f6f2" },
-  presetActive: { backgroundColor: INK, borderColor: INK },
-  presetTxt:   { fontSize: 14, color: MUTED, fontWeight: "500" },
-  presetTxtActive: { color: "#fff" },
+  preset:      { borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.cardAlt },
+  presetActive: { backgroundColor: c.text, borderColor: c.text },
+  presetTxt:   { fontSize: 14, color: c.textMuted, fontWeight: "500" },
+  presetTxtActive: { color: c.bg },
 
   // Days
   daysWrap:    { gap: 14 },
   daysGrid:    { flexDirection: "row", gap: 7 },
-  dayBtn:      { flex: 1, height: 54, borderRadius: 12, backgroundColor: "#f2f2f2", alignItems: "center", justifyContent: "center" },
-  dayBtnActive: { backgroundColor: INK },
-  dayTxt:      { fontSize: 14, fontWeight: "600", color: MUTED },
-  dayTxtActive: { color: "#fff" },
-  daysHint:    { fontSize: 13, color: "#bbb", textAlign: "center" },
+  dayBtn:      { flex: 1, height: 54, borderRadius: 12, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
+  dayBtnActive: { backgroundColor: c.text },
+  dayTxt:      { fontSize: 14, fontWeight: "600", color: c.textMuted },
+  dayTxtActive: { color: c.bg },
+  daysHint:    { fontSize: 13, color: c.textFaint, textAlign: "center" },
 
   // Footer
-  footer: { paddingHorizontal: H_PAD, paddingBottom: 36, paddingTop: 12, backgroundColor: "#fff" },
-  cta:    { backgroundColor: INK, borderRadius: 16, paddingVertical: 18, alignItems: "center" },
+  footer: { paddingHorizontal: H_PAD, paddingBottom: 36, paddingTop: 12, backgroundColor: c.bg },
+  cta:    { backgroundColor: c.text, borderRadius: 16, paddingVertical: 18, alignItems: "center" },
   ctaDisabled: { opacity: 0.3 },
-  ctaTxt: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  ctaTxt: { fontSize: 16, fontWeight: "700", color: c.bg },
 
   // Done
   doneScreen: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
@@ -458,7 +461,8 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(232,56,13,0.1)", borderWidth: 1.5, borderColor: "rgba(232,56,13,0.3)",
     alignItems: "center", justifyContent: "center", marginBottom: 8,
   },
-  doneCheck: { fontSize: 32, color: ORANGE },
-  doneTitle: { fontSize: 32, fontWeight: "800", color: INK, letterSpacing: -1 },
-  doneSub:   { fontSize: 15, color: MUTED },
+  doneCheck: { fontSize: 32, color: c.accent },
+  doneTitle: { fontSize: 32, fontWeight: "800", color: c.text, letterSpacing: -1 },
+  doneSub:   { fontSize: 15, color: c.textMuted },
 });
+let s = makeS(LIGHT);

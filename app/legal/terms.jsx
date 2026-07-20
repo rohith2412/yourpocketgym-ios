@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { useTheme, LIGHT } from "../../src/theme/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SECTIONS = [
@@ -65,10 +66,12 @@ Always consult a qualified professional before starting a new exercise program o
 ];
 
 export default function TermsScreen() {
+  const { colors } = useTheme();
+  st = makeSt(colors);
   const router = useRouter();
   return (
     <SafeAreaView style={st.screen} edges={["top"]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
       <View style={st.header}>
         <Pressable onPress={() => router.back()} style={st.back}>
           <Text style={st.backText}>← Back</Text>
@@ -89,15 +92,16 @@ export default function TermsScreen() {
   );
 }
 
-const st = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#fafaf8" },
+const makeSt = (c) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: c.bg },
   header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#f0ede8" },
   back: { marginBottom: 12 },
   backText: { fontSize: 14, fontWeight: "600", color: "#ff6b35" },
-  title: { fontSize: 26, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1 },
+  title: { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -1 },
   scroll: { paddingHorizontal: 20, paddingTop: 20 },
-  updated: { fontSize: 12, color: "#bbb", marginBottom: 20 },
+  updated: { fontSize: 12, color: c.textFaint, marginBottom: 20 },
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 15, fontWeight: "800", color: "#1a1a1a", marginBottom: 8 },
-  sectionBody: { fontSize: 14, color: "#555", lineHeight: 22 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: c.text, marginBottom: 8 },
+  sectionBody: { fontSize: 14, color: c.textMuted, lineHeight: 22 },
 });
+let st = makeSt(LIGHT);

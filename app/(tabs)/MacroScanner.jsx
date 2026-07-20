@@ -1,6 +1,7 @@
 import AvatarButton from "@/components/AvatarButton";
 import PremiumGate from "@/components/PremiumGate";
 import { useSubscription } from "@/src/hooks/useSubscription";
+import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
@@ -198,10 +199,10 @@ function BottomSheet({ visible, onClose, children }) {
   );
 }
 
-const sh = StyleSheet.create({
+const makeSh = (c) => StyleSheet.create({
   sheet: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.card,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: 22, paddingTop: 14,
     maxHeight: "90%",
@@ -209,10 +210,11 @@ const sh = StyleSheet.create({
     shadowOpacity: 0.12, shadowRadius: 20, elevation: 20,
   },
   handle: {
-    width: 36, height: 4, backgroundColor: "#e0ddd6",
+    width: 36, height: 4, backgroundColor: c.cardAlt,
     borderRadius: 99, alignSelf: "center", marginBottom: 20,
   },
 });
+let sh = makeSh(LIGHT);
 
 // ─── Calorie Arc ──────────────────────────────────────────────────────────────
 function CalorieArc({ consumed, goal }) {
@@ -254,10 +256,11 @@ function CalorieArc({ consumed, goal }) {
   );
 }
 
-const arc = StyleSheet.create({
-  num:  { fontSize: 24, fontWeight: "900", color: "#1a1a1a", letterSpacing: -1, lineHeight: 28 },
-  unit: { fontSize: 9, color: "rgba(0,0,0,0.3)", fontWeight: "700", letterSpacing: 1.4, marginTop: 2 },
+const makeArc = (c) => StyleSheet.create({
+  num:  { fontSize: 24, fontWeight: "900", color: c.text, letterSpacing: -1, lineHeight: 28 },
+  unit: { fontSize: 9, color: c.textFaint, fontWeight: "700", letterSpacing: 1.4, marginTop: 2 },
 });
+let arc = makeArc(LIGHT);
 
 // ─── Macro Bar ────────────────────────────────────────────────────────────────
 function MacroBar({ label, value, goal, delay = 0 }) {
@@ -294,6 +297,7 @@ function MacroBar({ label, value, goal, delay = 0 }) {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ height = 80 }) {
+  const { colors } = useTheme();
   const anim = useRef(new Animated.Value(0.5)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -301,7 +305,7 @@ function Skeleton({ height = 80 }) {
       Animated.timing(anim, { toValue: 0.5, duration: 700, useNativeDriver: true }),
     ])).start();
   }, []);
-  return <Animated.View style={{ height, borderRadius: 20, backgroundColor: "#ece9e3", marginBottom: 10, opacity: anim }} />;
+  return <Animated.View style={{ height, borderRadius: 20, backgroundColor: colors.cardAlt, marginBottom: 10, opacity: anim }} />;
 }
 
 // ─── Goals Sheet ──────────────────────────────────────────────────────────────
@@ -405,33 +409,35 @@ function GoalsSheet({ visible, goals, calculated, hasCustom, token, onClose, onS
   );
 }
 
-const gs = StyleSheet.create({
+const makeGs = (c) => StyleSheet.create({
   sheet: {
-    backgroundColor: "#ffffff",
+    backgroundColor: c.card,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: 22, paddingTop: 14,
     shadowColor: "#000", shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.12, shadowRadius: 20, elevation: 20,
   },
-  handle: { width: 36, height: 4, backgroundColor: "#e0ddd6", borderRadius: 99, alignSelf: "center", marginBottom: 20 },
+  handle: { width: 36, height: 4, backgroundColor: c.cardAlt, borderRadius: 99, alignSelf: "center", marginBottom: 20 },
 });
+let gs = makeGs(LIGHT);
 
-const g = StyleSheet.create({
+const makeG = (c) => StyleSheet.create({
   row:            { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 22 },
-  title:          { fontSize: 18, fontWeight: "700", color: "#1a1a1a" },
-  eyebrow:        { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 2 },
-  cancel:         { fontSize: 14, color: "#bbb", fontWeight: "600" },
-  resetRow:       { marginBottom: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: "#f4f2ed", alignItems: "center" },
-  resetText:      { fontSize: 13, fontWeight: "600", color: "#999" },
+  title:          { fontSize: 18, fontWeight: "700", color: c.text },
+  eyebrow:        { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textFaint, marginBottom: 2 },
+  cancel:         { fontSize: 14, color: c.textFaint, fontWeight: "600" },
+  resetRow:       { marginBottom: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: c.cardAlt, alignItems: "center" },
+  resetText:      { fontSize: 13, fontWeight: "600", color: c.textMuted },
   inputRow:       { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 4, gap: 10 },
   inputRowBorder: { borderBottomWidth: 1, borderBottomColor: "#f0ede6" },
-  inputLabel:     { flex: 1, fontSize: 15, fontWeight: "500", color: "#333" },
-  inputField:     { fontSize: 18, fontWeight: "700", color: "#1a1a1a", textAlign: "right", minWidth: 64 },
-  inputUnit:      { fontSize: 13, color: "#bbb", fontWeight: "400", width: 32, textAlign: "right" },
+  inputLabel:     { flex: 1, fontSize: 15, fontWeight: "500", color: c.textMuted },
+  inputField:     { fontSize: 18, fontWeight: "700", color: c.text, textAlign: "right", minWidth: 64 },
+  inputUnit:      { fontSize: 13, color: c.textFaint, fontWeight: "400", width: 32, textAlign: "right" },
   saveBtn:        { backgroundColor: "#1a1a1a", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   saveBtnText:    { fontSize: 15, fontWeight: "700", color: "#fff" },
   dot:            { width: 8, height: 8, borderRadius: 4 },
 });
+let g = makeG(LIGHT);
 
 // ─── Edit Macros Sheet ────────────────────────────────────────────────────────
 function EditMacrosSheet({ visible, log, onClose, onSave, token }) {
@@ -882,33 +888,35 @@ function LogSheet({ visible, onClose, onSuccess, token }) {
   );
 }
 
-const lf = StyleSheet.create({
-  picker:      { height: 148, borderRadius: 18, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#e0ddd6", backgroundColor: "#f8f6f2", alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 20 },
+const makeLf = (c) => StyleSheet.create({
+  picker:      { height: 148, borderRadius: 18, borderWidth: 1.5, borderStyle: "dashed", borderColor: c.border, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 20 },
   preview:     { width: "100%", height: "100%" },
   removeBtn:   { position: "absolute", top: 10, right: 10, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 99, width: 28, height: 28, alignItems: "center", justifyContent: "center" },
-  camBox:      { width: 48, height: 48, borderRadius: 14, backgroundColor: "#ece9e2", alignItems: "center", justifyContent: "center" },
-  pickerLabel: { fontSize: 14, fontWeight: "600", color: "#bbb" },
-  pickerSub:   { fontSize: 12, color: "#ccc" },
-  fieldLabel:  { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 10 },
-  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center" },
-  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  mealBtnText:  { fontSize: 12, fontWeight: "600", color: "#888" },
+  camBox:      { width: 48, height: 48, borderRadius: 14, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center" },
+  pickerLabel: { fontSize: 14, fontWeight: "600", color: c.textFaint },
+  pickerSub:   { fontSize: 12, color: c.textFaint },
+  fieldLabel:  { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textFaint, marginBottom: 10 },
+  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card, alignItems: "center" },
+  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: c.text },
+  mealBtnText:  { fontSize: 12, fontWeight: "600", color: c.textMuted },
   err:         { fontSize: 13, color: "#ef4444", fontWeight: "600", marginBottom: 12 },
-  limitBanner: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#f8f6f2", borderRadius: 16, borderWidth: 1, borderColor: "#e8e5de", padding: 14, marginBottom: 14 },
+  limitBanner: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: c.cardAlt, borderRadius: 16, borderWidth: 1, borderColor: c.border, padding: 14, marginBottom: 14 },
   limitIcon:   { fontSize: 22, lineHeight: 26 },
-  limitTitle:  { fontSize: 14, fontWeight: "700", color: "#0e0e0e", marginBottom: 3 },
-  limitSub:    { fontSize: 12, color: "#888", lineHeight: 17 },
+  limitTitle:  { fontSize: 14, fontWeight: "700", color: c.text, marginBottom: 3 },
+  limitSub:    { fontSize: 12, color: c.textMuted, lineHeight: 17 },
 });
+let lf = makeLf(LIGHT);
 
 // ─── Result Sheet ─────────────────────────────────────────────────────────────
 function ResultSheet({ visible, log, onClose }) {
+  const { colors } = useTheme();
   if (!log) return null;
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
         <View>
           <Text style={g.eyebrow}>{mealLabel(log.mealType)}</Text>
-          <Text style={{ fontSize: 30, fontWeight: "800", color: "#1a1a1a", letterSpacing: -1.5 }}>
+          <Text style={{ fontSize: 30, fontWeight: "800", color: colors.text, letterSpacing: -1.5 }}>
             {fmt(log.totals?.calories ?? 0)}
             <Text style={{ fontSize: 14, fontWeight: "400", color: "#bbb" }}> cal</Text>
           </Text>
@@ -954,20 +962,21 @@ function ResultSheet({ visible, log, onClose }) {
   );
 }
 
-const rf = StyleSheet.create({
+const makeRf = (c) => StyleSheet.create({
   badge:      { backgroundColor: "rgba(34,197,94,0.1)", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 6 },
   badgeText:  { fontSize: 12, fontWeight: "700", color: "#22c55e" },
-  macroRow:   { flexDirection: "row", justifyContent: "space-around", backgroundColor: "#f4f2ed", borderRadius: 18, paddingVertical: 18, marginBottom: 20 },
-  macroLabel: { fontSize: 10, fontWeight: "700", color: "#bbb", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 3 },
-  foodRow:    { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e8e5de", padding: 12, marginBottom: 7, gap: 10 },
-  foodName:   { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  foodPortion:{ fontSize: 11, color: "#bbb", marginTop: 2 },
-  foodCal:    { fontSize: 14, fontWeight: "800", color: "#1a1a1a" },
-  foodCalUnit:{ fontSize: 10, color: "#bbb" },
+  macroRow:   { flexDirection: "row", justifyContent: "space-around", backgroundColor: c.cardAlt, borderRadius: 18, paddingVertical: 18, marginBottom: 20 },
+  macroLabel: { fontSize: 10, fontWeight: "700", color: c.textFaint, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 3 },
+  foodRow:    { flexDirection: "row", alignItems: "center", backgroundColor: c.card, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 12, marginBottom: 7, gap: 10 },
+  foodName:   { fontSize: 14, fontWeight: "700", color: c.text },
+  foodPortion:{ fontSize: 11, color: c.textFaint, marginTop: 2 },
+  foodCal:    { fontSize: 14, fontWeight: "800", color: c.text },
+  foodCalUnit:{ fontSize: 10, color: c.textFaint },
   estBadge:   { backgroundColor: "rgba(245,158,11,0.1)", borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 },
   estText:    { fontSize: 9, fontWeight: "700", color: "#f59e0b" },
-  notes:      { fontSize: 12, color: "#aaa", lineHeight: 20, marginTop: 12, fontStyle: "italic" },
+  notes:      { fontSize: 12, color: c.textMuted, lineHeight: 20, marginTop: 12, fontStyle: "italic" },
 });
+let rf = makeRf(LIGHT);
 
 // ─── Meal Card ────────────────────────────────────────────────────────────────
 function MealCard({ log, index, onDelete, onEdit, token }) {
@@ -1106,35 +1115,36 @@ function MealCard({ log, index, onDelete, onEdit, token }) {
   );
 }
 
-const mc = StyleSheet.create({
-  card:              { backgroundColor: "#fff", borderRadius: 18, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  foodIconWrap:      { width: 54, height: 54, borderRadius: 15, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
+const makeMc = (c) => StyleSheet.create({
+  card:              { backgroundColor: c.card, borderRadius: 18, borderWidth: 1, borderColor: c.border, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  foodIconWrap:      { width: 54, height: 54, borderRadius: 15, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   foodPhoto:         { width: 54, height: 54 },
-  foods:             { fontSize: 15, fontWeight: "700", color: "#0e0e0e", letterSpacing: -0.2 },
-  typeTag:           { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
-  typeTagText:       { fontSize: 11, fontWeight: "600", color: "#888" },
+  foods:             { fontSize: 15, fontWeight: "700", color: c.text, letterSpacing: -0.2 },
+  typeTag:           { backgroundColor: c.cardAlt, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
+  typeTagText:       { fontSize: 11, fontWeight: "600", color: c.textMuted },
   latestBadge:       { backgroundColor: "rgba(232,56,13,0.1)", borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3 },
   latestText:        { fontSize: 9, fontWeight: "700", color: "#e8380d" },
-  cal:               { fontSize: 15, fontWeight: "800", color: "#0e0e0e" },
-  calUnit:           { fontSize: 11, fontWeight: "400", color: "#bbb" },
-  prot:              { fontSize: 12, color: "#888", fontWeight: "700" },
-  dotBtn:            { width: 30, height: 30, borderRadius: 8, backgroundColor: "#f4f2ed", alignItems: "center", justifyContent: "center", gap: 3 },
+  cal:               { fontSize: 15, fontWeight: "800", color: c.text },
+  calUnit:           { fontSize: 11, fontWeight: "400", color: c.textFaint },
+  prot:              { fontSize: 12, color: c.textMuted, fontWeight: "700" },
+  dotBtn:            { width: 30, height: 30, borderRadius: 8, backgroundColor: c.cardAlt, alignItems: "center", justifyContent: "center", gap: 3 },
   dot:               { width: 3.5, height: 3.5, borderRadius: 99, backgroundColor: "#888" },
   menuOverlay:       { flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" },
-  menuPopup:         { backgroundColor: "#fff", borderRadius: 16, width: 220, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 16, overflow: "hidden" },
+  menuPopup:         { backgroundColor: c.card, borderRadius: 16, width: 220, shadowColor: "#000", shadowOpacity: 0.16, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 16, overflow: "hidden" },
   menuItem:          { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 16, paddingHorizontal: 18 },
-  menuDivider:       { height: 1, backgroundColor: "#f0ede6", marginHorizontal: 12 },
-  menuItemIcon:      { fontSize: 16, color: "#1a1a1a", width: 20, textAlign: "center" },
-  menuItemText:      { fontSize: 14, fontWeight: "600", color: "#1a1a1a" },
+  menuDivider:       { height: 1, backgroundColor: c.cardAlt, marginHorizontal: 12 },
+  menuItemIcon:      { fontSize: 16, color: c.text, width: 20, textAlign: "center" },
+  menuItemText:      { fontSize: 14, fontWeight: "600", color: c.text },
   confirmBlock:      { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 16, gap: 4 },
-  confirmTitle:      { fontSize: 14, fontWeight: "700", color: "#1a1a1a" },
-  confirmSub:        { fontSize: 12, color: "#aaa", marginBottom: 12 },
+  confirmTitle:      { fontSize: 14, fontWeight: "700", color: c.text },
+  confirmSub:        { fontSize: 12, color: c.textMuted, marginBottom: 12 },
   confirmRow:        { flexDirection: "row", gap: 8 },
-  confirmCancelBtn:  { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: "#f4f2ed", alignItems: "center" },
-  confirmCancelText: { fontSize: 13, fontWeight: "600", color: "#555" },
+  confirmCancelBtn:  { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: c.cardAlt, alignItems: "center" },
+  confirmCancelText: { fontSize: 13, fontWeight: "600", color: c.textMuted },
   confirmDeleteBtn:  { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: "rgba(244,63,94,0.1)", alignItems: "center" },
   confirmDeleteText: { fontSize: 13, fontWeight: "700", color: "#f43f5e" },
 });
+let mc = makeMc(LIGHT);
 
 // ─── Week Strip ───────────────────────────────────────────────────────────────
 const DAY_ABBR  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -1202,30 +1212,35 @@ function MacroWeekStrip({ selDate, onSelect, weekCalories = {}, calorieGoal = 20
   );
 }
 
-const ws = StyleSheet.create({
+const makeWs = (c) => StyleSheet.create({
   container: {
     flexDirection: "row",
     marginBottom: 4,
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     borderRadius: 28,
     paddingVertical: 12,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
+    borderWidth: 1, borderColor: c.border,
     shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 }, elevation: 3,
   },
   col:        { flex: 1, alignItems: "center", gap: 5, paddingVertical: 2 },
-  abbr:       { fontSize: 11, fontWeight: "600", color: "rgba(0,0,0,0.3)", letterSpacing: 0.2 },
+  abbr:       { fontSize: 11, fontWeight: "600", color: c.textFaint, letterSpacing: 0.2 },
   abbrSel:    { color: "#e8380d", fontWeight: "800" },
   circleWrap: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   dayBubble:  { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   dayBubbleSel: { backgroundColor: "#e8380d" },
-  num:        { fontSize: 13, fontWeight: "700", color: "#0e0e0e" },
+  num:        { fontSize: 13, fontWeight: "700", color: c.text },
   numSel:     { color: "#fff" },
   dot:        { position: "absolute", bottom: -1, width: 5, height: 5, borderRadius: 3, backgroundColor: "#e8380d" },
 });
+let ws = makeWs(LIGHT);
 
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
+  const { colors } = useTheme();
+  sh = makeSh(colors); arc = makeArc(colors); gs = makeGs(colors); g = makeG(colors);
+  lf = makeLf(colors); rf = makeRf(colors); mc = makeMc(colors); ws = makeWs(colors);
+  n = makeN(colors); ml = makeMl(colors);
   const { token, userName } = useAuth();
   const { isPremium, loading: subLoading, refreshSubscriptionStatus } = useSubscription();
 
@@ -1382,7 +1397,7 @@ export default function NutritionScreen() {
         <View style={n.avatar}><AvatarButton /></View>
       </View>
 
-      <ScrollView style={{ flex: 1, backgroundColor: "#ffffff" }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 18, paddingBottom: 140, gap: 12 }} showsVerticalScrollIndicator={false}>
 
         {/* Week strip — always visible */}
         <MacroWeekStrip selDate={selDate} onSelect={setSelDate} weekCalories={weekCalories} calorieGoal={displayGoals.calories} />
@@ -1514,40 +1529,42 @@ export default function NutritionScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────. View style={mc.foodIconWrap
-const n = StyleSheet.create({
-  screen:           { flex: 1, backgroundColor: "#ffffff" },
-  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.06)", backgroundColor: "transparent" },
-  greeting:         { fontSize: 12, color: "#888", fontWeight: "500", marginBottom: 2 },
-  title:            { fontSize: 26, fontWeight: "800", color: "#0e0e0e", letterSpacing: -1 },
+const makeN = (c) => StyleSheet.create({
+  screen:           { flex: 1, backgroundColor: c.bg },
+  header:           { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: "transparent" },
+  greeting:         { fontSize: 12, color: c.textMuted, fontWeight: "500", marginBottom: 2 },
+  title:            { fontSize: 26, fontWeight: "800", color: c.text, letterSpacing: -1 },
   avatar:           { flexDirection: "row", alignItems: "center", gap: 10 },
   dateNav:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  dateLabel:        { fontSize: 15, fontWeight: "700", color: "#0e0e0e" },
-  heroCard:         { backgroundColor: "#ffffff", borderRadius: 28, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", padding: 18, shadowColor: "#000", shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  editGoalsBtn:     { backgroundColor: "#f4f2ed", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)" },
-  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: "#888" },
+  dateLabel:        { fontSize: 15, fontWeight: "700", color: c.text },
+  heroCard:         { backgroundColor: c.card, borderRadius: 28, borderWidth: 1, borderColor: c.border, padding: 18, shadowColor: "#000", shadowOpacity: 0.07, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  editGoalsBtn:     { backgroundColor: c.cardAlt, borderRadius: 99, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: c.border },
+  editGoalsBtnText: { fontSize: 11, fontWeight: "700", color: c.textMuted },
   heroBody:         { flexDirection: "row", alignItems: "center", gap: 12 },
-  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, backgroundColor: "#ffffff", gap: 10 },
+  stickyBar:        { flexDirection: "row", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 10, backgroundColor: c.card, gap: 10 },
   logBtn:           { flex: 1, backgroundColor: "#e8380d", borderRadius: 22, paddingVertical: 16, alignItems: "center", justifyContent: "center", shadowColor: "#e8380d", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   logBtnText:       { fontSize: 15, fontWeight: "700", color: "#fff", letterSpacing: 0.1 },
-  manualBtn:        { flex: 1, borderRadius: 22, paddingVertical: 16, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(0,0,0,0.08)", backgroundColor: "#fff" },
-  manualBtnText:    { fontSize: 15, fontWeight: "600", color: "#0e0e0e", letterSpacing: 0.1 },
-  sectionLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: "#aaa" },
-  sectionCount:     { fontSize: 11, fontWeight: "600", color: "#ccc" },
-  emptyCard:        { backgroundColor: "#fff", borderRadius: 28, borderWidth: 1, borderColor: "rgba(0,0,0,0.06)", padding: 36, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } },
-  emptyTitle:       { fontSize: 16, fontWeight: "700", color: "#0e0e0e", marginBottom: 6, textAlign: "center" },
-  emptyDesc:        { fontSize: 13, color: "#aaa", lineHeight: 20, textAlign: "center" },
+  manualBtn:        { flex: 1, borderRadius: 22, paddingVertical: 16, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card },
+  manualBtnText:    { fontSize: 15, fontWeight: "600", color: c.text, letterSpacing: 0.1 },
+  sectionLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: c.textMuted },
+  sectionCount:     { fontSize: 11, fontWeight: "600", color: c.textFaint },
+  emptyCard:        { backgroundColor: c.card, borderRadius: 28, borderWidth: 1, borderColor: c.border, padding: 36, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 3 } },
+  emptyTitle:       { fontSize: 16, fontWeight: "700", color: c.text, marginBottom: 6, textAlign: "center" },
+  emptyDesc:        { fontSize: 13, color: c.textMuted, lineHeight: 20, textAlign: "center" },
 });
+let n = makeN(LIGHT);
 
-const ml = StyleSheet.create({
-  fieldLabel:   { fontSize: 12, fontWeight: "700", color: "#888", letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
-  input:        { backgroundColor: "#f4f2ed", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 15, color: "#1a1a1a", borderWidth: 1, borderColor: "#e8e5de" },
+const makeMl = (c) => StyleSheet.create({
+  fieldLabel:   { fontSize: 12, fontWeight: "700", color: c.textMuted, letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
+  input:        { backgroundColor: c.cardAlt, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 15, color: c.text, borderWidth: 1, borderColor: c.border },
   mealRow:      { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: "#e8e5de", backgroundColor: "#fff", alignItems: "center" },
-  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: "#1a1a1a" },
-  mealBtnText:  { fontSize: 12, fontWeight: "600", color: "#888" },
+  mealBtn:      { paddingVertical: 9, paddingHorizontal: 14, borderRadius: 99, borderWidth: 1.5, borderColor: c.border, backgroundColor: c.card, alignItems: "center" },
+  mealBtnActive:{ backgroundColor: "#1a1a1a", borderColor: c.text },
+  mealBtnText:  { fontSize: 12, fontWeight: "600", color: c.textMuted },
   macroGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   macroField:   { width: "47%", gap: 6 },
-  macroLabel:   { fontSize: 11, fontWeight: "600", color: "#999" },
-  macroInput:   { backgroundColor: "#f4f2ed", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: "#1a1a1a", borderWidth: 1, borderColor: "#e8e5de" },
+  macroLabel:   { fontSize: 11, fontWeight: "600", color: c.textMuted },
+  macroInput:   { backgroundColor: c.cardAlt, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: c.text, borderWidth: 1, borderColor: c.border },
   errorText:    { fontSize: 13, color: "#f43f5e", fontWeight: "500", marginTop: 12, textAlign: "center" },
 });
+let ml = makeMl(LIGHT);

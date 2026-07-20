@@ -6,8 +6,9 @@
  * dark hair with a small cowlick, rosy cheeks, animated blink + float + smile.
  */
 
-import React, { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Image, StyleSheet, TouchableOpacity } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, {
   Circle,
   ClipPath,
@@ -27,6 +28,23 @@ const AnimatedG       = Animated.createAnimatedComponent(G);
 
 export default function AvatarButton({ size = 44, onPress: onPressProp }: { size?: number; onPress?: () => void }) {
   const router = useRouter();
+
+  const [photo, setPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem("user");
+        if (!raw) return;
+        const user = JSON.parse(raw);
+        if (active && user?.photo) setPhoto(user.photo);
+      } catch {}
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const pressAnim  = useRef(new Animated.Value(1)).current;
   const blinkAnim  = useRef(new Animated.Value(1)).current;
@@ -77,6 +95,25 @@ export default function AvatarButton({ size = 44, onPress: onPressProp }: { size
   const floatY     = floatAnim.interpolate({ inputRange: [-5,0], outputRange: [-5, 0] });
 
   const SIZE = size;
+
+  // Google-authenticated users: show their real profile photo
+  if (photo) {
+    return (
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.85} style={st.touch}>
+        <Animated.View
+          style={[
+            st.container,
+            { width: SIZE, height: SIZE, borderRadius: SIZE / 2, transform: [{ scale: pressAnim }] },
+          ]}
+        >
+          <Image
+            source={{ uri: photo }}
+            style={{ width: SIZE, height: SIZE, borderRadius: SIZE / 2 }}
+          />
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={1} style={st.touch}>

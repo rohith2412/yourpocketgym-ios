@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { getToken } from "../src/auth/storage";
+import { useTheme } from "../src/theme/ThemeContext";
+import { useMemo } from "react";
 
 const TERMS_URL   = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -27,6 +29,8 @@ const PHRASES = [
 
 export default function Index() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [destination, setDestination] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -108,7 +112,7 @@ export default function Index() {
 
   return (
     <Animated.View style={[s.root, { opacity: fadeAnim }]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={colors.statusBar} />
 
 
 
@@ -147,10 +151,10 @@ export default function Index() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (c) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: c.bg,
     alignItems: "center",
     justifyContent: "space-between",
     paddingTop: 100,
@@ -170,7 +174,7 @@ const s = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#ffffff",
+    color: c.text,
     letterSpacing: -1,
   },
 
@@ -187,13 +191,13 @@ const s = StyleSheet.create({
   phraseText: {
     fontSize: 34,
     fontWeight: "600",
-    color: "#0e0e0e",
+    color: c.text,
     letterSpacing: -0.5,
   },
   cursor: {
     fontSize: 34,
     fontWeight: "300",
-    color: "rgba(0,0,0,0.25)",
+    color: c.textFaint,
     marginLeft: 2,
   },
 
@@ -204,7 +208,7 @@ const s = StyleSheet.create({
   },
   primaryBtn: {
     width: "100%",
-    backgroundColor: "#0e0e0e",
+    backgroundColor: c.text,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
@@ -212,31 +216,31 @@ const s = StyleSheet.create({
   primaryBtnText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#ffffff",
+    color: c.bg,
   },
   secondaryBtn: {
     width: "100%",
-    backgroundColor: "#f4f4f4",
+    backgroundColor: c.card,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderColor: c.border,
   },
   secondaryBtnText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#0e0e0e",
+    color: c.text,
   },
   terms: {
     fontSize: 12,
-    color: "rgba(0,0,0,0.25)",
+    color: c.textFaint,
     textAlign: "center",
     lineHeight: 18,
     marginTop: 4,
   },
   termsLink: {
-    color: "rgba(0,0,0,0.45)",
+    color: c.textMuted,
     textDecorationLine: "underline",
   },
 });
