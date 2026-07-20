@@ -1,18 +1,18 @@
 import { Stack } from "expo-router";
-import SubscriptionInit from "../components/SubscriptionInit";
 import { View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ThemeProvider, useTheme } from "../src/theme/ThemeContext";
+import SubscriptionInit from "../components/SubscriptionInit";
+import { AppProviders } from "../src/providers/AppProviders";
+import { useTheme } from "../src/theme/ThemeProvider";
 
 function ThemedStack() {
-  const { colors } = useTheme();
+  const { theme } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <Stack
         screenOptions={{
           headerShown: false,
           animation: "fade",
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: theme.colors.bg },
         }}
       >
         <Stack.Screen name="index" />
@@ -31,12 +31,10 @@ function ThemedStack() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <SubscriptionInit>
-          <ThemedStack />
-        </SubscriptionInit>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <AppProviders>
+      <SubscriptionInit>
+        <ThemedStack />
+      </SubscriptionInit>
+    </AppProviders>
   );
 }

@@ -45,9 +45,8 @@ export default function Index() {
     (async () => {
       const token = await getToken();
       if (token) { setDestination("/(tabs)/tracking"); setChecking(false); return; }
-      const pending = await AsyncStorage.getItem("@pending_intro");
-      if (pending) { setDestination("/register"); setChecking(false); return; }
-      setDestination("/startersIntro");
+      // v2: Google-first flow — signed-out users go straight to login.
+      setDestination("/login");
       setChecking(false);
     })();
 
