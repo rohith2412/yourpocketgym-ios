@@ -38,8 +38,8 @@ export function LoginScreen() {
         {/* Brand */}
         <View style={{ alignItems: "center", gap: theme.spacing.md }}>
           <Image
-            source={require("../../../assets/images/logo.png")}
-            style={{ width: 64, height: 64 }}
+            source={require("../../../assets/images/logo-v2.png")}
+            style={{ width: 72, height: 72, tintColor: theme.colors.text }}
             resizeMode="contain"
           />
           <Text variant="title" center>
