@@ -18,11 +18,11 @@ export type Spacing = keyof typeof spacing;
 
 // ── Radius scale ──────────────────────────────────────────────────────────────
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  "2xl": 28,
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 14,
+  "2xl": 18,
   full: 999,
 } as const;
 export type Radius = keyof typeof radius;
@@ -68,40 +68,44 @@ export type ColorTokens = {
   inverseText: string;
 };
 
+// Brand accent (PocketGym orange). shadcn itself is monochrome, but we keep
+// one brand accent for highlights; the primary action button uses inverse.
 const BRAND = "#e8380d";
 
+// shadcn "zinc" — light
 export const lightColors: ColorTokens = {
-  bg: "#fafaf8",
+  bg: "#ffffff",
   surface: "#ffffff",
-  surfaceAlt: "#f2f2f5",
-  text: "#0e0e0e",
-  textMuted: "#71717a",
-  textFaint: "#a1a1aa",
-  border: "#e4e4e7",
+  surfaceAlt: "#f4f4f5", // zinc-100 (muted)
+  text: "#09090b", // zinc-950
+  textMuted: "#71717a", // zinc-500
+  textFaint: "#a1a1aa", // zinc-400
+  border: "#e4e4e7", // zinc-200
   primary: BRAND,
   primaryText: "#ffffff",
   success: "#16a34a",
   danger: "#ef4444",
   overlay: "rgba(0,0,0,0.45)",
-  inverseBg: "#0e0e0e",
+  inverseBg: "#18181b", // zinc-900 (shadcn primary)
   inverseText: "#fafafa",
 };
 
+// shadcn "zinc" — dark
 export const darkColors: ColorTokens = {
-  bg: "#0b0b0c",
-  surface: "#141416",
-  surfaceAlt: "#1c1c1f",
+  bg: "#09090b", // zinc-950
+  surface: "#18181b", // zinc-900
+  surfaceAlt: "#27272a", // zinc-800
   text: "#fafafa",
-  textMuted: "#a1a1aa",
-  textFaint: "#71717a",
-  border: "#27272a",
+  textMuted: "#a1a1aa", // zinc-400
+  textFaint: "#71717a", // zinc-500
+  border: "#27272a", // zinc-800
   primary: "#f7663f",
   primaryText: "#ffffff",
   success: "#22c55e",
   danger: "#f87171",
   overlay: "rgba(0,0,0,0.6)",
   inverseBg: "#fafafa",
-  inverseText: "#0e0e0e",
+  inverseText: "#18181b",
 };
 
 // ── Shadows (elevation presets) ──────────────────────────────────────────────
