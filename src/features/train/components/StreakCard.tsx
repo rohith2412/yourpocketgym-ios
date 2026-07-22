@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Card, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { getWeekActivity } from "../data";
@@ -23,47 +24,63 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
     );
 
   return (
-    <Card>
-      {/* Summary line */}
-      <View style={{ flexDirection: "row", alignItems: "baseline", gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
-        <Text style={{ fontSize: 28, fontWeight: theme.fontWeight.heavy, color: c.text, letterSpacing: -1 }}>
+    <Card padding="md">
+      {/* Header: streak + volume, tight */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "baseline",
+          gap: theme.spacing.xs,
+          marginBottom: theme.spacing.sm,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: theme.fontWeight.heavy,
+            color: c.text,
+            letterSpacing: -0.5,
+          }}
+        >
           {streak}
         </Text>
         <Text variant="caption" color="textMuted">
           / 7 sessions
         </Text>
         {weekVolume > 0 ? (
-          <Text variant="caption" color="textMuted">
-            · {weekVolume.toLocaleString()} lbs
+          <Text variant="caption" color="textFaint">
+            {" · "}
+            {weekVolume.toLocaleString()} lbs
           </Text>
         ) : null}
       </View>
 
-      {/* Week dots */}
-      <View style={{ flexDirection: "row", gap: 6 }}>
+      {/* Week dots — smaller */}
+      <View style={{ flexDirection: "row", gap: 4 }}>
         {week.map((d, i) => (
-          <View key={i} style={{ flex: 1, alignItems: "center", gap: 6 }}>
+          <View key={i} style={{ flex: 1, alignItems: "center", gap: 4 }}>
             <View
               style={{
                 width: "100%",
                 aspectRatio: 1,
-                borderRadius: theme.radius.md,
+                borderRadius: 6,
                 backgroundColor: d.active ? c.text : c.surfaceAlt,
-                borderWidth: d.today && !d.active ? 2 : 1,
-                borderColor: d.today ? c.text : c.border,
+                borderWidth: d.today && !d.active ? 1.5 : 0,
+                borderColor: c.text,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               {d.active ? (
-                <Text style={{ fontSize: 13, fontWeight: "800", color: c.inverseText }}>✓</Text>
+                <Ionicons name="checkmark" size={11} color={c.inverseText} />
               ) : null}
             </View>
             <Text
-              variant="caption"
-              color={d.today ? "text" : "textFaint"}
-              weight="semibold"
-              style={{ fontSize: 10 }}
+              style={{
+                fontSize: 9,
+                fontWeight: d.today ? "700" : "500",
+                color: d.today ? c.text : c.textFaint,
+              }}
             >
               {d.label}
             </Text>

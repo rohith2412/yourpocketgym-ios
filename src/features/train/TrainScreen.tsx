@@ -10,6 +10,7 @@ import { useRoutines, useTodayPlan } from "../routines/hooks";
 import { WEEKDAYS, type DayPlan } from "../routines/storage";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
+import { YearHeatmap } from "./components/YearHeatmap";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
 import { LogSheet } from "./components/LogSheet";
 
@@ -70,6 +71,9 @@ export function TrainScreen() {
 
           {/* Streak card */}
           <StreakCard logs={logs} />
+
+          {/* Yearly activity heatmap */}
+          <YearHeatmap logs={logs} />
 
 
           {/* Empty state or weekly plan preview */}
