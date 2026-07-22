@@ -10,7 +10,6 @@ import { useTodayRoutine, useRoutines } from "../routines/hooks";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
-import { HistoryList } from "./components/HistoryList";
 import { LogSheet } from "./components/LogSheet";
 
 function getGreeting() {
@@ -32,7 +31,7 @@ export function TrainScreen() {
     loadUser().then((u) => u?.name && setFirstName(u.name.split(" ")[0] ?? ""));
   }, []);
 
-  const { data: logs = [], isLoading } = useWorkoutLogs();
+  const { data: logs = [] } = useWorkoutLogs();
   const muscleStats = buildMuscleStats(logs);
   const { routine, isRest } = useTodayRoutine();
   const { data: routines = [] } = useRoutines();
@@ -143,15 +142,6 @@ export function TrainScreen() {
             </View>
           )}
 
-          {/* History (delete lives inside each log row) */}
-          {logs.length > 0 ? (
-            <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.md }}>
-              <Text variant="label" color="textMuted">
-                RECENT WORKOUTS
-              </Text>
-              <HistoryList logs={logs} loading={isLoading} />
-            </View>
-          ) : null}
         </ScrollView>
       </Screen>
 

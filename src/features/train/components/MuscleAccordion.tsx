@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Card, Text, Badge, Separator } from "../../../ui";
+import { Card, Text, Badge, Separator, Button } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
-import type { WorkoutLog } from "../api";
-import { maxWeight } from "../data";
+import { useDeleteWorkout, type WorkoutLog } from "../api";
+import { maxWeight, totalVolSets } from "../data";
 
 type Stat = {
   mg: string;
@@ -68,19 +68,24 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 
 export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLog[] }) {
   const { theme } = useTheme();
+  const del = useDeleteWorkout();
   const [open, setOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  // Collect all exercises for this MG across logs, deduped by name.
-  const seen = new Set<string>();
-  const exercises: WorkoutLog["exercises"] = [];
-  logs.forEach((log) => {
-    log.exercises.forEach((ex) => {
-      if ((ex.muscleGroup || "").trim() === stat.mg && !seen.has(ex.name)) {
-        seen.add(ex.name);
-        exercises.push(ex);
-      }
-    });
-  });
+  // Every log that touched this muscle group — newest first.
+  const relevantLogs = logs.filter((log) =>
+    log.exercises.some((ex) => (ex.muscleGroup || "").trim() === stat.mg),
+  );
+
+  const removeLog = (id: string) => {
+    if (confirmId !== id) {
+      setConfirmId(id);
+      setTimeout(() => setConfirmId((v) => (v === id ? null : v)), 3000);
+      return;
+    }
+    setConfirmId(null);
+    del.mutate(id);
+  };
 
   return (
     <Card padding="lg">
@@ -111,33 +116,66 @@ export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLo
       </Pressable>
 
       {open ? (
-        <View style={{ marginTop: theme.spacing.md, gap: theme.spacing.sm }}>
+        <View style={{ marginTop: theme.spacing.md, gap: theme.spacing.md }}>
           <Separator />
-          {exercises.map((ex, i) => (
-            <View key={i} style={{ paddingTop: theme.spacing.sm, gap: 4 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
-                <Text variant="label" weight="bold">
-                  {ex.name}
-                </Text>
-                <Text variant="caption" color="textMuted">
-                  {maxWeight(ex.sets)} lbs max
-                </Text>
-              </View>
-              {ex.sets.map((s, j) => (
-                <View key={j} style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-                  <Text variant="caption" color="textFaint" weight="bold" style={{ width: 18, textAlign: "center" }}>
-                    {j + 1}
-                  </Text>
-                  <Text variant="caption" color="textMuted">
-                    {s.reps} × {s.weight} lbs
-                  </Text>
-                  <Text variant="caption" color="textFaint" style={{ marginLeft: "auto" }}>
-                    {(s.reps * s.weight).toLocaleString()} vol
-                  </Text>
+          {relevantLogs.map((log) => {
+            const isPending = confirmId === log._id;
+            const date = new Date(log.date);
+            const mgExercises = log.exercises.filter(
+              (ex) => (ex.muscleGroup || "").trim() === stat.mg,
+            );
+            return (
+              <View key={log._id} style={{ gap: theme.spacing.sm }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="label" weight="bold">
+                      {date.toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                  <Button
+                    title={isPending ? "Confirm?" : "Delete"}
+                    variant={isPending ? "primary" : "ghost"}
+                    size="md"
+                    fullWidth={false}
+                    haptic="light"
+                    onPress={() => removeLog(log._id)}
+                  />
                 </View>
-              ))}
-            </View>
-          ))}
+
+                {mgExercises.map((ex, ei) => (
+                  <View key={ei} style={{ gap: 4, paddingLeft: theme.spacing.sm }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <Text variant="label" weight="bold">
+                        {ex.name}
+                      </Text>
+                      <Text variant="caption" color="textMuted">
+                        {maxWeight(ex.sets)} lbs max · {totalVolSets(ex.sets).toLocaleString()} vol
+                      </Text>
+                    </View>
+                    {ex.sets.map((s, j) => (
+                      <View key={j} style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+                        <Text variant="caption" color="textFaint" weight="bold" style={{ width: 18, textAlign: "center" }}>
+                          {j + 1}
+                        </Text>
+                        <Text variant="caption" color="textMuted">
+                          {s.reps} × {s.weight} lbs
+                        </Text>
+                        <Text variant="caption" color="textFaint" style={{ marginLeft: "auto" }}>
+                          {(s.reps * s.weight).toLocaleString()} vol
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+
+                <Separator />
+              </View>
+            );
+          })}
         </View>
       ) : null}
     </Card>
