@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Pressable, TextInput, Alert, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BottomSheet, Text, Button, Card, Badge, Separator } from "../../../ui";
+import { BottomSheet, Text, Button, Card } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { EXERCISE_LIBRARY, MUSCLE_GROUPS, type MuscleGroup } from "../data";
 import { useSaveWorkout, useWorkoutLogs, lastLiftFor, type TrackedExercise } from "../api";
@@ -9,7 +9,7 @@ import type { RoutineExercise } from "../../routines/storage";
 
 type DraftSet = { reps: string; weight: string };
 type DraftExercise = { name: string; mg: MuscleGroup; sets: DraftSet[] };
-type Step = "muscles" | "exercises" | "sets";
+type Step = "muscles" | "exercises" | "log";
 
 export function LogSheet({
   visible,
@@ -31,7 +31,6 @@ export function LogSheet({
   const [step, setStep] = useState<Step>("muscles");
   const [activeMg, setActiveMg] = useState<MuscleGroup | null>(null);
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
-  const [activeEx, setActiveEx] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
   // Seed from a routine when opened. Blank sets ready to fill with real reps/weight.
@@ -45,20 +44,12 @@ export function LogSheet({
         })),
       );
       setStep("muscles");
-      setActiveEx(null);
     }
   }, [visible, initialExercises]);
-
-  // Last lift info for the currently-active exercise (progressive overload hint).
-  const lastLift = useMemo(() => {
-    if (activeEx === null) return null;
-    return lastLiftFor(logs, exercises[activeEx]?.name ?? "");
-  }, [logs, exercises, activeEx]);
 
   const reset = () => {
     setStep("muscles");
     setActiveMg(null);
-    setActiveEx(null);
     setExercises([]);
     setNotes("");
   };
@@ -69,7 +60,6 @@ export function LogSheet({
   };
 
   const stepIndex = step === "muscles" ? 0 : step === "exercises" ? 1 : 2;
-  const currentEx = activeEx !== null ? exercises[activeEx] : null;
   const alreadyAdded = new Set(exercises.map((e) => e.name));
 
   const pickMuscle = (mg: MuscleGroup) => {
@@ -78,32 +68,31 @@ export function LogSheet({
   };
 
   const pickExercise = (name: string) => {
-    const existing = exercises.findIndex((e) => e.name === name);
-    if (existing >= 0) {
-      setActiveEx(existing);
-    } else {
-      const next = [...exercises, { name, mg: activeMg!, sets: [{ reps: "", weight: "" }] }];
-      setExercises(next);
-      setActiveEx(next.length - 1);
+    const alreadyThere = exercises.some((e) => e.name === name);
+    if (!alreadyThere) {
+      setExercises((prev) => [
+        ...prev,
+        { name, mg: activeMg!, sets: [{ reps: "", weight: "" }] },
+      ]);
     }
-    setStep("sets");
+    setStep("muscles");
   };
 
-  const updateSet = (si: number, field: "reps" | "weight", val: string) =>
+  const updateSetAt = (ei: number, si: number, field: "reps" | "weight", val: string) =>
     setExercises((prev) =>
       prev.map((ex, i) =>
-        i !== activeEx ? ex : { ...ex, sets: ex.sets.map((s, j) => (j === si ? { ...s, [field]: val } : s)) },
+        i !== ei ? ex : { ...ex, sets: ex.sets.map((s, j) => (j === si ? { ...s, [field]: val } : s)) },
       ),
     );
 
-  const addSet = () =>
+  const addSetAt = (ei: number) =>
     setExercises((prev) =>
-      prev.map((ex, i) => (i !== activeEx ? ex : { ...ex, sets: [...ex.sets, { reps: "", weight: "" }] })),
+      prev.map((ex, i) => (i !== ei ? ex : { ...ex, sets: [...ex.sets, { reps: "", weight: "" }] })),
     );
 
-  const removeSet = (si: number) =>
+  const removeSetAt = (ei: number, si: number) =>
     setExercises((prev) =>
-      prev.map((ex, i) => (i !== activeEx ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== si) })),
+      prev.map((ex, i) => (i !== ei ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== si) })),
     );
 
   const removeExercise = (ei: number) => setExercises((prev) => prev.filter((_, i) => i !== ei));
@@ -137,7 +126,7 @@ export function LogSheet({
   // ── Step indicator ───────────────────────────────────────────────────────────
   const StepIndicator = () => (
     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: theme.spacing.lg }}>
-      {["Muscle", "Exercise", "Sets"].map((label, i) => (
+      {["Muscle", "Exercise", "Log"].map((label, i) => (
         <View key={label} style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
           <View
             style={{
@@ -250,17 +239,6 @@ export function LogSheet({
                           {ex.name}
                         </Text>
                       </View>
-                      <Badge label={`${ex.sets.length}×`} variant="muted" />
-                      <Pressable
-                        onPress={() => {
-                          setActiveMg(ex.mg);
-                          setActiveEx(ei);
-                          setStep("sets");
-                        }}
-                        hitSlop={8}
-                      >
-                        <Ionicons name="create-outline" size={20} color={c.textMuted} />
-                      </Pressable>
                       <Pressable onPress={() => removeExercise(ei)} hitSlop={8}>
                         <Ionicons name="close" size={20} color={c.danger} />
                       </Pressable>
@@ -332,11 +310,11 @@ export function LogSheet({
                     <Text variant="body" weight={added ? "bold" : "regular"} style={{ flex: 1 }}>
                       {name}
                     </Text>
-                    {added ? (
-                      <Badge label="Edit" variant="default" />
-                    ) : (
-                      <Ionicons name="add" size={20} color={c.textMuted} />
-                    )}
+                    <Ionicons
+                      name={added ? "checkmark" : "add"}
+                      size={20}
+                      color={added ? c.text : c.textMuted}
+                    />
                   </Pressable>
                 );
               })}
@@ -344,176 +322,164 @@ export function LogSheet({
           </>
         ) : null}
 
-        {/* ── STEP 3: SETS ──────────────────────────────────────────────────── */}
-        {step === "sets" && currentEx ? (
+        {/* ── STEP 3: LOG (all exercises with sets, save at bottom) ─────────── */}
+        {step === "log" ? (
           <>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, marginBottom: theme.spacing.md }}>
-              <Pressable
-                onPress={() => {
-                  setActiveEx(null);
-                  setStep("muscles");
-                }}
-                hitSlop={12}
-              >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
+              <Pressable onPress={() => setStep("muscles")} hitSlop={12}>
                 <Ionicons name="chevron-back" size={22} color={c.text} />
               </Pressable>
-              <View style={{ flex: 1 }}>
-                <Text variant="caption" color="textMuted" weight="bold">
-                  {currentEx.mg.toUpperCase()}
-                </Text>
-                <Text variant="heading" numberOfLines={1}>
-                  {currentEx.name}
-                </Text>
-              </View>
+              <Text variant="heading" style={{ flex: 1 }}>
+                Log your workout
+              </Text>
             </View>
 
-            {/* Last time hint — progressive overload */}
-            {lastLift ? (
-              <View
-                style={{
-                  backgroundColor: c.surfaceAlt,
-                  borderRadius: theme.radius.md,
-                  padding: theme.spacing.md,
-                  marginBottom: theme.spacing.md,
-                  gap: 4,
-                }}
-              >
-                <Text variant="caption" color="textMuted" weight="bold">
-                  LAST TIME
-                </Text>
-                <Text variant="body" weight="semibold">
-                  {lastLift.sets.map((s) => `${s.weight}×${s.reps}`).join("  ·  ")}
-                </Text>
-              </View>
-            ) : null}
+            {exercises.map((ex, ei) => {
+              const prev = lastLiftFor(logs, ex.name);
+              return (
+                <View key={ei} style={{ marginBottom: theme.spacing.xl }}>
+                  <Text variant="caption" color="textMuted" weight="bold">
+                    {ex.mg.toUpperCase()}
+                  </Text>
+                  <Text variant="heading" numberOfLines={1} style={{ marginBottom: theme.spacing.sm }}>
+                    {ex.name}
+                  </Text>
 
-            <View
-              style={{
-                flexDirection: "row",
-                paddingVertical: theme.spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: c.border,
-                marginBottom: theme.spacing.sm,
-              }}
-            >
-              <Text variant="caption" color="textFaint" weight="bold" style={{ width: 40 }}>
-                #
-              </Text>
-              <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
-                REPS
-              </Text>
-              <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
-                LBS
-              </Text>
-              <View style={{ width: 36 }} />
-            </View>
+                  {prev ? (
+                    <View
+                      style={{
+                        backgroundColor: c.surfaceAlt,
+                        borderRadius: theme.radius.md,
+                        padding: theme.spacing.sm,
+                        marginBottom: theme.spacing.sm,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                      }}
+                    >
+                      <Text variant="caption" color="textMuted" weight="bold">
+                        LAST
+                      </Text>
+                      <Text variant="caption" weight="semibold">
+                        {prev.sets.map((s) => `${s.weight}×${s.reps}`).join("  ·  ")}
+                      </Text>
+                    </View>
+                  ) : null}
 
-            {currentEx.sets.map((set, si) => (
-              <View
-                key={si}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: theme.spacing.sm,
-                  paddingVertical: theme.spacing.sm,
-                }}
-              >
-                <Text style={{ width: 40, textAlign: "center", fontWeight: "700", color: c.textFaint }}>
-                  {si + 1}
-                </Text>
-                <TextInput
-                  style={{
-                    flex: 1,
-                    height: 48,
-                    backgroundColor: c.surface,
-                    borderWidth: 1.5,
-                    borderColor: c.border,
-                    borderRadius: theme.radius.md,
-                    fontSize: 20,
-                    fontWeight: "700",
-                    textAlign: "center",
-                    color: c.text,
-                  }}
-                  value={set.reps}
-                  placeholder="0"
-                  placeholderTextColor={c.textFaint}
-                  keyboardType="number-pad"
-                  selectTextOnFocus
-                  onChangeText={(v) => updateSet(si, "reps", v.replace(/[^0-9]/g, ""))}
-                />
-                <TextInput
-                  style={{
-                    flex: 1,
-                    height: 48,
-                    backgroundColor: c.surface,
-                    borderWidth: 1.5,
-                    borderColor: c.border,
-                    borderRadius: theme.radius.md,
-                    fontSize: 20,
-                    fontWeight: "700",
-                    textAlign: "center",
-                    color: c.text,
-                  }}
-                  value={set.weight}
-                  placeholder="0"
-                  placeholderTextColor={c.textFaint}
-                  keyboardType="decimal-pad"
-                  selectTextOnFocus
-                  onChangeText={(v) => updateSet(si, "weight", v.replace(/[^0-9.]/g, ""))}
-                />
-                <Pressable
-                  onPress={() => removeSet(si)}
-                  disabled={currentEx.sets.length <= 1}
-                  hitSlop={8}
-                  style={{ width: 36, alignItems: "center", opacity: currentEx.sets.length <= 1 ? 0.2 : 1 }}
-                >
-                  <Ionicons name="remove-circle-outline" size={22} color={c.danger} />
-                </Pressable>
-              </View>
-            ))}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: theme.spacing.xs,
+                      borderBottomWidth: 1,
+                      borderBottomColor: c.border,
+                      marginBottom: theme.spacing.sm,
+                    }}
+                  >
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ width: 30 }}>
+                      #
+                    </Text>
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
+                      REPS
+                    </Text>
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
+                      LBS
+                    </Text>
+                    <View style={{ width: 30 }} />
+                  </View>
 
-            {currentEx.sets.length < 10 ? (
-              <Pressable
-                onPress={addSet}
-                style={{
-                  marginTop: theme.spacing.md,
-                  paddingVertical: theme.spacing.md,
-                  borderRadius: theme.radius.md,
-                  borderWidth: 1.5,
-                  borderStyle: "dashed",
-                  borderColor: c.border,
-                  alignItems: "center",
-                }}
-              >
-                <Text variant="label" weight="bold">
-                  + Add set
-                </Text>
-              </Pressable>
-            ) : null}
+                  {ex.sets.map((set, si) => (
+                    <View
+                      key={si}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <Text style={{ width: 30, textAlign: "center", fontWeight: "700", color: c.textFaint }}>
+                        {si + 1}
+                      </Text>
+                      <TextInput
+                        style={{
+                          flex: 1, height: 44,
+                          backgroundColor: c.surface,
+                          borderWidth: 1.5, borderColor: c.border, borderRadius: theme.radius.md,
+                          fontSize: 18, fontWeight: "700", textAlign: "center", color: c.text,
+                        }}
+                        value={set.reps}
+                        placeholder="0"
+                        placeholderTextColor={c.textFaint}
+                        keyboardType="number-pad"
+                        selectTextOnFocus
+                        onChangeText={(v) => updateSetAt(ei, si, "reps", v.replace(/[^0-9]/g, ""))}
+                      />
+                      <TextInput
+                        style={{
+                          flex: 1, height: 44,
+                          backgroundColor: c.surface,
+                          borderWidth: 1.5, borderColor: c.border, borderRadius: theme.radius.md,
+                          fontSize: 18, fontWeight: "700", textAlign: "center", color: c.text,
+                        }}
+                        value={set.weight}
+                        placeholder="0"
+                        placeholderTextColor={c.textFaint}
+                        keyboardType="decimal-pad"
+                        selectTextOnFocus
+                        onChangeText={(v) => updateSetAt(ei, si, "weight", v.replace(/[^0-9.]/g, ""))}
+                      />
+                      <Pressable
+                        onPress={() => removeSetAt(ei, si)}
+                        disabled={ex.sets.length <= 1}
+                        hitSlop={8}
+                        style={{ width: 30, alignItems: "center", opacity: ex.sets.length <= 1 ? 0.2 : 1 }}
+                      >
+                        <Ionicons name="remove-circle-outline" size={20} color={c.danger} />
+                      </Pressable>
+                    </View>
+                  ))}
+
+                  {ex.sets.length < 10 ? (
+                    <Pressable
+                      onPress={() => addSetAt(ei)}
+                      style={{
+                        marginTop: theme.spacing.sm,
+                        paddingVertical: theme.spacing.sm,
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1.5,
+                        borderStyle: "dashed",
+                        borderColor: c.border,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text variant="label" weight="bold">
+                        + Add set
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })}
           </>
         ) : null}
       </ScrollView>
 
       {/* Footer button */}
       <View style={{ marginTop: theme.spacing.lg }}>
-        {step === "sets" ? (
+        {step === "muscles" ? (
           <Button
-            title="Done — back to exercises"
-            variant="secondary"
+            title="Next"
+            variant="primary"
             radius="lg"
             size="lg"
-            onPress={() => {
-              setActiveEx(null);
-              setStep("muscles");
-            }}
+            glow
+            haptic="medium"
+            disabled={!exercises.length}
+            onPress={() => setStep("log")}
           />
-        ) : (
+        ) : step === "log" ? (
           <Button
-            title={
-              save.isPending
-                ? "Saving…"
-                : `Save workout${exercises.length ? ` · ${exercises.length} exercise${exercises.length !== 1 ? "s" : ""}` : ""}`
-            }
+            title={save.isPending ? "Saving…" : "Save workout"}
             variant="primary"
             radius="lg"
             size="lg"
@@ -523,7 +489,7 @@ export function LogSheet({
             disabled={!exercises.length}
             onPress={submit}
           />
-        )}
+        ) : null}
       </View>
     </BottomSheet>
   );
