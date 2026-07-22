@@ -45,10 +45,10 @@ export function Button({
   const glowStyle = glow
     ? {
         shadowColor: variant === "primary" ? c.inverseBg : c.text,
-        shadowOpacity: 0.32,
-        shadowRadius: 14,
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
         shadowOffset: { width: 0, height: 0 },
-        elevation: 8,
+        elevation: 6,
       }
     : variant === "primary"
       ? theme.shadow.sm
