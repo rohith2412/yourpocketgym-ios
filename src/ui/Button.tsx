@@ -3,12 +3,24 @@ import {
   ActivityIndicator,
   View,
   type PressableProps,
+  type GestureResponderEvent,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Text } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
 import type { Radius } from "../theme/tokens";
 
 type Variant = "primary" | "secondary" | "ghost";
+type Haptic = "light" | "medium" | "heavy" | "none";
+
+const IMPACT: Record<
+  Exclude<Haptic, "none">,
+  Haptics.ImpactFeedbackStyle
+> = {
+  light: Haptics.ImpactFeedbackStyle.Light,
+  medium: Haptics.ImpactFeedbackStyle.Medium,
+  heavy: Haptics.ImpactFeedbackStyle.Heavy,
+};
 
 type ButtonProps = Omit<PressableProps, "style"> & {
   title: string;
@@ -23,6 +35,8 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   size?: "md" | "lg";
   /** Soft glowing halo in the button's own color (sparkle effect). */
   glow?: boolean;
+  /** Tap vibration. Default: "light". Set "none" to disable. */
+  haptic?: Haptic;
 };
 
 export function Button({
@@ -35,11 +49,20 @@ export function Button({
   radius = "md",
   size = "md",
   glow = false,
+  haptic = "light",
+  onPress,
   ...rest
 }: ButtonProps) {
   const { theme } = useTheme();
   const c = theme.colors;
   const height = size === "lg" ? 58 : 50;
+
+  const handlePress = (e: GestureResponderEvent) => {
+    if (haptic !== "none") {
+      Haptics.impactAsync(IMPACT[haptic]).catch(() => {});
+    }
+    onPress?.(e);
+  };
 
   // Sparkle: a soft halo tinted the button's own colour (white on dark).
   const glowStyle = glow
@@ -66,6 +89,7 @@ export function Button({
   return (
     <Pressable
       disabled={isDisabled}
+      onPress={handlePress}
       style={({ pressed }) => [
         {
           height,

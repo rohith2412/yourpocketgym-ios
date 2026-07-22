@@ -174,6 +174,7 @@ export function WelcomeScreen() {
             radius="full"
             size="lg"
             glow
+            haptic="medium"
             onPress={() => setSheetOpen(true)}
           />
         </View>
