@@ -71,50 +71,6 @@ export function TrainScreen() {
           {/* Streak card */}
           <StreakCard logs={logs} />
 
-          {/* TODAY card — surfaces today's day plan (or Rest / prompt) */}
-          {routines.length > 0 ? (
-            <Card
-              padding="lg"
-              onPress={
-                todayPlan
-                  ? () => openLog(todayPlan)
-                  : () => router.push("/routines")
-              }
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-                <View
-                  style={{
-                    width: 52, height: 52, borderRadius: theme.radius.xl,
-                    backgroundColor: c.inverseBg, alignItems: "center", justifyContent: "center",
-                  }}
-                >
-                  <Ionicons
-                    name={todayPlan ? "barbell" : "bed-outline"}
-                    size={24}
-                    color={c.inverseText}
-                  />
-                </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text variant="caption" color="textMuted" weight="bold">
-                    {todayName.toUpperCase()} · TODAY
-                  </Text>
-                  <Text variant="body" weight="bold">
-                    {todayPlan ? todayPlan.name : "Rest day"}
-                  </Text>
-                  <Text variant="caption" color="textMuted" numberOfLines={1}>
-                    {todayPlan
-                      ? `${todayPlan.exercises.length} exercise${todayPlan.exercises.length !== 1 ? "s" : ""} · tap to start`
-                      : "Schedule training days"}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={todayPlan ? "play" : "chevron-forward"}
-                  size={18}
-                  color={c.textFaint}
-                />
-              </View>
-            </Card>
-          ) : null}
 
           {/* Empty state or weekly plan preview */}
           {routines.length === 0 ? (
