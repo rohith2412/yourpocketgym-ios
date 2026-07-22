@@ -75,13 +75,6 @@ export function TrainScreen() {
               <Text variant="label" color="textMuted">
                 YOUR ROUTINES
               </Text>
-              {routines.length > 0 ? (
-                <Pressable onPress={() => router.push("/routines")} hitSlop={8}>
-                  <Text variant="label" color="textMuted">
-                    Manage
-                  </Text>
-                </Pressable>
-              ) : null}
             </View>
 
             {routines.length === 0 ? (
@@ -101,10 +94,14 @@ export function TrainScreen() {
                 </View>
               </Card>
             ) : null}
-            {routines.length > 0
-              ? routines.map((r) => (
-                <Card key={r.id} onPress={() => openLog(r)} padding="lg">
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+            {/* Only one routine allowed — tap card body to log, pencil to edit/delete. */}
+            {routines[0] ? (
+              <Card padding="lg">
+                <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+                  <Pressable
+                    onPress={() => openLog(routines[0])}
+                    style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, flex: 1 }}
+                  >
                     <View
                       style={{
                         width: 48, height: 48, borderRadius: theme.radius.xl,
@@ -115,26 +112,27 @@ export function TrainScreen() {
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text variant="body" weight="bold">
-                        {r.name}
+                        {routines[0].name}
                       </Text>
                       <Text variant="caption" color="textMuted" numberOfLines={1}>
-                        {r.exercises.length} exercise{r.exercises.length !== 1 ? "s" : ""}
+                        {routines[0].exercises.length} exercise{routines[0].exercises.length !== 1 ? "s" : ""} · tap to start
                       </Text>
                     </View>
-                    <Ionicons name="play" size={18} color={c.textFaint} />
-                  </View>
-                </Card>
-              ))
-              : null}
-
-            {routines.length > 0 ? (
-              <Button
-                title="+ Add another routine"
-                variant="secondary"
-                radius="md"
-                haptic="light"
-                onPress={() => router.push("/routines/new")}
-              />
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      router.push({ pathname: "/routines/[id]", params: { id: routines[0].id } })
+                    }
+                    hitSlop={10}
+                    style={{
+                      width: 40, height: 40, borderRadius: theme.radius.lg,
+                      backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={18} color={c.text} />
+                  </Pressable>
+                </View>
+              </Card>
             ) : null}
           </View>
 
