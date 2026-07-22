@@ -21,6 +21,8 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   radius?: Radius;
   /** Height/emphasis. Default: "md". */
   size?: "md" | "lg";
+  /** Soft glowing halo in the button's own color (sparkle effect). */
+  glow?: boolean;
 };
 
 export function Button({
@@ -32,11 +34,25 @@ export function Button({
   left,
   radius = "md",
   size = "md",
+  glow = false,
   ...rest
 }: ButtonProps) {
   const { theme } = useTheme();
   const c = theme.colors;
   const height = size === "lg" ? 58 : 50;
+
+  // Sparkle: a soft halo tinted the button's own colour (white on dark).
+  const glowStyle = glow
+    ? {
+        shadowColor: variant === "primary" ? c.inverseBg : c.text,
+        shadowOpacity: 0.55,
+        shadowRadius: 22,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: 14,
+      }
+    : variant === "primary"
+      ? theme.shadow.sm
+      : {};
 
   const bg = {
     primary: c.inverseBg,
@@ -64,7 +80,7 @@ export function Button({
           borderColor: c.border,
           width: fullWidth ? "100%" : undefined,
           opacity: isDisabled ? 0.5 : pressed ? 0.9 : 1,
-          ...(variant === "primary" ? theme.shadow.sm : {}),
+          ...glowStyle,
         },
       ]}
       {...rest}

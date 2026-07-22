@@ -83,6 +83,7 @@ export function WelcomeScreen() {
             variant="primary"
             radius="full"
             size="lg"
+            glow
             onPress={() => router.push("/login")}
           />
         </View>
