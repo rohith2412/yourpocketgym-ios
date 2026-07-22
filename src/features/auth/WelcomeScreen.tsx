@@ -8,8 +8,8 @@ const PHRASES = [
   "Get fit.",
   "Get strong.",
   "Get lean.",
-  "Beat yesterday.",
-  "Stay consistent.",
+  "Level up.",
+  "Go harder.",
 ];
 
 /** Types each phrase out char-by-char, pauses, deletes, moves to the next. */
@@ -106,6 +106,7 @@ export function WelcomeScreen() {
           >
             <Text
               center
+              numberOfLines={1}
               style={{
                 fontSize: 52,
                 lineHeight: 58,
