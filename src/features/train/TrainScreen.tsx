@@ -3,7 +3,7 @@ import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Badge, SegmentedControl } from "../../ui";
+import { Screen, Text, Card, Badge } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { loadUser } from "../auth/session";
 import { useTodayRoutine, useRoutines } from "../routines/hooks";
@@ -25,7 +25,6 @@ export function TrainScreen() {
   const c = theme.colors;
   const router = useRouter();
 
-  const [tab, setTab] = useState<"progress" | "history">("progress");
   const [showLog, setShowLog] = useState(false);
   const [firstName, setFirstName] = useState("");
 
@@ -125,38 +124,34 @@ export function TrainScreen() {
             <Ionicons name="chevron-forward" size={14} color={c.textFaint} />
           </Pressable>
 
-          {/* Tab switcher */}
-          <SegmentedControl
-            value={tab}
-            onChange={setTab}
-            segments={[
-              { value: "progress", label: "Progress" },
-              { value: "history", label: "History" },
-            ]}
-          />
-
-          {/* Content */}
-          {tab === "progress" ? (
-            logs.length === 0 ? (
-              <View style={{ alignItems: "center", paddingVertical: theme.spacing["3xl"], gap: theme.spacing.md }}>
-                <Text variant="heading">No workouts yet</Text>
-                <Text variant="body" color="textMuted" center>
-                  Log your first session to start tracking progress
-                </Text>
-              </View>
-            ) : (
-              <View style={{ gap: theme.spacing.md }}>
-                <Text variant="label" color="textMuted">
-                  BODY PARTS
-                </Text>
-                {muscleStats.map((stat) => (
-                  <MuscleAccordionRow key={stat.mg} stat={stat} logs={logs} />
-                ))}
-              </View>
-            )
+          {/* Progress: body parts */}
+          {logs.length === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: theme.spacing["3xl"], gap: theme.spacing.md }}>
+              <Text variant="heading">No workouts yet</Text>
+              <Text variant="body" color="textMuted" center>
+                Log your first session to start tracking progress
+              </Text>
+            </View>
           ) : (
-            <HistoryList logs={logs} loading={isLoading} />
+            <View style={{ gap: theme.spacing.md }}>
+              <Text variant="label" color="textMuted">
+                BODY PARTS
+              </Text>
+              {muscleStats.map((stat) => (
+                <MuscleAccordionRow key={stat.mg} stat={stat} logs={logs} />
+              ))}
+            </View>
           )}
+
+          {/* History (delete lives inside each log row) */}
+          {logs.length > 0 ? (
+            <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.md }}>
+              <Text variant="label" color="textMuted">
+                RECENT WORKOUTS
+              </Text>
+              <HistoryList logs={logs} loading={isLoading} />
+            </View>
+          ) : null}
         </ScrollView>
       </Screen>
 
