@@ -68,43 +68,42 @@ export type ColorTokens = {
   inverseText: string;
 };
 
-// Brand accent (PocketGym orange). shadcn itself is monochrome, but we keep
-// one brand accent for highlights; the primary action button uses inverse.
-const BRAND = "#e8380d";
+// Monochrome black & white theme. The accent is simply black (light) / white
+// (dark). success/danger stay colored because they carry meaning.
 
-// shadcn "zinc" — light
+// Light — white surfaces, black accent
 export const lightColors: ColorTokens = {
   bg: "#ffffff",
   surface: "#ffffff",
-  surfaceAlt: "#f4f4f5", // zinc-100 (muted)
-  text: "#09090b", // zinc-950
-  textMuted: "#71717a", // zinc-500
-  textFaint: "#a1a1aa", // zinc-400
-  border: "#e4e4e7", // zinc-200
-  primary: BRAND,
+  surfaceAlt: "#f4f4f5",
+  text: "#0a0a0a",
+  textMuted: "#6b7280",
+  textFaint: "#a1a1aa",
+  border: "#e4e4e7",
+  primary: "#0a0a0a", // black accent
   primaryText: "#ffffff",
   success: "#16a34a",
   danger: "#ef4444",
   overlay: "rgba(0,0,0,0.45)",
-  inverseBg: "#18181b", // zinc-900 (shadcn primary)
-  inverseText: "#fafafa",
+  inverseBg: "#0a0a0a",
+  inverseText: "#ffffff",
 };
 
-// shadcn "zinc" — dark
+// Dark — true black, white accent
 export const darkColors: ColorTokens = {
-  bg: "#09090b", // zinc-950
-  surface: "#18181b", // zinc-900
-  surfaceAlt: "#27272a", // zinc-800
-  text: "#fafafa",
-  textMuted: "#a1a1aa", // zinc-400
-  textFaint: "#71717a", // zinc-500
-  border: "#27272a", // zinc-800
-  primary: "#f7663f",
-  primaryText: "#ffffff",
+  bg: "#000000",
+  surface: "#0e0e0e",
+  surfaceAlt: "#1a1a1a",
+  text: "#ffffff",
+  textMuted: "#a1a1a1",
+  textFaint: "#6b6b6b",
+  border: "#262626",
+  primary: "#ffffff", // white accent
+  primaryText: "#0a0a0a",
   success: "#22c55e",
   danger: "#f87171",
-  overlay: "rgba(0,0,0,0.6)",
-  inverseBg: "#ffffff", // pure bright white (primary button on dark)
+  overlay: "rgba(0,0,0,0.65)",
+  inverseBg: "#ffffff",
   inverseText: "#0a0a0a",
 };
 
