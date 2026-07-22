@@ -1,78 +1,124 @@
-import { View } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Text, Button, Card, ListRow, Badge } from "../../ui";
+import * as Haptics from "expo-haptics";
+import { Screen, Text, SegmentedControl } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
+import { loadUser } from "../auth/session";
+import { useWorkoutLogs } from "./api";
+import { StreakCard } from "./components/StreakCard";
+import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
+import { HistoryList } from "./components/HistoryList";
+import { LogSheet } from "./components/LogSheet";
 
-// Placeholder routines — replaced by real data (backend) as we build Train out.
-const ROUTINES = [
-  { name: "Push Day", meta: "Chest · Shoulders · Triceps", count: 6 },
-  { name: "Pull Day", meta: "Back · Biceps", count: 5 },
-  { name: "Leg Day", meta: "Quads · Hamstrings · Calves", count: 7 },
-];
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "morning";
+  if (h < 17) return "afternoon";
+  return "evening";
+}
 
 export function TrainScreen() {
   const { theme } = useTheme();
+  const c = theme.colors;
+
+  const [tab, setTab] = useState<"progress" | "history">("progress");
+  const [showLog, setShowLog] = useState(false);
+  const [firstName, setFirstName] = useState("");
+
+  useEffect(() => {
+    loadUser().then((u) => u?.name && setFirstName(u.name.split(" ")[0] ?? ""));
+  }, []);
+
+  const { data: logs = [], isLoading } = useWorkoutLogs();
+  const muscleStats = buildMuscleStats(logs);
 
   return (
-    <Screen scroll contentContainerStyle={{ paddingBottom: theme.spacing["3xl"], gap: theme.spacing.xl }}>
-      {/* Header */}
-      <View style={{ paddingTop: theme.spacing.lg }}>
-        <Text variant="caption" color="textMuted">
-          Ready to move?
-        </Text>
-        <Text variant="title">Train</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <Screen padded={false}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: theme.spacing.xl,
+            paddingBottom: 140,
+            gap: theme.spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={{ paddingTop: theme.spacing.lg }}>
+            <Text variant="caption" color="textMuted">
+              Good {getGreeting()}
+              {firstName ? `, ${firstName}` : ""}
+            </Text>
+            <Text variant="title">Train</Text>
+          </View>
 
-      {/* Start workout */}
-      <Button
-        title="Start Empty Workout"
-        variant="primary"
-        size="lg"
-        radius="lg"
-        glow
-        haptic="medium"
-        left={<Ionicons name="add" size={20} color={theme.colors.inverseText} />}
-        onPress={() => {}}
-      />
+          {/* Streak card */}
+          <StreakCard logs={logs} />
 
-      {/* Routines */}
-      <View style={{ gap: theme.spacing.md }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text variant="label" color="textMuted">
-            YOUR ROUTINES
-          </Text>
-          <Text variant="label" color="text">
-            + New
-          </Text>
-        </View>
+          {/* Tab switcher */}
+          <SegmentedControl
+            value={tab}
+            onChange={setTab}
+            segments={[
+              { value: "progress", label: "Progress" },
+              { value: "history", label: "History" },
+            ]}
+          />
 
-        {ROUTINES.map((r) => (
-          <Card key={r.name} onPress={() => {}} padding="lg">
-            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="body" weight="semibold">
-                  {r.name}
-                </Text>
-                <Text variant="caption" color="textMuted">
-                  {r.meta}
+          {/* Content */}
+          {tab === "progress" ? (
+            logs.length === 0 ? (
+              <View style={{ alignItems: "center", paddingVertical: theme.spacing["3xl"], gap: theme.spacing.md }}>
+                <Text variant="heading">No workouts yet</Text>
+                <Text variant="body" color="textMuted" center>
+                  Log your first session to start tracking progress
                 </Text>
               </View>
-              <Badge label={`${r.count} exercises`} variant="muted" />
-              <Ionicons name="chevron-forward" size={18} color={theme.colors.textFaint} />
-            </View>
-          </Card>
-        ))}
-      </View>
+            ) : (
+              <View style={{ gap: theme.spacing.md }}>
+                <Text variant="label" color="textMuted">
+                  BODY PARTS
+                </Text>
+                {muscleStats.map((stat) => (
+                  <MuscleAccordionRow key={stat.mg} stat={stat} logs={logs} />
+                ))}
+              </View>
+            )
+          ) : (
+            <HistoryList logs={logs} loading={isLoading} />
+          )}
+        </ScrollView>
+      </Screen>
 
-      {/* Library */}
-      <Card padding="sm">
-        <ListRow
-          title="Exercise library"
-          subtitle="Browse 300+ exercises"
-          icon="barbell-outline"
-          onPress={() => {}}
-        />
-      </Card>
-    </Screen>
+      {/* FAB */}
+      {!showLog ? (
+        <View style={{ position: "absolute", bottom: theme.spacing.xl, right: theme.spacing.xl }}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+              setShowLog(true);
+            }}
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: theme.radius.xl,
+              backgroundColor: c.inverseBg,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: c.inverseBg,
+              shadowOpacity: 0.28,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 8,
+            }}
+          >
+            <Ionicons name="add" size={30} color={c.inverseText} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      <LogSheet visible={showLog} onClose={() => setShowLog(false)} />
+    </View>
   );
 }
