@@ -1,4 +1,5 @@
-import { View, Image, Alert, Linking } from "react-native";
+import { View, Image, Alert, Linking, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Screen, Text, Button } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
@@ -14,15 +15,13 @@ export function LoginScreen() {
   const router = useRouter();
 
   const { mutate: login, isPending } = useGoogleLogin({
-    onSuccess: (user) => {
-      router.replace(user.hasIntro ? "/(tabs)/tracking" : "/startersIntro");
-    },
+    onSuccess: (user) =>
+      router.replace(user.hasIntro ? "/(tabs)/tracking" : "/startersIntro"),
   });
 
   const handleGoogle = () => {
     login(undefined, {
       onError: (err) => {
-        // Cancellation is swallowed in the hook; only real errors reach here.
         const msg =
           err instanceof ApiError
             ? err.message
@@ -34,58 +33,98 @@ export function LoginScreen() {
 
   return (
     <Screen>
-      <View style={{ flex: 1, justifyContent: "center", gap: theme.spacing.xl }}>
-        {/* Brand */}
-        <View style={{ alignItems: "center", gap: theme.spacing.md }}>
-          <Image
-            source={require("../../../assets/images/logo-v2.png")}
-            style={{ width: 72, height: 72, tintColor: theme.colors.text }}
-            resizeMode="contain"
+      <View style={{ flex: 1 }}>
+        {/* ── Back ── */}
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/welcome"))}
+          hitSlop={12}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: theme.radius.md,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            marginTop: theme.spacing.sm,
+          }}
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
+        </Pressable>
+
+        {/* ── Heading ── */}
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            gap: theme.spacing.xl,
+          }}
+        >
+          <View style={{ alignItems: "center", gap: theme.spacing.lg }}>
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: theme.radius["2xl"],
+                backgroundColor: theme.colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Image
+                source={require("../../../assets/images/logo-v2.png")}
+                style={{ width: 42, height: 42, tintColor: theme.colors.text }}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={{ gap: theme.spacing.xs, alignItems: "center" }}>
+              <Text variant="title" center>
+                Log in
+              </Text>
+              <Text variant="body" color="textMuted" center>
+                Continue with your Google account.
+              </Text>
+            </View>
+          </View>
+
+          <Button
+            title={isPending ? "Signing in…" : "Continue with Google"}
+            variant="secondary"
+            loading={isPending}
+            onPress={handleGoogle}
+            left={<GoogleGLogo size={20} />}
           />
-          <Text variant="title" center>
-            PocketGym
-          </Text>
-          <Text variant="body" color="textMuted" center>
-            Your pocket-sized personal gym.
-          </Text>
         </View>
 
-        {/* Google-only sign in */}
-        <Button
-          title={isPending ? "Signing in…" : "Continue with Google"}
-          variant="secondary"
-          loading={isPending}
-          onPress={handleGoogle}
-          left={<GoogleGLogo size={20} />}
-        />
-      </View>
-
-      {/* Terms footer */}
-      <Text
-        variant="caption"
-        color="textFaint"
-        center
-        style={{ paddingBottom: theme.spacing.xl, lineHeight: 18 }}
-      >
-        By continuing you agree to our{" "}
+        {/* ── Terms ── */}
         <Text
           variant="caption"
-          color="textMuted"
-          onPress={() => Linking.openURL(TERMS_URL)}
-          style={{ textDecorationLine: "underline" }}
+          color="textFaint"
+          center
+          style={{ lineHeight: 18, paddingBottom: theme.spacing.xl }}
         >
-          Terms
-        </Text>{" "}
-        &{" "}
-        <Text
-          variant="caption"
-          color="textMuted"
-          onPress={() => Linking.openURL(PRIVACY_URL)}
-          style={{ textDecorationLine: "underline" }}
-        >
-          Privacy Policy
+          By continuing you agree to our{" "}
+          <Text
+            variant="caption"
+            color="textMuted"
+            onPress={() => Linking.openURL(TERMS_URL)}
+            style={{ textDecorationLine: "underline" }}
+          >
+            Terms
+          </Text>{" "}
+          &{" "}
+          <Text
+            variant="caption"
+            color="textMuted"
+            onPress={() => Linking.openURL(PRIVACY_URL)}
+            style={{ textDecorationLine: "underline" }}
+          >
+            Privacy Policy
+          </Text>
         </Text>
-      </Text>
+      </View>
     </Screen>
   );
 }

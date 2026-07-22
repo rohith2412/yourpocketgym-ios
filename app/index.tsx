@@ -45,8 +45,8 @@ export default function Index() {
     (async () => {
       const token = await getToken();
       if (token) { setDestination("/(tabs)/tracking"); setChecking(false); return; }
-      // v2: Google-first flow — signed-out users go straight to login.
-      setDestination("/login");
+      // v2: signed-out users start at the welcome screen.
+      setDestination("/welcome");
       setChecking(false);
     })();
 

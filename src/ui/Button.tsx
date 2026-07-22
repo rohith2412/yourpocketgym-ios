@@ -6,6 +6,7 @@ import {
 } from "react-native";
 import { Text } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
+import type { Radius } from "../theme/tokens";
 
 type Variant = "primary" | "secondary" | "ghost";
 
@@ -16,6 +17,10 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   disabled?: boolean;
   fullWidth?: boolean;
   left?: React.ReactNode;
+  /** Corner radius token. Default: "md". Use "full" for a pill. */
+  radius?: Radius;
+  /** Height/emphasis. Default: "md". */
+  size?: "md" | "lg";
 };
 
 export function Button({
@@ -25,10 +30,13 @@ export function Button({
   disabled = false,
   fullWidth = true,
   left,
+  radius = "md",
+  size = "md",
   ...rest
 }: ButtonProps) {
   const { theme } = useTheme();
   const c = theme.colors;
+  const height = size === "lg" ? 58 : 50;
 
   const bg = {
     primary: c.inverseBg,
@@ -44,8 +52,8 @@ export function Button({
       disabled={isDisabled}
       style={({ pressed }) => [
         {
-          height: 50,
-          borderRadius: theme.radius.md,
+          height,
+          borderRadius: theme.radius[radius],
           alignItems: "center",
           justifyContent: "center",
           flexDirection: "row",
@@ -66,7 +74,12 @@ export function Button({
       ) : (
         <>
           {left ? <View>{left}</View> : null}
-          <Text variant="body" weight="semibold" color={fg}>
+          <Text
+            variant="body"
+            weight="semibold"
+            color={fg}
+            style={{ fontSize: size === "lg" ? theme.fontSize.lg : theme.fontSize.md }}
+          >
             {title}
           </Text>
         </>
