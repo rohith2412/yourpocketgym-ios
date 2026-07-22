@@ -104,8 +104,8 @@ export const darkColors: ColorTokens = {
   success: "#22c55e",
   danger: "#f87171",
   overlay: "rgba(0,0,0,0.6)",
-  inverseBg: "#fafafa",
-  inverseText: "#18181b",
+  inverseBg: "#ffffff", // pure bright white (primary button on dark)
+  inverseText: "#0a0a0a",
 };
 
 // ── Shadows (elevation presets) ──────────────────────────────────────────────
