@@ -25,8 +25,8 @@ function makeRoutes(plan: "free" | "premium", tint: string) {
   const profile = { key: "profile", title: "Profile", focusedIcon: { sfSymbol: "person.fill" }, activeTintColor: tint };
 
   return plan === "premium"
-    ? [train, progress, nutrition, coach, profile]
-    : [train, progress, profile];
+    ? [progress, train, nutrition, coach, profile]
+    : [progress, train, profile];
 }
 
 function SceneWrapper({ children, bg }: { children: React.ReactNode; bg: string }) {
