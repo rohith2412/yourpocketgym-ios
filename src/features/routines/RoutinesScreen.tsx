@@ -39,13 +39,9 @@ export function RoutinesScreen() {
         <Text variant="heading" style={{ flex: 1 }}>
           Build you routines
         </Text>
-        {routines.length === 0 ? (
-          <Pressable onPress={() => router.push("/routines/new")} hitSlop={12}>
-            <Ionicons name="add" size={24} color={c.text} />
-          </Pressable>
-        ) : (
-          <View style={{ width: 24 }} />
-        )}
+        <Pressable onPress={() => router.push("/routines/new")} hitSlop={12}>
+          <Ionicons name="add" size={24} color={c.text} />
+        </Pressable>
       </View>
 
       <ScrollView
