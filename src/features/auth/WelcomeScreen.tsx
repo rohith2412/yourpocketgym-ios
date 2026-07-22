@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Image, Animated, Easing } from "react-native";
+import { View, Image, Animated, Easing, Alert, Linking } from "react-native";
 import { useRouter } from "expo-router";
-import { Screen, Text, Button } from "../../ui";
+import { Screen, Text, Button, BottomSheet } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
+import GoogleGLogo from "../../../components/GoogleGLogo";
+import { useGoogleLogin } from "./useGoogleLogin";
+import { ApiError } from "../../api/client";
+
+const TERMS_URL = "https://yourpocketgym.com/legal/terms";
+const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 
 const PHRASES = [
   "Get fit.",
@@ -58,6 +64,26 @@ export function WelcomeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const typed = useTypewriter(PHRASES);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const { mutate: login, isPending } = useGoogleLogin({
+    onSuccess: (user) => {
+      setSheetOpen(false);
+      router.replace(user.hasIntro ? "/(tabs)/tracking" : "/startersIntro");
+    },
+  });
+
+  const handleGoogle = () => {
+    login(undefined, {
+      onError: (err) => {
+        const msg =
+          err instanceof ApiError
+            ? err.message
+            : "Google sign-in failed. Please try again.";
+        Alert.alert("Sign-in failed", msg);
+      },
+    });
+  };
 
   // Screen fade-in + blinking cursor
   const fade = useRef(new Animated.Value(0)).current;
@@ -148,10 +174,56 @@ export function WelcomeScreen() {
             radius="full"
             size="lg"
             glow
-            onPress={() => router.push("/login")}
+            onPress={() => setSheetOpen(true)}
           />
         </View>
       </Animated.View>
+
+      {/* ── Sign-in sheet ── */}
+      <BottomSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
+        <View style={{ gap: theme.spacing.xs, marginBottom: theme.spacing.xl }}>
+          <Text variant="title">Sign in</Text>
+          <Text variant="body" color="textMuted">
+            Continue with your Google account to get started.
+          </Text>
+        </View>
+
+        <Button
+          title={isPending ? "Signing in…" : "Sign in with Google"}
+          variant="secondary"
+          radius="full"
+          size="lg"
+          loading={isPending}
+          onPress={handleGoogle}
+          left={<GoogleGLogo size={20} />}
+        />
+
+        <Text
+          variant="caption"
+          color="textFaint"
+          center
+          style={{ lineHeight: 18, marginTop: theme.spacing.lg }}
+        >
+          By continuing you agree to our{" "}
+          <Text
+            variant="caption"
+            color="textMuted"
+            onPress={() => Linking.openURL(TERMS_URL)}
+            style={{ textDecorationLine: "underline" }}
+          >
+            Terms
+          </Text>{" "}
+          &{" "}
+          <Text
+            variant="caption"
+            color="textMuted"
+            onPress={() => Linking.openURL(PRIVACY_URL)}
+            style={{ textDecorationLine: "underline" }}
+          >
+            Privacy Policy
+          </Text>
+        </Text>
+      </BottomSheet>
     </Screen>
   );
 }
