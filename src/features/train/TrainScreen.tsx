@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Screen, Text, SegmentedControl } from "../../ui";
+import { useRouter } from "expo-router";
+import { Screen, Text, Card, Badge, SegmentedControl } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { loadUser } from "../auth/session";
+import { useTodayRoutine, useRoutines } from "../routines/hooks";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
@@ -21,6 +23,7 @@ function getGreeting() {
 export function TrainScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
+  const router = useRouter();
 
   const [tab, setTab] = useState<"progress" | "history">("progress");
   const [showLog, setShowLog] = useState(false);
@@ -32,6 +35,8 @@ export function TrainScreen() {
 
   const { data: logs = [], isLoading } = useWorkoutLogs();
   const muscleStats = buildMuscleStats(logs);
+  const { routine, isRest } = useTodayRoutine();
+  const { data: routines = [] } = useRoutines();
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -55,6 +60,70 @@ export function TrainScreen() {
 
           {/* Streak card */}
           <StreakCard logs={logs} />
+
+          {/* Today's workout */}
+          <Card
+            onPress={() =>
+              routine ? setShowLog(true) : router.push("/routines")
+            }
+            padding="lg"
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+              <View
+                style={{
+                  width: 44, height: 44, borderRadius: theme.radius.lg,
+                  backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <Ionicons
+                  name={routine ? "flash" : isRest ? "bed-outline" : "calendar-outline"}
+                  size={20}
+                  color={c.text}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="caption" color="textMuted" weight="bold">
+                  TODAY
+                </Text>
+                <Text variant="body" weight="bold">
+                  {routine ? routine.name : "Rest day"}
+                </Text>
+                <Text variant="caption" color="textMuted" numberOfLines={1}>
+                  {routine
+                    ? `${routine.exercises.length} exercises · tap to start`
+                    : routines.length === 0
+                    ? "Set up a routine to see today's workout"
+                    : "Schedule a routine for today"}
+                </Text>
+              </View>
+              <Ionicons
+                name={routine ? "play" : "chevron-forward"}
+                size={20}
+                color={c.textFaint}
+              />
+            </View>
+          </Card>
+
+          {/* Routines shortcut */}
+          <Pressable
+            onPress={() => router.push("/routines")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: theme.spacing.sm,
+              gap: theme.spacing.sm,
+            }}
+          >
+            <Text variant="label" color="text" weight="semibold">
+              Routines
+            </Text>
+            <Badge label={String(routines.length)} variant="muted" />
+            <View style={{ flex: 1 }} />
+            <Text variant="label" color="textMuted">
+              Manage
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={c.textFaint} />
+          </Pressable>
 
           {/* Tab switcher */}
           <SegmentedControl

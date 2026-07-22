@@ -25,6 +25,9 @@ function ThemedStack() {
         <Stack.Screen name="legal/privacy" />
         <Stack.Screen name="legal/terms" />
         <Stack.Screen name="legal/delete-account" />
+        <Stack.Screen name="routines/index" />
+        <Stack.Screen name="routines/new" />
+        <Stack.Screen name="routines/[id]" />
       </Stack>
     </View>
   );
