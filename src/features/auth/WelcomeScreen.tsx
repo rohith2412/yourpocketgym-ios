@@ -190,7 +190,7 @@ export function WelcomeScreen() {
 
         <Button
           title={isPending ? "Signing in…" : "Sign in with Google"}
-          variant="secondary"
+          variant="primary"
           radius="full"
           size="lg"
           loading={isPending}

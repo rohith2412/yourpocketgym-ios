@@ -3,6 +3,7 @@ import {
   Modal,
   Pressable,
   Animated,
+  Easing,
   View,
   StyleSheet,
   Dimensions,
@@ -29,15 +30,16 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
     if (visible) {
       slide.setValue(H);
       Animated.parallel([
-        Animated.spring(slide, {
+        Animated.timing(slide, {
           toValue: 0,
+          duration: 380,
+          easing: Easing.bezier(0.22, 1, 0.36, 1), // smooth ease-out
           useNativeDriver: true,
-          tension: 65,
-          friction: 11,
         }),
         Animated.timing(backdrop, {
           toValue: 1,
-          duration: 220,
+          duration: 300,
+          easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }),
       ]).start();
@@ -46,8 +48,18 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
 
   const close = () => {
     Animated.parallel([
-      Animated.timing(slide, { toValue: H, duration: 220, useNativeDriver: true }),
-      Animated.timing(backdrop, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slide, {
+        toValue: H,
+        duration: 300,
+        easing: Easing.bezier(0.4, 0, 1, 1), // smooth ease-in
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdrop, {
+        toValue: 0,
+        duration: 260,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
     ]).start(() => onClose());
   };
 
