@@ -4,11 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Screen, Text, Card, Button } from "../../ui";
-import type { Routine } from "../routines/storage";
 import { useTheme } from "../../theme/ThemeProvider";
 import { loadUser } from "../auth/session";
-import { useRoutines, useTodayRoutine } from "../routines/hooks";
-import { WEEKDAYS } from "../routines/storage";
+import { useRoutines, useTodayPlan } from "../routines/hooks";
+import { WEEKDAYS, type DayPlan } from "../routines/storage";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
@@ -27,15 +26,15 @@ export function TrainScreen() {
   const router = useRouter();
 
   const [showLog, setShowLog] = useState(false);
-  const [presetRoutine, setPresetRoutine] = useState<Routine | null>(null);
+  const [presetPlan, setPresetPlan] = useState<DayPlan | null>(null);
 
-  const openLog = (routine: Routine | null = null) => {
-    setPresetRoutine(routine);
+  const openLog = (plan: DayPlan | null = null) => {
+    setPresetPlan(plan);
     setShowLog(true);
   };
   const closeLog = () => {
     setShowLog(false);
-    setPresetRoutine(null);
+    setPresetPlan(null);
   };
   const [firstName, setFirstName] = useState("");
 
@@ -46,8 +45,8 @@ export function TrainScreen() {
   const { data: logs = [] } = useWorkoutLogs();
   const muscleStats = buildMuscleStats(logs);
   const { data: routines = [] } = useRoutines();
-  const { routine: todayRoutine } = useTodayRoutine();
-  const todayName = WEEKDAYS[new Date().getDay()].long;
+  const { plan: todayPlan } = useTodayPlan();
+  const todayName = WEEKDAYS.find((d) => d.key === (new Date().getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6))!.long;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -72,13 +71,13 @@ export function TrainScreen() {
           {/* Streak card */}
           <StreakCard logs={logs} />
 
-          {/* TODAY card — surfaces the routine scheduled for today, or Rest / prompt */}
+          {/* TODAY card — surfaces today's day plan (or Rest / prompt) */}
           {routines.length > 0 ? (
             <Card
               padding="lg"
               onPress={
-                todayRoutine
-                  ? () => openLog(todayRoutine)
+                todayPlan
+                  ? () => openLog(todayPlan)
                   : () => router.push("/routines")
               }
             >
@@ -90,7 +89,7 @@ export function TrainScreen() {
                   }}
                 >
                   <Ionicons
-                    name={todayRoutine ? "flash" : "bed-outline"}
+                    name={todayPlan ? "barbell" : "bed-outline"}
                     size={24}
                     color={c.inverseText}
                   />
@@ -100,16 +99,16 @@ export function TrainScreen() {
                     {todayName.toUpperCase()} · TODAY
                   </Text>
                   <Text variant="body" weight="bold">
-                    {todayRoutine ? todayRoutine.name : "Rest day"}
+                    {todayPlan ? todayPlan.name : "Rest day"}
                   </Text>
                   <Text variant="caption" color="textMuted" numberOfLines={1}>
-                    {todayRoutine
-                      ? `${todayRoutine.exercises.length} exercise${todayRoutine.exercises.length !== 1 ? "s" : ""} · tap to start`
-                      : "Schedule a routine for today"}
+                    {todayPlan
+                      ? `${todayPlan.exercises.length} exercise${todayPlan.exercises.length !== 1 ? "s" : ""} · tap to start`
+                      : "Schedule training days"}
                   </Text>
                 </View>
                 <Ionicons
-                  name={todayRoutine ? "play" : "chevron-forward"}
+                  name={todayPlan ? "play" : "chevron-forward"}
                   size={18}
                   color={c.textFaint}
                 />
@@ -117,90 +116,44 @@ export function TrainScreen() {
             </Card>
           ) : null}
 
-          {/* Your routines — multi, each editable via pencil */}
-          <View style={{ gap: theme.spacing.sm }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text variant="label" color="textMuted">
-                YOUR ROUTINES
+          {/* Empty state or weekly plan preview */}
+          {routines.length === 0 ? (
+            <Card padding="xl">
+              <View style={{ alignItems: "center", gap: theme.spacing.md }}>
+                <Ionicons name="calendar-outline" size={30} color={c.textMuted} />
+                <Text variant="body" color="textMuted" center>
+                  Build your weekly plan.{"\n"}Pick the days you train, name each one (Push day, Pull day…), and add exercises.
+                </Text>
+                <Button
+                  title="Create weekly plan"
+                  variant="primary"
+                  radius="full"
+                  haptic="medium"
+                  onPress={() => router.push("/routines/new")}
+                />
+              </View>
+            </Card>
+          ) : (
+            <Pressable
+              onPress={() => router.push("/routines")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: theme.spacing.sm,
+                gap: theme.spacing.sm,
+              }}
+            >
+              <Ionicons name="calendar-outline" size={18} color={c.text} />
+              <Text variant="label" weight="semibold">
+                Weekly plan
               </Text>
-              {routines.length > 0 ? (
-                <Pressable onPress={() => router.push("/routines")} hitSlop={8}>
-                  <Text variant="label" color="textMuted">
-                    Weekly schedule
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            {routines.length === 0 ? (
-              <Card padding="xl">
-                <View style={{ alignItems: "center", gap: theme.spacing.md }}>
-                  <Ionicons name="calendar-outline" size={30} color={c.textMuted} />
-                  <Text variant="body" color="textMuted" center>
-                    Build routines for your week (Push, Pull, Legs…).{"\n"}
-                    Assign them to weekdays and log each session with last-time weight hints.
-                  </Text>
-                  <Button
-                    title="Create a routine"
-                    variant="primary"
-                    radius="full"
-                    haptic="medium"
-                    onPress={() => router.push("/routines/new")}
-                  />
-                </View>
-              </Card>
-            ) : (
-              routines.map((r) => (
-                <Card key={r.id} padding="lg">
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-                    <Pressable
-                      onPress={() => openLog(r)}
-                      style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, flex: 1 }}
-                    >
-                      <View
-                        style={{
-                          width: 48, height: 48, borderRadius: theme.radius.xl,
-                          backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        <Ionicons name="barbell" size={22} color={c.text} />
-                      </View>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text variant="body" weight="bold">
-                          {r.name}
-                        </Text>
-                        <Text variant="caption" color="textMuted" numberOfLines={1}>
-                          {r.exercises.length} exercise{r.exercises.length !== 1 ? "s" : ""}
-                        </Text>
-                      </View>
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        router.push({ pathname: "/routines/[id]", params: { id: r.id } })
-                      }
-                      hitSlop={10}
-                      style={{
-                        width: 40, height: 40, borderRadius: theme.radius.lg,
-                        backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="create-outline" size={18} color={c.text} />
-                    </Pressable>
-                  </View>
-                </Card>
-              ))
-            )}
-
-            {routines.length > 0 ? (
-              <Button
-                title="+ Add another routine"
-                variant="secondary"
-                radius="md"
-                haptic="light"
-                onPress={() => router.push("/routines/new")}
-              />
-            ) : null}
-          </View>
+              <View style={{ flex: 1 }} />
+              <Text variant="label" color="textMuted">
+                Manage
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={c.textFaint} />
+            </Pressable>
+          )}
 
           {/* Progress: body parts */}
           {logs.length === 0 ? (
@@ -230,7 +183,7 @@ export function TrainScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-              openLog(todayRoutine ?? null);
+              openLog(todayPlan ?? null);
             }}
             style={{
               width: 60,
@@ -254,8 +207,8 @@ export function TrainScreen() {
       <LogSheet
         visible={showLog}
         onClose={closeLog}
-        initialExercises={presetRoutine?.exercises}
-        routineName={presetRoutine?.name}
+        initialExercises={presetPlan?.exercises}
+        routineName={presetPlan?.name}
       />
     </View>
   );

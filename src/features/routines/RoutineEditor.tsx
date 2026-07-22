@@ -1,12 +1,30 @@
-import { useState } from "react";
-import { View, ScrollView, Pressable, Alert } from "react-native";
+import { useEffect, useState } from "react";
+import { View, ScrollView, Pressable, TextInput, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Screen, Text, Card, Button, Input, Badge, Separator, BottomSheet } from "../../ui";
+import { Screen, Text, Card, Button, BottomSheet, Separator } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { EXERCISE_LIBRARY, MUSCLE_GROUPS, type MuscleGroup } from "../train/data";
 import { useRoutines, useUpsertRoutine, useDeleteRoutine } from "./hooks";
-import { newRoutineId, type Routine, type RoutineExercise } from "./storage";
+import {
+  WEEKDAYS,
+  newRoutineId,
+  emptyDayPlan,
+  type Routine,
+  type DayPlan,
+  type Weekday,
+  type RoutineExercise,
+} from "./storage";
+
+const DEFAULT_NAMES: Record<number, string> = {
+  0: "Push day",
+  1: "Pull day",
+  2: "Leg day",
+  3: "Upper body",
+  4: "Lower body",
+  5: "Full body",
+  6: "Core & cardio",
+};
 
 export function RoutineEditor() {
   const { theme } = useTheme();
@@ -17,47 +35,73 @@ export function RoutineEditor() {
   const { data: routines = [] } = useRoutines();
   const existing = id ? routines.find((r) => r.id === id) : undefined;
 
-  const [name, setName] = useState(existing?.name ?? "");
-  const [exercises, setExercises] = useState<RoutineExercise[]>(existing?.exercises ?? []);
-  const [picker, setPicker] = useState<null | MuscleGroup>(null);
+  const [step, setStep] = useState<"days" | "configure">("days");
+  const [days, setDays] = useState<Partial<Record<Weekday, DayPlan>>>({});
+  const [pickerDay, setPickerDay] = useState<Weekday | null>(null);
+  const [pickerMg, setPickerMg] = useState<MuscleGroup>(MUSCLE_GROUPS[0]);
 
   const upsert = useUpsertRoutine();
   const del = useDeleteRoutine();
 
-  const addExercise = (mg: MuscleGroup, exName: string) => {
-    setExercises((prev) => [
-      ...prev,
-      { name: exName, muscleGroup: mg, targetSets: 3, targetReps: 10 },
-    ]);
-    setPicker(null);
+  useEffect(() => {
+    if (existing) {
+      setDays(existing.days);
+      setStep("configure");
+    }
+  }, [existing]);
+
+  const selectedDayKeys = WEEKDAYS.map((d) => d.key).filter((k) => days[k]);
+
+  const toggleDay = (k: Weekday) => {
+    setDays((prev) => {
+      if (prev[k]) {
+        const next = { ...prev };
+        delete next[k];
+        return next;
+      }
+      // Autofill a default name
+      const usedNames = Object.values(prev).map((p) => p?.name);
+      let defaultName = "";
+      for (let i = 0; i < 7; i++) {
+        const cand = DEFAULT_NAMES[i];
+        if (!usedNames.includes(cand)) { defaultName = cand; break; }
+      }
+      return { ...prev, [k]: { ...emptyDayPlan(), name: defaultName || "Workout" } };
+    });
   };
 
-  const removeAt = (i: number) => setExercises((prev) => prev.filter((_, j) => j !== i));
+  const renameDay = (k: Weekday, name: string) =>
+    setDays((prev) => (prev[k] ? { ...prev, [k]: { ...prev[k]!, name } } : prev));
 
-  const bumpSets = (i: number, delta: number) =>
-    setExercises((prev) =>
-      prev.map((ex, j) => (j !== i ? ex : { ...ex, targetSets: Math.max(1, Math.min(10, ex.targetSets + delta)) })),
-    );
+  const addExercise = (k: Weekday, ex: RoutineExercise) =>
+    setDays((prev) => {
+      const p = prev[k];
+      if (!p) return prev;
+      if (p.exercises.some((e) => e.name === ex.name)) return prev;
+      return { ...prev, [k]: { ...p, exercises: [...p.exercises, ex] } };
+    });
 
-  const bumpReps = (i: number, delta: number) =>
-    setExercises((prev) =>
-      prev.map((ex, j) => (j !== i ? ex : { ...ex, targetReps: Math.max(1, Math.min(30, ex.targetReps + delta)) })),
-    );
+  const removeExercise = (k: Weekday, name: string) =>
+    setDays((prev) => {
+      const p = prev[k];
+      if (!p) return prev;
+      return { ...prev, [k]: { ...p, exercises: p.exercises.filter((e) => e.name !== name) } };
+    });
 
   const save = async () => {
-    if (!name.trim()) {
-      Alert.alert("Give this routine a name.");
+    if (selectedDayKeys.length === 0) {
+      Alert.alert("Pick at least one day.");
       return;
     }
-    if (exercises.length === 0) {
-      Alert.alert("Add at least one exercise.");
-      return;
+    for (const k of selectedDayKeys) {
+      const p = days[k]!;
+      if (!p.name.trim()) { Alert.alert(`Name ${WEEKDAYS.find((d) => d.key === k)!.long} (e.g. Push day).`); return; }
+      if (p.exercises.length === 0) { Alert.alert(`Add at least one exercise to ${p.name}.`); return; }
     }
     const now = new Date().toISOString();
     const routine: Routine = {
       id: existing?.id ?? newRoutineId(),
-      name: name.trim(),
-      exercises,
+      days,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
@@ -67,7 +111,7 @@ export function RoutineEditor() {
 
   const remove = () => {
     if (!existing) return;
-    Alert.alert("Delete routine?", `"${existing.name}" will be removed.`, [
+    Alert.alert("Delete routine?", "Your weekly plan will be removed.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -93,11 +137,14 @@ export function RoutineEditor() {
           paddingBottom: theme.spacing.md,
         }}
       >
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable
+          onPress={() => (step === "configure" && !existing ? setStep("days") : router.back())}
+          hitSlop={12}
+        >
           <Ionicons name="chevron-back" size={24} color={c.text} />
         </Pressable>
         <Text variant="heading" style={{ flex: 1 }}>
-          {existing ? "Edit routine" : "New routine"}
+          {step === "days" ? "Pick your training days" : "Set up each day"}
         </Text>
         {existing ? (
           <Pressable onPress={remove} hitSlop={12}>
@@ -109,74 +156,162 @@ export function RoutineEditor() {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: theme.spacing.xl,
-          paddingBottom: 120,
+          paddingBottom: 140,
           gap: theme.spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Input
-          label="Name"
-          placeholder="e.g. Push Day"
-          value={name}
-          onChangeText={setName}
-          maxLength={40}
-        />
-
-        <View style={{ gap: theme.spacing.sm }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text variant="label" color="textMuted">
-              EXERCISES
+        {/* STEP 1: PICK DAYS */}
+        {step === "days" ? (
+          <>
+            <Text variant="body" color="textMuted">
+              Which days do you train? You can name each one (Push day, Pull day…) on the next step.
             </Text>
-            <Text variant="label" color="textFaint">
-              {exercises.length}
-            </Text>
-          </View>
 
-          {exercises.length === 0 ? (
-            <Card>
-              <Text variant="body" color="textMuted" center>
-                Add exercises to build this routine.
-              </Text>
-            </Card>
-          ) : (
-            exercises.map((ex, i) => (
-              <Card key={`${ex.name}-${i}`} padding="lg">
-                <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
-                  <View style={{ flex: 1 }}>
-                    <Text variant="caption" color="textMuted" weight="bold">
-                      {ex.muscleGroup.toUpperCase()}
+            <View style={{ gap: theme.spacing.sm }}>
+              {WEEKDAYS.map((d) => {
+                const on = !!days[d.key];
+                return (
+                  <Pressable
+                    key={d.key}
+                    onPress={() => toggleDay(d.key)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: on ? c.inverseBg : c.surfaceAlt,
+                      borderRadius: theme.radius.xl,
+                      paddingVertical: theme.spacing.md,
+                      paddingHorizontal: theme.spacing.lg,
+                      gap: theme.spacing.md,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: on ? c.inverseText : "transparent",
+                        borderWidth: on ? 0 : 1.5,
+                        borderColor: c.border,
+                      }}
+                    >
+                      {on ? <Ionicons name="checkmark" size={14} color={c.inverseBg} /> : null}
+                    </View>
+                    <Text
+                      variant="body"
+                      weight="semibold"
+                      style={{ flex: 1, color: on ? c.inverseText : c.text }}
+                    >
+                      {d.long}
                     </Text>
-                    <Text variant="body" weight="bold">
-                      {ex.name}
-                    </Text>
-                  </View>
-                  <Pressable onPress={() => removeAt(i)} hitSlop={8}>
-                    <Ionicons name="close" size={20} color={c.textMuted} />
+                    {on ? (
+                      <Text variant="caption" style={{ color: c.inverseText, opacity: 0.7 }}>
+                        {days[d.key]!.name || "Untitled"}
+                      </Text>
+                    ) : null}
                   </Pressable>
-                </View>
-
-                <Separator inset={0} />
-
-                <View style={{ flexDirection: "row", gap: theme.spacing.lg, marginTop: theme.spacing.sm }}>
-                  <Counter label="Sets" value={ex.targetSets} onMinus={() => bumpSets(i, -1)} onPlus={() => bumpSets(i, 1)} />
-                  <Counter label="Reps" value={ex.targetReps} onMinus={() => bumpReps(i, -1)} onPlus={() => bumpReps(i, 1)} />
-                </View>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          /* STEP 2: CONFIGURE EACH SELECTED DAY */
+          <>
+            {selectedDayKeys.length === 0 ? (
+              <Card padding="lg">
+                <Text variant="body" color="textMuted" center>
+                  Pick training days first.
+                </Text>
               </Card>
-            ))
-          )}
+            ) : (
+              selectedDayKeys.map((k) => {
+                const d = WEEKDAYS.find((w) => w.key === k)!;
+                const plan = days[k]!;
+                return (
+                  <Card key={k} padding="lg">
+                    <Text variant="caption" color="textMuted" weight="bold">
+                      {d.long.toUpperCase()}
+                    </Text>
+                    <TextInput
+                      value={plan.name}
+                      onChangeText={(v) => renameDay(k, v)}
+                      placeholder="Push day"
+                      placeholderTextColor={c.textFaint}
+                      style={{
+                        fontSize: theme.fontSize.xl,
+                        fontWeight: theme.fontWeight.bold,
+                        color: c.text,
+                        paddingVertical: theme.spacing.xs,
+                      }}
+                      maxLength={30}
+                    />
+                    <Separator inset={0} />
 
-          <Button
-            title="+ Add exercise"
-            variant="secondary"
-            radius="md"
-            haptic="light"
-            onPress={() => setPicker(MUSCLE_GROUPS[0])}
-          />
-        </View>
+                    <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.sm }}>
+                      {plan.exercises.length === 0 ? (
+                        <Text variant="caption" color="textFaint">
+                          No exercises yet
+                        </Text>
+                      ) : (
+                        plan.exercises.map((ex) => (
+                          <View
+                            key={ex.name}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              paddingVertical: theme.spacing.xs,
+                              gap: theme.spacing.sm,
+                            }}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text variant="body">{ex.name}</Text>
+                              <Text variant="caption" color="textMuted">
+                                {ex.muscleGroup}
+                              </Text>
+                            </View>
+                            <Pressable onPress={() => removeExercise(k, ex.name)} hitSlop={8}>
+                              <Ionicons name="close" size={20} color={c.textMuted} />
+                            </Pressable>
+                          </View>
+                        ))
+                      )}
+                    </View>
+
+                    <Pressable
+                      onPress={() => {
+                        setPickerMg(MUSCLE_GROUPS[0]);
+                        setPickerDay(k);
+                      }}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        paddingVertical: theme.spacing.md,
+                        marginTop: theme.spacing.sm,
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1.5,
+                        borderStyle: "dashed",
+                        borderColor: c.border,
+                      }}
+                    >
+                      <Ionicons name="add" size={16} color={c.text} />
+                      <Text variant="label" weight="semibold">
+                        Add exercise
+                      </Text>
+                    </Pressable>
+                  </Card>
+                );
+              })
+            )}
+          </>
+        )}
       </ScrollView>
 
-      {/* Save button */}
+      {/* Bottom CTA */}
       <View
         style={{
           position: "absolute",
@@ -190,42 +325,55 @@ export function RoutineEditor() {
           borderTopColor: c.border,
         }}
       >
-        <Button
-          title={upsert.isPending ? "Saving…" : existing ? "Save changes" : "Create routine"}
-          variant="primary"
-          radius="full"
-          size="lg"
-          glow
-          haptic="medium"
-          loading={upsert.isPending}
-          onPress={save}
-        />
+        {step === "days" ? (
+          <Button
+            title={`Continue${selectedDayKeys.length ? ` (${selectedDayKeys.length} day${selectedDayKeys.length !== 1 ? "s" : ""})` : ""}`}
+            variant="primary"
+            radius="full"
+            size="lg"
+            glow
+            haptic="medium"
+            disabled={selectedDayKeys.length === 0}
+            onPress={() => setStep("configure")}
+          />
+        ) : (
+          <Button
+            title={upsert.isPending ? "Saving…" : existing ? "Save changes" : "Save routine"}
+            variant="primary"
+            radius="full"
+            size="lg"
+            glow
+            haptic="medium"
+            loading={upsert.isPending}
+            onPress={save}
+          />
+        )}
       </View>
 
       {/* Exercise picker sheet */}
-      <BottomSheet visible={picker !== null} onClose={() => setPicker(null)}>
+      <BottomSheet visible={pickerDay !== null} onClose={() => setPickerDay(null)}>
         <Text variant="heading" style={{ marginBottom: theme.spacing.md }}>
-          Add an exercise
+          Add exercise
         </Text>
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
           {MUSCLE_GROUPS.map((mg) => (
             <Pressable
               key={mg}
-              onPress={() => setPicker(mg)}
+              onPress={() => setPickerMg(mg)}
               style={{
                 paddingHorizontal: theme.spacing.md,
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.radius.full,
-                backgroundColor: picker === mg ? c.text : c.surfaceAlt,
+                backgroundColor: pickerMg === mg ? c.text : c.surfaceAlt,
                 borderWidth: 1,
-                borderColor: picker === mg ? c.text : c.border,
+                borderColor: pickerMg === mg ? c.text : c.border,
               }}
             >
               <Text
                 variant="label"
                 weight="semibold"
-                style={{ color: picker === mg ? c.inverseText : c.text }}
+                style={{ color: pickerMg === mg ? c.inverseText : c.text }}
               >
                 {mg}
               </Text>
@@ -234,76 +382,36 @@ export function RoutineEditor() {
         </View>
 
         <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
-          {picker
-            ? EXERCISE_LIBRARY[picker].map((exName) => (
-                <Pressable
-                  key={exName}
-                  onPress={() => addExercise(picker, exName)}
-                  style={{
-                    paddingVertical: theme.spacing.md,
-                    borderBottomWidth: 1,
-                    borderBottomColor: c.border,
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text variant="body" style={{ flex: 1 }}>
-                    {exName}
-                  </Text>
-                  <Ionicons name="add" size={20} color={c.textMuted} />
-                </Pressable>
-              ))
-            : null}
+          {EXERCISE_LIBRARY[pickerMg].map((exName) => {
+            const already = pickerDay !== null && days[pickerDay]?.exercises.some((e) => e.name === exName);
+            return (
+              <Pressable
+                key={exName}
+                onPress={() => {
+                  if (pickerDay === null || already) return;
+                  addExercise(pickerDay, { name: exName, muscleGroup: pickerMg });
+                }}
+                style={{
+                  paddingVertical: theme.spacing.md,
+                  borderBottomWidth: 1,
+                  borderBottomColor: c.border,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <Text variant="body" style={{ flex: 1, opacity: already ? 0.4 : 1 }}>
+                  {exName}
+                </Text>
+                <Ionicons
+                  name={already ? "checkmark" : "add"}
+                  size={20}
+                  color={already ? c.textMuted : c.text}
+                />
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </BottomSheet>
     </Screen>
-  );
-}
-
-// Small +/- counter — used for target sets/reps
-function Counter({
-  label,
-  value,
-  onMinus,
-  onPlus,
-}: {
-  label: string;
-  value: number;
-  onMinus: () => void;
-  onPlus: () => void;
-}) {
-  const { theme } = useTheme();
-  const c = theme.colors;
-  return (
-    <View style={{ flex: 1, alignItems: "center", gap: 4 }}>
-      <Text variant="caption" color="textMuted" weight="bold">
-        {label.toUpperCase()}
-      </Text>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-        <Pressable
-          onPress={onMinus}
-          hitSlop={8}
-          style={{
-            width: 30, height: 30, borderRadius: 15,
-            backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Ionicons name="remove" size={16} color={c.text} />
-        </Pressable>
-        <Text style={{ fontSize: 20, fontWeight: theme.fontWeight.heavy, color: c.text, minWidth: 24, textAlign: "center" }}>
-          {value}
-        </Text>
-        <Pressable
-          onPress={onPlus}
-          hitSlop={8}
-          style={{
-            width: 30, height: 30, borderRadius: 15,
-            backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Ionicons name="add" size={16} color={c.text} />
-        </Pressable>
-      </View>
-    </View>
   );
 }

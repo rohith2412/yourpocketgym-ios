@@ -41,7 +41,7 @@ export function LogSheet({
         initialExercises.map((e) => ({
           name: e.name,
           mg: e.muscleGroup,
-          sets: Array.from({ length: e.targetSets }, () => ({ reps: "", weight: "" })),
+          sets: [{ reps: "", weight: "" }],
         })),
       );
       setStep("muscles");
