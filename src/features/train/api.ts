@@ -35,6 +35,15 @@ export function useSaveWorkout() {
   });
 }
 
+/** Most recent time this exercise was performed (any log). null if never. */
+export function lastLiftFor(logs: WorkoutLog[], name: string) {
+  for (const log of logs) {
+    const ex = log.exercises.find((e) => e.name === name);
+    if (ex) return { date: log.date, sets: ex.sets };
+  }
+  return null;
+}
+
 export function useDeleteWorkout() {
   const qc = useQueryClient();
   return useMutation({

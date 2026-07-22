@@ -1,25 +1,59 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Pressable, TextInput, Alert, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheet, Text, Button, Card, Badge, Separator } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { EXERCISE_LIBRARY, MUSCLE_GROUPS, type MuscleGroup } from "../data";
-import { useSaveWorkout, type TrackedExercise } from "../api";
+import { useSaveWorkout, useWorkoutLogs, lastLiftFor, type TrackedExercise } from "../api";
+import type { RoutineExercise } from "../../routines/storage";
 
 type DraftSet = { reps: string; weight: string };
 type DraftExercise = { name: string; mg: MuscleGroup; sets: DraftSet[] };
 type Step = "muscles" | "exercises" | "sets";
 
-export function LogSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function LogSheet({
+  visible,
+  onClose,
+  initialExercises,
+  routineName,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  /** Pre-fill from a routine (skips picking exercises). */
+  initialExercises?: RoutineExercise[];
+  routineName?: string;
+}) {
   const { theme } = useTheme();
   const c = theme.colors;
   const save = useSaveWorkout();
+  const { data: logs = [] } = useWorkoutLogs();
 
   const [step, setStep] = useState<Step>("muscles");
   const [activeMg, setActiveMg] = useState<MuscleGroup | null>(null);
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
   const [activeEx, setActiveEx] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
+
+  // Seed from a routine when opened. Blank sets ready to fill with real reps/weight.
+  useEffect(() => {
+    if (visible && initialExercises && initialExercises.length > 0) {
+      setExercises(
+        initialExercises.map((e) => ({
+          name: e.name,
+          mg: e.muscleGroup,
+          sets: Array.from({ length: e.targetSets }, () => ({ reps: "", weight: "" })),
+        })),
+      );
+      setStep("muscles");
+      setActiveEx(null);
+    }
+  }, [visible, initialExercises]);
+
+  // Last lift info for the currently-active exercise (progressive overload hint).
+  const lastLift = useMemo(() => {
+    if (activeEx === null) return null;
+    return lastLiftFor(logs, exercises[activeEx]?.name ?? "");
+  }, [logs, exercises, activeEx]);
 
   const reset = () => {
     setStep("muscles");
@@ -332,6 +366,26 @@ export function LogSheet({ visible, onClose }: { visible: boolean; onClose: () =
                 </Text>
               </View>
             </View>
+
+            {/* Last time hint — progressive overload */}
+            {lastLift ? (
+              <View
+                style={{
+                  backgroundColor: c.surfaceAlt,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  marginBottom: theme.spacing.md,
+                  gap: 4,
+                }}
+              >
+                <Text variant="caption" color="textMuted" weight="bold">
+                  LAST TIME
+                </Text>
+                <Text variant="body" weight="semibold">
+                  {lastLift.sets.map((s) => `${s.weight}×${s.reps}`).join("  ·  ")}
+                </Text>
+              </View>
+            ) : null}
 
             <View
               style={{

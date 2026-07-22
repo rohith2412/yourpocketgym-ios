@@ -3,10 +3,11 @@ import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Badge, BottomSheet } from "../../ui";
+import { Screen, Text, Card, Button } from "../../ui";
+import type { Routine } from "../routines/storage";
 import { useTheme } from "../../theme/ThemeProvider";
 import { loadUser } from "../auth/session";
-import { useTodayRoutine, useRoutines } from "../routines/hooks";
+import { useRoutines } from "../routines/hooks";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
@@ -25,7 +26,16 @@ export function TrainScreen() {
   const router = useRouter();
 
   const [showLog, setShowLog] = useState(false);
-  const [showChooser, setShowChooser] = useState(false);
+  const [presetRoutine, setPresetRoutine] = useState<Routine | null>(null);
+
+  const openLog = (routine: Routine | null = null) => {
+    setPresetRoutine(routine);
+    setShowLog(true);
+  };
+  const closeLog = () => {
+    setShowLog(false);
+    setPresetRoutine(null);
+  };
   const [firstName, setFirstName] = useState("");
 
   useEffect(() => {
@@ -34,7 +44,6 @@ export function TrainScreen() {
 
   const { data: logs = [] } = useWorkoutLogs();
   const muscleStats = buildMuscleStats(logs);
-  const { routine, isRest } = useTodayRoutine();
   const { data: routines = [] } = useRoutines();
 
   return (
@@ -60,86 +69,41 @@ export function TrainScreen() {
           {/* Streak card */}
           <StreakCard logs={logs} />
 
-          {/* Routines UI temporarily hidden — will re-enable once the "Log from routine" flow lands.
-          <Card
-            onPress={() =>
-              routine ? setShowLog(true) : router.push("/routines")
-            }
-            padding="lg"
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
-              <View
-                style={{
-                  width: 44, height: 44, borderRadius: theme.radius.lg,
-                  backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
-                }}
-              >
-                <Ionicons
-                  name={routine ? "flash" : isRest ? "bed-outline" : "calendar-outline"}
-                  size={20}
-                  color={c.text}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text variant="caption" color="textMuted" weight="bold">
-                  TODAY
-                </Text>
-                <Text variant="body" weight="bold">
-                  {routine ? routine.name : "Rest day"}
-                </Text>
-                <Text variant="caption" color="textMuted" numberOfLines={1}>
-                  {routine
-                    ? `${routine.exercises.length} exercises · tap to start`
-                    : routines.length === 0
-                    ? "Set up a routine to see today's workout"
-                    : "Schedule a routine for today"}
-                </Text>
-              </View>
-              <Ionicons
-                name={routine ? "play" : "chevron-forward"}
-                size={20}
-                color={c.textFaint}
-              />
-            </View>
-          </Card>
-
-          {/* Routines shortcut */}
-          <Pressable
-            onPress={() => router.push("/routines")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: theme.spacing.sm,
-              gap: theme.spacing.sm,
-            }}
-          >
-            <Text variant="label" color="text" weight="semibold">
-              Routines
-            </Text>
-            <Badge label={String(routines.length)} variant="muted" />
-            <View style={{ flex: 1 }} />
-            <Text variant="label" color="textMuted">
-              Manage
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color={c.textFaint} />
-          </Pressable>
-          */}
-
-          {/* Your routines — shown every day (Cal AI-style large cards) */}
-          {routines.length > 0 ? (
-            <View style={{ gap: theme.spacing.sm }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text variant="label" color="textMuted">
-                  YOUR ROUTINES
-                </Text>
+          {/* Your routines — the primary way to log; tap opens LogSheet pre-filled */}
+          <View style={{ gap: theme.spacing.sm }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text variant="label" color="textMuted">
+                YOUR ROUTINES
+              </Text>
+              {routines.length > 0 ? (
                 <Pressable onPress={() => router.push("/routines")} hitSlop={8}>
                   <Text variant="label" color="textMuted">
                     Manage
                   </Text>
                 </Pressable>
-              </View>
-              {routines.map((r) => (
-                <Card key={r.id} onPress={() => setShowLog(true)} padding="lg">
+              ) : null}
+            </View>
+
+            {routines.length === 0 ? (
+              <Card padding="xl">
+                <View style={{ alignItems: "center", gap: theme.spacing.md }}>
+                  <Ionicons name="calendar-outline" size={30} color={c.textMuted} />
+                  <Text variant="body" color="textMuted" center>
+                    Build a routine once, log it every session.{"\n"}You'll see last time's weight so you know what to lift.
+                  </Text>
+                  <Button
+                    title="Create a routine"
+                    variant="primary"
+                    radius="full"
+                    haptic="medium"
+                    onPress={() => router.push("/routines/new")}
+                  />
+                </View>
+              </Card>
+            ) : null}
+            {routines.length > 0
+              ? routines.map((r) => (
+                <Card key={r.id} onPress={() => openLog(r)} padding="lg">
                   <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
                     <View
                       style={{
@@ -160,9 +124,19 @@ export function TrainScreen() {
                     <Ionicons name="play" size={18} color={c.textFaint} />
                   </View>
                 </Card>
-              ))}
-            </View>
-          ) : null}
+              ))
+              : null}
+
+            {routines.length > 0 ? (
+              <Button
+                title="+ Add another routine"
+                variant="secondary"
+                radius="md"
+                haptic="light"
+                onPress={() => router.push("/routines/new")}
+              />
+            ) : null}
+          </View>
 
           {/* Progress: body parts */}
           {logs.length === 0 ? (
@@ -192,7 +166,7 @@ export function TrainScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-              setShowChooser(true);
+              openLog(null);
             }}
             style={{
               width: 60,
@@ -213,92 +187,12 @@ export function TrainScreen() {
         </View>
       ) : null}
 
-      <LogSheet visible={showLog} onClose={() => setShowLog(false)} />
-
-      {/* + FAB chooser — Cal AI-style two big options */}
-      <BottomSheet visible={showChooser} onClose={() => setShowChooser(false)}>
-        <View style={{ gap: theme.spacing.xs, marginBottom: theme.spacing.xl }}>
-          <Text variant="title">What next?</Text>
-          <Text variant="body" color="textMuted">
-            Save a routine to reuse, or just log this workout.
-          </Text>
-        </View>
-
-        <View style={{ gap: theme.spacing.md }}>
-          <ChooserOption
-            icon="calendar-outline"
-            title="Create a routine"
-            sub="Build a reusable workout"
-            onPress={() => {
-              setShowChooser(false);
-              router.push("/routines/new");
-            }}
-          />
-          <ChooserOption
-            icon="add-circle-outline"
-            title="Log manually"
-            sub="Track today's workout only"
-            onPress={() => {
-              setShowChooser(false);
-              setShowLog(true);
-            }}
-          />
-        </View>
-      </BottomSheet>
+      <LogSheet
+        visible={showLog}
+        onClose={closeLog}
+        initialExercises={presetRoutine?.exercises}
+        routineName={presetRoutine?.name}
+      />
     </View>
-  );
-}
-
-function ChooserOption({
-  icon,
-  title,
-  sub,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  sub: string;
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const c = theme.colors;
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        onPress();
-      }}
-      style={({ pressed }) => ({
-        backgroundColor: c.surfaceAlt,
-        borderRadius: theme.radius["2xl"],
-        padding: theme.spacing.xl,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: theme.spacing.lg,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: theme.radius.xl,
-          backgroundColor: c.surface,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Ionicons name={icon} size={26} color={c.text} />
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="body" weight="bold">
-          {title}
-        </Text>
-        <Text variant="caption" color="textMuted">
-          {sub}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
-    </Pressable>
   );
 }
