@@ -108,7 +108,7 @@ export function TrainScreen() {
                         backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
                       }}
                     >
-                      <Ionicons name="flash" size={22} color={c.text} />
+                      <Ionicons name="barbell" size={22} color={c.text} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text variant="body" weight="bold">
