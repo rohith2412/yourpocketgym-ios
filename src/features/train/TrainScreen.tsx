@@ -3,7 +3,7 @@ import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Badge } from "../../ui";
+import { Screen, Text, Card, Badge, BottomSheet } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { loadUser } from "../auth/session";
 import { useTodayRoutine, useRoutines } from "../routines/hooks";
@@ -25,6 +25,7 @@ export function TrainScreen() {
   const router = useRouter();
 
   const [showLog, setShowLog] = useState(false);
+  const [showChooser, setShowChooser] = useState(false);
   const [firstName, setFirstName] = useState("");
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export function TrainScreen() {
           {/* Streak card */}
           <StreakCard logs={logs} />
 
-          {/* Today's workout */}
+          {/* Routines UI temporarily hidden — will re-enable once the "Log from routine" flow lands.
           <Card
             onPress={() =>
               routine ? setShowLog(true) : router.push("/routines")
@@ -122,6 +123,46 @@ export function TrainScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={14} color={c.textFaint} />
           </Pressable>
+          */}
+
+          {/* Your routines — shown every day (Cal AI-style large cards) */}
+          {routines.length > 0 ? (
+            <View style={{ gap: theme.spacing.sm }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text variant="label" color="textMuted">
+                  YOUR ROUTINES
+                </Text>
+                <Pressable onPress={() => router.push("/routines")} hitSlop={8}>
+                  <Text variant="label" color="textMuted">
+                    Manage
+                  </Text>
+                </Pressable>
+              </View>
+              {routines.map((r) => (
+                <Card key={r.id} onPress={() => setShowLog(true)} padding="lg">
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+                    <View
+                      style={{
+                        width: 48, height: 48, borderRadius: theme.radius.xl,
+                        backgroundColor: c.surfaceAlt, alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons name="flash" size={22} color={c.text} />
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text variant="body" weight="bold">
+                        {r.name}
+                      </Text>
+                      <Text variant="caption" color="textMuted" numberOfLines={1}>
+                        {r.exercises.length} exercise{r.exercises.length !== 1 ? "s" : ""}
+                      </Text>
+                    </View>
+                    <Ionicons name="play" size={18} color={c.textFaint} />
+                  </View>
+                </Card>
+              ))}
+            </View>
+          ) : null}
 
           {/* Progress: body parts */}
           {logs.length === 0 ? (
@@ -151,7 +192,7 @@ export function TrainScreen() {
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-              setShowLog(true);
+              setShowChooser(true);
             }}
             style={{
               width: 60,
@@ -173,6 +214,91 @@ export function TrainScreen() {
       ) : null}
 
       <LogSheet visible={showLog} onClose={() => setShowLog(false)} />
+
+      {/* + FAB chooser — Cal AI-style two big options */}
+      <BottomSheet visible={showChooser} onClose={() => setShowChooser(false)}>
+        <View style={{ gap: theme.spacing.xs, marginBottom: theme.spacing.xl }}>
+          <Text variant="title">What next?</Text>
+          <Text variant="body" color="textMuted">
+            Save a routine to reuse, or just log this workout.
+          </Text>
+        </View>
+
+        <View style={{ gap: theme.spacing.md }}>
+          <ChooserOption
+            icon="calendar-outline"
+            title="Create a routine"
+            sub="Build a reusable workout"
+            onPress={() => {
+              setShowChooser(false);
+              router.push("/routines/new");
+            }}
+          />
+          <ChooserOption
+            icon="add-circle-outline"
+            title="Log manually"
+            sub="Track today's workout only"
+            onPress={() => {
+              setShowChooser(false);
+              setShowLog(true);
+            }}
+          />
+        </View>
+      </BottomSheet>
     </View>
+  );
+}
+
+function ChooserOption({
+  icon,
+  title,
+  sub,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  return (
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        onPress();
+      }}
+      style={({ pressed }) => ({
+        backgroundColor: c.surfaceAlt,
+        borderRadius: theme.radius["2xl"],
+        padding: theme.spacing.xl,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: theme.spacing.lg,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: theme.radius.xl,
+          backgroundColor: c.surface,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons name={icon} size={26} color={c.text} />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text variant="body" weight="bold">
+          {title}
+        </Text>
+        <Text variant="caption" color="textMuted">
+          {sub}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+    </Pressable>
   );
 }
