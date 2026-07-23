@@ -13,7 +13,7 @@ import { WaterTracker } from "./components/WaterTracker";
 import { WeeklyChart } from "./components/WeeklyChart";
 import { DEFAULT_GOALS, type FoodEntry } from "./storage";
 // (WATER_GOAL_ML + toISODay imported above)
-import { ACCENT_GREEN, ACCENT_GREEN_DARK, ACCENT_GREEN_SOFT } from "./theme";
+import { ACCENT_GREEN, ACCENT_GREEN_SOFT } from "./theme";
 
 // ─── Meal buckets ────────────────────────────────────────────────────────────
 type MealKey = "breakfast" | "lunch" | "dinner" | "snacks";
@@ -247,15 +247,6 @@ export function NutritionScreen() {
     setShowLog(true);
   };
 
-  const openScan = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    Alert.alert(
-      "AI Scan is Premium ✨",
-      "Snap a photo and let AI log the meal for you — coming with Premium. For now, tap Add Manually.",
-      [{ text: "OK" }],
-    );
-  };
-
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -275,38 +266,13 @@ export function NutritionScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Header ────────────────────────────────────────────────────── */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              paddingTop: theme.spacing.lg,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text variant="caption" color="textMuted">
-                {today}
-              </Text>
-              <Text variant="title" style={{ marginTop: 2 }}>
-                Nutrition
-              </Text>
-              <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-                Track meals — AI photo coming with Premium.
-              </Text>
-            </View>
-            <Pressable
-              onPress={openScan}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: ACCENT_GREEN_SOFT,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="sparkles" size={18} color={ACCENT_GREEN} />
-            </Pressable>
+          <View style={{ paddingTop: theme.spacing.lg }}>
+            <Text variant="caption" color="textMuted">
+              {today}
+            </Text>
+            <Text variant="title" style={{ marginTop: 2 }}>
+              Nutrition
+            </Text>
           </View>
 
           {/* ── Daily summary hero ────────────────────────────────────────── */}
@@ -336,71 +302,6 @@ export function NutritionScreen() {
               <StatDivider />
               <QuickStat icon="water" iconColor="#3B82F6" value={waterLabel} label="Water" />
             </View>
-          </View>
-
-          {/* ── Quick Actions ─────────────────────────────────────────────── */}
-          <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
-            <Pressable
-              onPress={openScan}
-              style={({ pressed }) => ({
-                flex: 1,
-                backgroundColor: ACCENT_GREEN,
-                borderRadius: theme.radius.xl,
-                padding: theme.spacing.lg,
-                gap: 6,
-                opacity: pressed ? 0.9 : 1,
-                shadowColor: ACCENT_GREEN,
-                shadowOpacity: 0.35,
-                shadowRadius: 16,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 6,
-              })}
-            >
-              <Ionicons name="camera" size={22} color="#fff" />
-              <Text weight="bold" style={{ color: "#fff", marginTop: 4 }}>
-                Scan Meal
-              </Text>
-              <Text variant="caption" style={{ color: "rgba(255,255,255,0.75)" }}>
-                Photo · AI-powered
-              </Text>
-              <View
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                  paddingHorizontal: 7,
-                  paddingVertical: 2,
-                  borderRadius: 999,
-                  backgroundColor: "rgba(255,255,255,0.22)",
-                }}
-              >
-                <Text variant="caption" weight="bold" style={{ color: "#fff", fontSize: 9 }}>
-                  PRO
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={openLog}
-              style={({ pressed }) => ({
-                flex: 1,
-                backgroundColor: c.surface,
-                borderRadius: theme.radius.xl,
-                borderWidth: 1,
-                borderColor: c.border,
-                padding: theme.spacing.lg,
-                gap: 6,
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <Ionicons name="add" size={22} color={c.text} />
-              <Text weight="bold" style={{ marginTop: 4 }}>
-                Add Manually
-              </Text>
-              <Text variant="caption" color="textMuted">
-                Type it in
-              </Text>
-            </Pressable>
           </View>
 
           {/* ── Macros ───────────────────────────────────────────────────── */}
@@ -440,26 +341,21 @@ export function NutritionScreen() {
           <Pressable
             onPress={openLog}
             style={({ pressed }) => ({
-              paddingHorizontal: 18,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: ACCENT_GREEN,
+              width: 60,
+              height: 60,
+              borderRadius: theme.radius.xl,
+              backgroundColor: c.inverseBg,
               alignItems: "center",
               justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
               opacity: pressed ? 0.9 : 1,
-              shadowColor: ACCENT_GREEN,
-              shadowOpacity: 0.45,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 10,
+              shadowColor: c.inverseBg,
+              shadowOpacity: 0.28,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 8,
             })}
           >
-            <Ionicons name="add" size={22} color="#fff" />
-            <Text weight="bold" style={{ color: "#fff" }}>
-              Log food
-            </Text>
+            <Ionicons name="add" size={30} color={c.inverseText} />
           </Pressable>
         </View>
       ) : null}
