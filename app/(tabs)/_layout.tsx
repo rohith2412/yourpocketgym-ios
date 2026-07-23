@@ -26,7 +26,7 @@ function makeRoutes(plan: "free" | "premium", tint: string) {
 
   return plan === "premium"
     ? [progress, train, nutrition, coach, profile]
-    : [progress, train, profile];
+    : [progress, train, nutrition, profile];
 }
 
 function SceneWrapper({ children, bg }: { children: React.ReactNode; bg: string }) {
@@ -42,7 +42,7 @@ function SceneWrapper({ children, bg }: { children: React.ReactNode; bg: string 
 export default function TabLayout() {
   const { theme } = useTheme();
   const { plan } = useEntitlement();
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(1);
 
   const routes = makeRoutes(plan, theme.colors.text);
   const safeIndex = Math.min(index, routes.length - 1);
