@@ -33,7 +33,23 @@ export const DEFAULT_GOALS: MacroGoals = {
   fat: 70,
 };
 
-const KEYS = { food: "@food_entries", goals: "@macro_goals" };
+const KEYS = { food: "@food_entries", goals: "@macro_goals", water: "@water_state" };
+
+// Water goal (ml/day). Simple constant for now; can become user-editable later.
+export const WATER_GOAL_ML = 3000;
+
+// Water: map of ISO day → ml consumed
+export type WaterState = Record<string, number>;
+export async function loadWater(): Promise<WaterState> {
+  return (await getJSON<WaterState>(KEYS.water)) ?? {};
+}
+export const saveWater = (s: WaterState) => setJSON(KEYS.water, s);
+export async function addWaterMl(day: string, ml: number) {
+  const s = await loadWater();
+  s[day] = Math.max(0, (s[day] ?? 0) + ml);
+  await saveWater(s);
+  return s[day];
+}
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 export const toISODay = (d: Date | string = new Date()) =>
@@ -85,5 +101,5 @@ export const saveGoals = (g: MacroGoals) => setJSON(KEYS.goals, g);
 
 // ── Reset (for sign-out) ─────────────────────────────────────────────────────
 export async function clearNutritionLocal() {
-  await AsyncStorage.multiRemove([KEYS.food, KEYS.goals]);
+  await AsyncStorage.multiRemove([KEYS.food, KEYS.goals, KEYS.water]);
 }
