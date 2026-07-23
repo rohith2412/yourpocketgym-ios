@@ -101,55 +101,48 @@ export function NutritionScreen() {
             <Text variant="title">Nutrition</Text>
           </View>
 
-          {/* HERO — today's macro summary */}
+          {/* HERO — today's macro summary (Cal-AI style: subtle dark card, bright numbers) */}
           <View
             style={{
-              backgroundColor: c.inverseBg,
+              backgroundColor: c.surface,
               borderRadius: theme.radius["2xl"],
+              borderWidth: 1,
+              borderColor: c.border,
               padding: theme.spacing.xl,
-              gap: theme.spacing.lg,
+              gap: theme.spacing.xl,
             }}
           >
-            <View>
-              <Text
-                variant="caption"
-                weight="bold"
-                style={{ color: c.inverseText, opacity: 0.6, letterSpacing: 1 }}
-              >
+            {/* Big kcal number */}
+            <View style={{ gap: 4 }}>
+              <Text variant="caption" color="textMuted" weight="bold" style={{ letterSpacing: 1 }}>
                 TODAY
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: theme.spacing.sm, marginTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: theme.spacing.sm }}>
                 <Text
                   style={{
-                    fontSize: 36,
+                    fontSize: 44,
                     fontWeight: theme.fontWeight.heavy,
-                    color: c.inverseText,
-                    letterSpacing: -1,
+                    color: c.text,
+                    letterSpacing: -1.5,
                   }}
                 >
                   {Math.round(totals.calories).toLocaleString()}
                 </Text>
-                <Text
-                  style={{ color: c.inverseText, opacity: 0.6 }}
-                  variant="body"
-                >
+                <Text variant="body" color="textMuted">
                   / {goals.calories.toLocaleString()} kcal
                 </Text>
               </View>
-              <Text
-                variant="caption"
-                style={{ color: c.inverseText, opacity: 0.55, marginTop: 2 }}
-              >
+              <Text variant="caption" color="textFaint">
                 {remaining > 0 ? `${remaining.toLocaleString()} kcal left` : "Over daily goal"}
               </Text>
             </View>
 
-            {/* Big progress bar */}
+            {/* Overall progress bar */}
             <View
               style={{
                 height: 6,
                 borderRadius: 3,
-                backgroundColor: "rgba(255,255,255,0.15)",
+                backgroundColor: c.surfaceAlt,
                 overflow: "hidden",
               }}
             >
@@ -157,45 +150,45 @@ export function NutritionScreen() {
                 style={{
                   width: `${Math.min(100, (totals.calories / goals.calories) * 100)}%`,
                   height: "100%",
-                  backgroundColor: c.inverseText,
+                  backgroundColor: c.text,
                 }}
               />
             </View>
 
-            {/* Macros: 3-col mini */}
+            {/* Macros: 3-col */}
             <View style={{ flexDirection: "row", gap: theme.spacing.lg }}>
               {(["protein", "carbs", "fat"] as const).map((k) => {
                 const label = k.charAt(0).toUpperCase() + k.slice(1);
                 return (
-                  <View key={k} style={{ flex: 1, gap: 4 }}>
+                  <View key={k} style={{ flex: 1, gap: 6 }}>
                     <Text
                       variant="caption"
+                      color="textMuted"
                       weight="bold"
-                      style={{ color: c.inverseText, opacity: 0.6, letterSpacing: 0.5 }}
+                      style={{ letterSpacing: 0.5 }}
                     >
                       {label.toUpperCase()}
                     </Text>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: theme.fontWeight.heavy,
-                        color: c.inverseText,
-                        letterSpacing: -0.5,
-                      }}
-                    >
-                      {Math.round(totals[k])}
+                    <View style={{ flexDirection: "row", alignItems: "baseline", gap: 2 }}>
                       <Text
-                        variant="caption"
-                        style={{ color: c.inverseText, opacity: 0.5 }}
+                        style={{
+                          fontSize: 20,
+                          fontWeight: theme.fontWeight.heavy,
+                          color: c.text,
+                          letterSpacing: -0.5,
+                        }}
                       >
+                        {Math.round(totals[k])}
+                      </Text>
+                      <Text variant="caption" color="textFaint">
                         /{goals[k]}g
                       </Text>
-                    </Text>
+                    </View>
                     <View
                       style={{
                         height: 3,
                         borderRadius: 2,
-                        backgroundColor: "rgba(255,255,255,0.15)",
+                        backgroundColor: c.surfaceAlt,
                         overflow: "hidden",
                       }}
                     >
@@ -203,7 +196,7 @@ export function NutritionScreen() {
                         style={{
                           width: `${Math.min(100, (totals[k] / goals[k]) * 100)}%`,
                           height: "100%",
-                          backgroundColor: c.inverseText,
+                          backgroundColor: c.text,
                         }}
                       />
                     </View>
