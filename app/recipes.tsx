@@ -2,16 +2,16 @@ import AvatarButton from "@/components/AvatarButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 //register useA. const token = useAuth(); <Text style={s.headerTitle}>Recipes</Text>
@@ -345,7 +345,7 @@ function RecipeDetail({ recipe, onBack, onRegenerate, isGenerating }) {
               <Text style={s.calorieEyebrow}>Calories</Text>
               <Text style={s.calorieNum}>
                 {fmt(recipe.macros?.calories)}
-                <Text style={s.calorieUnit}> kcal</Text>
+                <Text style={s.calorieUnit}> cal</Text>
               </Text>
             </View>
             <View style={{ flexDirection: "row", gap: 14 }}>
@@ -509,7 +509,7 @@ function LibraryCard({ recipe, onPress }) {
             {fmt(recipe.macros?.protein)}g protein
           </Text>
           <Text style={s.libDot}>·</Text>
-          <Text style={s.libMeta}>{fmt(recipe.macros?.calories)} kcal</Text>
+          <Text style={s.libMeta}>{fmt(recipe.macros?.calories)} cal</Text>
           <Text style={s.libDot}>·</Text>
           <Text style={s.libMeta}>{totalTime(recipe)}m</Text>
         </View>

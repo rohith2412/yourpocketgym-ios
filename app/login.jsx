@@ -16,12 +16,14 @@ import {
     View,
 } from "react-native";
 import { saveToken } from "../src/auth/storage";
+import { signInWithGoogle, isCancelled } from "../src/auth/google";
 //handleLogin
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -90,6 +92,45 @@ export default function Login() {
       alert("Something went wrong. Check your connection.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const google = await signInWithGoogle();
+      if (!google) {
+        alert("Google sign-in failed. Please try again.");
+        return;
+      }
+
+      const res = await fetch("https://yourpocketgym.com/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: google.idToken }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.error || "Google login failed");
+        return;
+      }
+
+      await saveToken(data.token);
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+      if (!data.user.hasIntro) {
+        router.replace("/startersIntro");
+      } else {
+        router.replace("/tracking");
+      }
+    } catch (err) {
+      if (isCancelled(err)) return;
+      alert("Something went wrong with Google sign-in.");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -175,6 +216,27 @@ export default function Login() {
             >
               <Text style={s.btnText}>
                 {loading ? "Signing in..." : "Sign In →"}
+              </Text>
+            </Pressable>
+
+            <View style={s.dividerRow}>
+              <View style={s.dividerLine} />
+              <Text style={s.dividerText}>or</Text>
+              <View style={s.dividerLine} />
+            </View>
+
+            <Pressable
+              onPress={handleGoogleLogin}
+              disabled={googleLoading || loading}
+              style={[s.googleBtn, (googleLoading || loading) && s.btnDisabled]}
+            >
+              <Image
+                source={require("../assets/images/google.png")}
+                style={s.googleIcon}
+                resizeMode="contain"
+              />
+              <Text style={s.googleBtnText}>
+                {googleLoading ? "Signing in..." : "Continue with Google"}
               </Text>
             </Pressable>
           </View>
@@ -269,6 +331,27 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   btnDisabled: { opacity: 0.4 },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginVertical: 4,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#e8e5de" },
+  dividerText: { fontSize: 12, color: "#bbb", fontWeight: "600" },
+  googleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: "#e8e5de",
+  },
+  googleIcon: { width: 20, height: 20 },
+  googleBtnText: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
   btnText: {
     fontSize: 15,
     fontWeight: "700",
