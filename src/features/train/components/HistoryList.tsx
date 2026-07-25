@@ -86,7 +86,7 @@ export function HistoryList({ logs, loading }: { logs: WorkoutLog[]; loading: bo
                     {ex.name}
                   </Text>
                   <Text variant="caption" color="textMuted">
-                    {ex.sets.length} sets · {maxWeight(ex.sets)} lbs · {totalVolSets(ex.sets).toLocaleString()} vol
+                    {ex.sets.length} sets · {maxWeight(ex.sets)} lb · {totalVolSets(ex.sets).toLocaleString()} vol
                   </Text>
                 </View>
               ))}

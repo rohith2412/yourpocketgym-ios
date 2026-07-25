@@ -107,7 +107,7 @@ export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLo
             {stat.lastBest}
             <Text variant="caption" color="textMuted">
               {" "}
-              lbs
+              lb
             </Text>
           </Text>
           <DeltaBadge delta={stat.delta} />
@@ -153,7 +153,7 @@ export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLo
                         {ex.name}
                       </Text>
                       <Text variant="caption" color="textMuted">
-                        {maxWeight(ex.sets)} lbs max · {totalVolSets(ex.sets).toLocaleString()} vol
+                        {maxWeight(ex.sets)} lb max · {totalVolSets(ex.sets).toLocaleString()} vol
                       </Text>
                     </View>
                     {ex.sets.map((s, j) => (
@@ -162,7 +162,7 @@ export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLo
                           {j + 1}
                         </Text>
                         <Text variant="caption" color="textMuted">
-                          {s.reps} × {s.weight} lbs
+                          {s.reps} × {s.weight} lb
                         </Text>
                         <Text variant="caption" color="textFaint" style={{ marginLeft: "auto" }}>
                           {(s.reps * s.weight).toLocaleString()} vol

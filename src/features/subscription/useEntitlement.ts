@@ -4,6 +4,7 @@ import {
   isPremium as customerIsPremium,
   addPremiumStatusListener,
 } from "../../services/iapService";
+import { useDevPremium } from "./devOverride";
 
 export type Plan = "free" | "premium";
 
@@ -32,6 +33,9 @@ export function useEntitlement(): Entitlement {
   // on an active subscription). OR'd into `isPremium` below.
   const duoActive = false;
 
+  // DEV: local override toggle from Profile page (persisted in AsyncStorage).
+  const { data: devForcePremium = false } = useDevPremium();
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -54,7 +58,7 @@ export function useEntitlement(): Entitlement {
     [],
   );
 
-  const isPremium = ownPremium === true || duoActive;
+  const isPremium = devForcePremium || ownPremium === true || duoActive;
 
   return {
     plan: isPremium ? "premium" : "free",

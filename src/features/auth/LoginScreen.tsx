@@ -16,7 +16,7 @@ export function LoginScreen() {
 
   const { mutate: login, isPending } = useGoogleLogin({
     onSuccess: (user) =>
-      router.replace(user.hasIntro ? "/(tabs)/tracking" : "/startersIntro"),
+      router.replace(user.hasIntro ? "/(tabs)" : "/startersIntro"),
   });
 
   const handleGoogle = () => {

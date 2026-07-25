@@ -3,7 +3,6 @@ import { View, Animated, Easing } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
-import { ACCENT_GREEN, ACCENT_GREEN_DARK } from "../theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -43,8 +42,8 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
       <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
         <Defs>
           <LinearGradient id="calGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0%" stopColor={ACCENT_GREEN} stopOpacity="1" />
-            <Stop offset="100%" stopColor={ACCENT_GREEN_DARK} stopOpacity="1" />
+            <Stop offset="0%" stopColor={c.inverseBg} stopOpacity="1" />
+            <Stop offset="100%" stopColor={c.inverseBg} stopOpacity="0.7" />
           </LinearGradient>
         </Defs>
         <Circle
@@ -68,26 +67,41 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
         />
       </Svg>
 
-      <View style={{ position: "absolute", alignItems: "center" }}>
-        <Text variant="caption" color="textMuted" weight="bold" style={{ letterSpacing: 1 }}>
-          {over ? "OVER" : "REMAINING"}
-        </Text>
-        <Text
-          style={{
-            fontSize: 52,
-            fontWeight: theme.fontWeight.heavy,
-            color: c.text,
-            letterSpacing: -2.5,
-            lineHeight: 56,
-            marginTop: 2,
-          }}
-        >
-          {(over ? eaten - goal : remaining).toLocaleString()}
-        </Text>
-        <Text variant="caption" color="textFaint" style={{ marginTop: 2 }}>
-          of {goal.toLocaleString()} kcal
-        </Text>
-      </View>
+      {(() => {
+        const bigFont = Math.round(size * 0.24);
+        const lineH = Math.round(bigFont * 1.05);
+        return (
+          <View style={{ position: "absolute", alignItems: "center" }}>
+            <Text
+              variant="caption"
+              color="textMuted"
+              weight="bold"
+              style={{ letterSpacing: 1, fontSize: Math.max(9, Math.round(size * 0.055)) }}
+            >
+              {over ? "OVER" : "LEFT"}
+            </Text>
+            <Text
+              style={{
+                fontSize: bigFont,
+                fontWeight: theme.fontWeight.heavy,
+                color: c.text,
+                letterSpacing: -2,
+                lineHeight: lineH,
+                marginTop: 2,
+              }}
+            >
+              {(over ? eaten - goal : remaining).toLocaleString()}
+            </Text>
+            <Text
+              variant="caption"
+              color="textFaint"
+              style={{ marginTop: 2, fontSize: Math.max(9, Math.round(size * 0.055)) }}
+            >
+              of {goal.toLocaleString()}
+            </Text>
+          </View>
+        );
+      })()}
     </View>
   );
 }

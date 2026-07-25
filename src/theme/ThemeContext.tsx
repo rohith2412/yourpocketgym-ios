@@ -37,7 +37,7 @@ export const LIGHT: Palette = {
   statusBar: "dark-content",
 };
 
-export const DARK: Palette = {
+export const  DARK: Palette = {
   mode: "dark",
   bg: "#0b0b0c",
   card: "#0f0f11",

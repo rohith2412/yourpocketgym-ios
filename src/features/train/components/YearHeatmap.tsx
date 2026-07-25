@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { View, ScrollView } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 import { Card, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import type { WorkoutLog } from "../api";
@@ -7,8 +7,12 @@ import type { WorkoutLog } from "../api";
 const CELL = 11;
 const GAP = 3;
 const STEP = CELL + GAP;
+const DAY_LABEL_WIDTH = 20;
+const DAY_NAMES = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 const toISODate = (d: Date | string) => new Date(d).toLocaleDateString("en-CA");
+// const [tooltip, setTooltip] = useState<DayCell | null>(null);
+type DayCell = { date: string; vol: number; hasLog: boolean };
 
 function buildYearGrid(logs: WorkoutLog[]) {
   const volByDate: Record<string, number> = {};
@@ -27,10 +31,10 @@ function buildYearGrid(logs: WorkoutLog[]) {
   start.setDate(start.getDate() - 364);
   start.setDate(start.getDate() - start.getDay()); // back to Sunday
 
-  const weeks: ({ date: string; vol: number; hasLog: boolean } | null)[][] = [];
+  const weeks: (DayCell | null)[][] = [];
   const cursor = new Date(start);
   while (cursor <= today) {
-    const week: (typeof weeks)[number] = [];
+    const week: (DayCell | null)[] = [];
     for (let d = 0; d < 7; d++) {
       if (cursor > today) {
         week.push(null);
@@ -44,7 +48,21 @@ function buildYearGrid(logs: WorkoutLog[]) {
   }
 
   const maxVol = Math.max(1, ...Object.values(volByDate));
-  return { weeks, maxVol };
+
+  // Longest run of consecutive logged days across the year.
+  let longestStreak = 0;
+  let cur = 0;
+  weeks.flat().forEach((day) => {
+    if (day === null) return;
+    if (day.hasLog) {
+      cur += 1;
+      longestStreak = Math.max(longestStreak, cur);
+    } else {
+      cur = 0;
+    }
+  });
+
+  return { weeks, maxVol, longestStreak };
 }
 
 /** Total workouts logged in the past 365 days. */
@@ -74,9 +92,13 @@ export function YearHeatmap({ logs }: { logs: WorkoutLog[] }) {
   const { theme } = useTheme();
   const c = theme.colors;
   const cellColor = useCellColor();
+  const scrollRef = useRef<ScrollView>(null);
+  const [tooltip, setTooltip] = useState<DayCell | null>(null);
 
-  const { weeks, maxVol } = useMemo(() => buildYearGrid(logs), [logs]);
+  const { weeks, maxVol, longestStreak } = useMemo(() => buildYearGrid(logs), [logs]);
   const sessions = yearSessionCount(logs);
+  const sessionsLabel = `${sessions} session${sessions !== 1 ? "s" : ""}`;
+  const streakLabel = `${longestStreak} day${longestStreak !== 1 ? "s" : ""} streak`;
 
   // Month labels — one per month at the first week of that month.
   const monthLabels: { wi: number; x: number; label: string }[] = [];
@@ -113,58 +135,114 @@ export function YearHeatmap({ logs }: { logs: WorkoutLog[] }) {
           THIS YEAR
         </Text>
         <Text variant="caption" color="textFaint">
-          {sessions} session{sessions !== 1 ? "s" : ""}
+          {sessionsLabel} · {streakLabel}
         </Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 4 }}
-      >
-        <View style={{ width: gridWidth }}>
-          {/* Month labels */}
-          <View style={{ height: 14, marginBottom: 4 }}>
-            {monthLabels.map(({ wi, x, label }) => (
-              <Text
-                key={wi}
-                style={{
-                  position: "absolute",
-                  left: x,
-                  fontSize: 9,
-                  fontWeight: "700",
-                  color: c.textMuted,
-                  letterSpacing: 0.3,
-                }}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
-            ))}
-          </View>
+      <View style={{ flexDirection: "row" }}>
+        {/* Day-of-week labels — fixed column, doesn't scroll with the grid */}
+        <View style={{ width: DAY_LABEL_WIDTH, marginTop: 18 }}>
+          {DAY_NAMES.map((name, di) => (
+            <View
+              key={di}
+              style={{ height: CELL, marginBottom: GAP, justifyContent: "center" }}
+            >
+              {name !== "" && (
+                <Text
+                  variant="caption"
+                  color="textFaint"
+                  style={{ fontSize: 8, fontWeight: "600" }}
+                >
+                  {name}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
 
-          {/* Weeks × days grid */}
-          <View style={{ flexDirection: "row", gap: GAP }}>
-            {weeks.map((week, wi) => (
-              <View key={wi} style={{ flexDirection: "column", gap: GAP }}>
-                {week.map((day, di) => (
-                  <View
-                    key={di}
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+            contentContainerStyle={{ paddingRight: 4 }}
+          >
+            <View style={{ width: gridWidth }}>
+              {/* Month labels */}
+              <View style={{ height: 14, marginBottom: 4 }}>
+                {monthLabels.map(({ wi, x, label }) => (
+                  <Text
+                    key={wi}
                     style={{
-                      width: CELL,
-                      height: CELL,
-                      borderRadius: 2,
-                      backgroundColor: day
-                        ? cellColor(day.vol, maxVol, day.hasLog)
-                        : "transparent",
+                      position: "absolute",
+                      left: x,
+                      fontSize: 9,
+                      fontWeight: "700",
+                      color: c.textMuted,
+                      letterSpacing: 0.3,
                     }}
-                  />
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
                 ))}
               </View>
-            ))}
-          </View>
+
+              {/* Weeks × days grid */}
+              <View style={{ flexDirection: "row", gap: GAP }}>
+                {weeks.map((week, wi) => (
+                  <View key={wi} style={{ flexDirection: "column", gap: GAP }}>
+                    {week.map((day, di) => (
+                      <Pressable
+                        key={di}
+                        disabled={!day?.hasLog}
+                        onPress={() => {
+                          if (!day) return;
+                          setTooltip((t) => (t?.date === day.date ? null : day));
+                        }}
+                        style={{
+                          width: CELL,
+                          height: CELL,
+                          borderRadius: 2,
+                          backgroundColor: day
+                            ? cellColor(day.vol, maxVol, day.hasLog)
+                            : "transparent",
+                        }}
+                      />
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
+
+      {/* Tapped-day detail */}
+      {tooltip && (
+        <View
+          style={{
+            marginTop: theme.spacing.sm,
+            backgroundColor: c.surfaceAlt,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            alignSelf: "flex-start",
+          }}
+        >
+          <Text variant="caption" color="textMuted">
+            {new Date(tooltip.date).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
+          </Text>
+          <Text variant="caption" color="text" weight="bold" style={{ fontSize: 13 }}>
+            {tooltip.vol.toLocaleString()} lb
+          </Text>
+        </View>
+      )}
 
       {/* Legend */}
       <View

@@ -14,12 +14,15 @@ import {
 } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useEntitlement } from "../subscription/useEntitlement";
+import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
 import { loadUser, clearSession, type AuthUser } from "../auth/session";
 
 export function ProfileScreen() {
   const { theme, mode, setMode } = useTheme();
   const router = useRouter();
   const { plan } = useEntitlement();
+  const { data: devPremium = false } = useDevPremium();
+  const setDevPremium = useSetDevPremium();
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
@@ -115,6 +118,31 @@ export function ProfileScreen() {
         <Separator inset={theme.spacing.lg} />
         <ListRow title="Delete account" icon="trash-outline" danger onPress={() => router.push("/legal/delete-account")} />
       </Card>
+
+      {/* Dev — plan toggle */}
+      <View style={{ gap: theme.spacing.sm }}>
+        <Text variant="label" color="textMuted">
+          DEV
+        </Text>
+        <Card padding="lg" style={{ gap: theme.spacing.md }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text variant="body" weight="semibold">Force premium</Text>
+              <Text variant="caption" color="textMuted">
+                Currently: {plan}
+              </Text>
+            </View>
+          </View>
+          <SegmentedControl<"free" | "premium">
+            value={devPremium ? "premium" : "free"}
+            onChange={(v) => setDevPremium.mutate(v === "premium")}
+            segments={[
+              { value: "free", label: "Free" },
+              { value: "premium", label: "Premium" },
+            ]}
+          />
+        </Card>
+      </View>
 
       <Text variant="caption" color="textFaint" center>
         PocketGym · v2.0

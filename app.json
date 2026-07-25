@@ -56,7 +56,13 @@
       "expo-image-picker",
       "expo-secure-store",
       "expo-web-browser",
-      "react-native-bottom-tabs"
+      "react-native-bottom-tabs",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "PocketGym uses the microphone so Pro members can log workouts by voice."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

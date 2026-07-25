@@ -69,7 +69,7 @@ export function WelcomeScreen() {
   const { mutate: login, isPending } = useGoogleLogin({
     onSuccess: (user) => {
       setSheetOpen(false);
-      router.replace(user.hasIntro ? "/(tabs)/tracking" : "/startersIntro");
+      router.replace(user.hasIntro ? "/(tabs)" : "/startersIntro");
     },
   });
 

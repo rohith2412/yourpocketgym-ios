@@ -29,7 +29,7 @@ export function getWeekActivity(logs: LikeLog[]) {
     d.setDate(d.getDate() - i);
     const iso = d.toLocaleDateString("en-CA");
     const active = logs.some((l) => new Date(l.date).toLocaleDateString("en-CA") === iso);
-    days.push({ label: dayLetters[d.getDay()], active, today: i === 0 });
+    days.push({ label: dayLetters[d.getDay()], date: d.getDate(), active, today: i === 0 });
   }
   return days;
 }

@@ -4,7 +4,6 @@ import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from "
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { useWeeklyCalories } from "../hooks";
-import { ACCENT_GREEN } from "../theme";
 
 function smooth(pts: { x: number; y: number }[]) {
   if (pts.length < 2) return "";
@@ -18,13 +17,16 @@ function smooth(pts: { x: number; y: number }[]) {
   return d;
 }
 
-export function WeeklyChart({ goal }: { goal: number }) {
+const GREEN = "#22C55E";
+
+export function WeeklyChart({ goal, height }: { goal: number; height?: number }) {
   const { theme } = useTheme();
   const c = theme.colors;
   const days = useWeeklyCalories();
 
   const W = 320;
   const H = 130;
+  const cardHeight = height;
   const PAD_L = 8;
   const PAD_R = 8;
   const PAD_T = 12;
@@ -56,6 +58,7 @@ export function WeeklyChart({ goal }: { goal: number }) {
         borderWidth: 1,
         borderColor: c.border,
         padding: theme.spacing.lg,
+        ...(cardHeight ? { height: cardHeight, justifyContent: "space-between" } : null),
       }}
     >
       <View
@@ -77,8 +80,8 @@ export function WeeklyChart({ goal }: { goal: number }) {
       <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="wgArea" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={ACCENT_GREEN} stopOpacity="0.28" />
-            <Stop offset="100%" stopColor={ACCENT_GREEN} stopOpacity="0.02" />
+            <Stop offset="0%" stopColor={GREEN} stopOpacity="0.28" />
+            <Stop offset="100%" stopColor={GREEN} stopOpacity="0.02" />
           </LinearGradient>
         </Defs>
 
@@ -87,7 +90,7 @@ export function WeeklyChart({ goal }: { goal: number }) {
           <Path
             d={line}
             fill="none"
-            stroke={ACCENT_GREEN}
+            stroke={GREEN}
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -104,8 +107,8 @@ export function WeeklyChart({ goal }: { goal: number }) {
               cx={p.x}
               cy={p.y}
               r={d.isToday ? 5 : 3}
-              fill={d.isToday ? ACCENT_GREEN : c.surface}
-              stroke={ACCENT_GREEN}
+              fill={d.isToday ? GREEN : c.surface}
+              stroke={GREEN}
               strokeWidth={d.isToday ? 0 : 2}
             />
           );

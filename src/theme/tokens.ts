@@ -71,16 +71,16 @@ export type ColorTokens = {
 // Monochrome black & white theme. The accent is simply black (light) / white
 // (dark). success/danger stay colored because they carry meaning.
 
-// Light — white surfaces, black accent
+// Light — softer off-white bg, dark text, muted gray surfaces
 export const lightColors: ColorTokens = {
-  bg: "#ffffff",
-  surface: "#ffffff",
-  surfaceAlt: "#f4f4f5",
+  bg: "#ececec",
+  surface: "#f5f5f5",
+  surfaceAlt: "#e2e2e5",
   text: "#0a0a0a",
   textMuted: "#6b7280",
-  textFaint: "#a1a1aa",
-  border: "#e4e4e7",
-  primary: "#0a0a0a", // black accent
+  textFaint: "#9ca3af",
+  border: "#d4d4d8",
+  primary: "#0a0a0a",
   primaryText: "#ffffff",
   success: "#16a34a",
   danger: "#ef4444",
@@ -89,16 +89,16 @@ export const lightColors: ColorTokens = {
   inverseText: "#ffffff",
 };
 
-// Dark — true black, white accent
+// Dark — near-black bg, lighter surfaces for card contrast
 export const darkColors: ColorTokens = {
-  bg: "#000000",
-  surface: "#0e0e0e",
-  surfaceAlt: "#1a1a1a",
+  bg: "#0a0a0a",
+  surface: "#0f0f0f",
+  surfaceAlt: "#1f1f1f",
   text: "#ffffff",
-  textMuted: "#a1a1a1",
+  textMuted: "#a1a1aa",
   textFaint: "#6b6b6b",
-  border: "#262626",
-  primary: "#ffffff", // white accent
+  border: "#2a2a2a",
+  primary: "#ffffff",
   primaryText: "#0a0a0a",
   success: "#22c55e",
   danger: "#f87171",

@@ -85,7 +85,7 @@ export default function Register() {
           }
         } catch {}
         await AsyncStorage.removeItem("@pending_intro");
-        router.replace("/(tabs)/tracking");
+        router.replace("/(tabs)");
       } else {
         // Old flow fallback — check if intro was already done on the server
         const introRes  = await fetch("https://yourpocketgym.com/api/user-intro", {
@@ -93,7 +93,7 @@ export default function Register() {
         });
         const introData = await introRes.json();
         if (!introRes.ok || !introData?.exists) router.replace("/startersIntro");
-        else                                     router.replace("/(tabs)/tracking");
+        else                                     router.replace("/(tabs)");
       }
     } catch {
       alert("Something went wrong");
@@ -124,7 +124,7 @@ export default function Register() {
       );
 
       if (!data.user.hasIntro) router.replace("/startersIntro");
-      else                     router.replace("/(tabs)/tracking");
+      else                     router.replace("/(tabs)");
     } catch (err) {
       if (isCancelled(err)) return;
       console.warn("Google sign-in error:", err?.code, err?.message, err);

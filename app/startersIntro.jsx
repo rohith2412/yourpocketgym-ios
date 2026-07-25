@@ -116,7 +116,7 @@ export default function IntroPage() {
             await AsyncStorage.setItem("user", JSON.stringify({ ...user, hasIntro: true }));
           }
           setDone(true);
-          setTimeout(() => router.replace("/(tabs)/tracking"), 2000);
+          setTimeout(() => router.replace("/(tabs)"), 2000);
         } else {
           alert("Error: " + (data.error || "Something went wrong"));
         }

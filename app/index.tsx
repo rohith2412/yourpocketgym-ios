@@ -44,7 +44,7 @@ export default function Index() {
   useEffect(() => {
     (async () => {
       const token = await getToken();
-      if (token) { setDestination("/(tabs)/tracking"); setChecking(false); return; }
+      if (token) { setDestination("/(tabs)"); setChecking(false); return; }
       // v2: signed-out users start at the welcome screen.
       setDestination("/welcome");
       setChecking(false);

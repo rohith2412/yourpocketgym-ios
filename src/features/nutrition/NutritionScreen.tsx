@@ -1,40 +1,86 @@
-import { useMemo, useState } from "react";
-import { View, Pressable, ScrollView, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Pressable,
+  Alert,
+  Animated,
+  Easing,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from "react-native";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const LIST_LAYOUT_ANIM: Parameters<typeof LayoutAnimation.configureNext>[0] = {
+  duration: 320,
+  create: { type: "easeInEaseOut", property: "opacity" },
+  update: { type: "spring", springDamping: 0.8 },
+  delete: { type: "easeInEaseOut", property: "opacity" },
+};
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+
+type MCIName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 import * as Haptics from "expo-haptics";
 import { Screen, Text, Separator } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useToday, useDeleteFood, useWater } from "./hooks";
-import { WATER_GOAL_ML, toISODay } from "./storage";
+import { useFoodEntries, useGoals, useDeleteFood } from "./hooks";
+import { WeekCalendar } from "./components/WeekCalendar";
+import AvatarButton from "../../../components/AvatarButton";
+import { useTabNav } from "../../nav/tabNav";
+import { LinearGradient } from "expo-linear-gradient";
 import { FoodLogSheet } from "./FoodLogSheet";
-import { CalorieRing } from "./components/CalorieRing";
-import { MacroBars } from "./components/MacroBars";
-import { WaterTracker } from "./components/WaterTracker";
-import { WeeklyChart } from "./components/WeeklyChart";
-import { DEFAULT_GOALS, type FoodEntry } from "./storage";
-// (WATER_GOAL_ML + toISODay imported above)
-import { ACCENT_GREEN, ACCENT_GREEN_SOFT } from "./theme";
+import { GoalSheet } from "./GoalSheet";
+import { RotatingHero } from "./components/RotatingHero";
+import { DEFAULT_GOALS, toISODay, totalsForDay, type FoodEntry } from "./storage";
 
-// ─── Meal buckets ────────────────────────────────────────────────────────────
-type MealKey = "breakfast" | "lunch" | "dinner" | "snacks";
-const MEAL_META: Record<MealKey, { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  breakfast: { label: "Breakfast", icon: "sunny-outline" },
-  lunch: { label: "Lunch", icon: "restaurant-outline" },
-  dinner: { label: "Dinner", icon: "moon-outline" },
-  snacks: { label: "Snacks", icon: "cafe-outline" },
+// ─── Flat food row ───────────────────────────────────────────────────────────
+const FOOD_ICONS: [RegExp, MCIName][] = [
+  [/pizza/i, "pizza"],
+  [/burger|cheeseburger/i, "hamburger"],
+  [/fries|chips/i, "french-fries"],
+  [/hot ?dog/i, "hot-dog"],
+  [/taco/i, "taco"],
+  [/burrito|wrap/i, "food-takeout-box"],
+  [/sushi|sashimi|maki/i, "rice"],
+  [/noodle|ramen|pasta|spaghetti/i, "noodles"],
+  [/rice/i, "rice"],
+  [/salad|lettuce|greens|broccoli|spinach|kale/i, "leaf"],
+  [/steak|beef|pork|bacon|lamb/i, "food-steak"],
+  [/chicken|poultry|wing|turkey|drumstick/i, "food-drumstick"],
+  [/fish|salmon|tuna|shrimp|prawn|seafood/i, "fish"],
+  [/egg|omelet|omelette/i, "egg"],
+  [/bread|toast|sandwich|bagel|croissant/i, "bread-slice"],
+  [/pancake|waffle/i, "food-variant"],
+  [/cheese/i, "cheese"],
+  [/milk|latte|cappuccino/i, "cup"],
+  [/coffee|espresso|americano/i, "coffee"],
+  [/tea/i, "tea"],
+  [/water/i, "cup-water"],
+  [/beer/i, "beer"],
+  [/wine/i, "glass-wine"],
+  [/juice|smoothie|shake|protein|whey/i, "cup"],
+  [/apple/i, "food-apple"],
+  [/banana|grape|orange|mango|pineapple|strawberr|berry|watermelon|melon|peach|pear|kiwi|fruit/i, "fruit-cherries"],
+  [/avocado|tomato|carrot|potato|onion|pepper|cucumber|vegetable|veggie|corn/i, "carrot"],
+  [/nuts|almond|peanut|cashew|walnut/i, "peanut"],
+  [/chocolate|cocoa|candy|sweet/i, "candycane"],
+  [/cookie|biscuit/i, "cookie"],
+  [/cake|donut|doughnut|muffin|cupcake|dessert/i, "cupcake"],
+  [/ice ?cream|gelato/i, "ice-cream"],
+  [/honey|jam/i, "beehive-outline"],
+  [/yogurt|yoghurt|oat|cereal|granola|porridge|oatmeal/i, "bowl-mix"],
+  [/soup|stew|curry|chili/i, "pot-steam"],
+];
+
+const iconFor = (name: string): MCIName => {
+  for (const [re, icon] of FOOD_ICONS) if (re.test(name)) return icon;
+  return "silverware-fork-knife";
 };
 
-const mealFor = (iso: string): MealKey => {
-  const h = new Date(iso).getHours();
-  if (h < 11) return "breakfast";
-  if (h < 16) return "lunch";
-  if (h < 21) return "dinner";
-  return "snacks";
-};
-
-const initial = (name: string) => (name.trim()[0] ?? "?").toUpperCase();
-
-// ─── Food row (Apple Wallet-style card row) ──────────────────────────────────
 function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }) {
   const { theme } = useTheme();
   const c = theme.colors;
@@ -68,7 +114,6 @@ function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }
         paddingHorizontal: theme.spacing.lg,
       }}
     >
-      {/* Letter avatar */}
       <View
         style={{
           width: 44,
@@ -79,11 +124,7 @@ function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }
           justifyContent: "center",
         }}
       >
-        <Text
-          style={{ fontSize: 17, fontWeight: theme.fontWeight.heavy, color: c.text }}
-        >
-          {initial(entry.name)}
-        </Text>
+        <MaterialCommunityIcons name={iconFor(entry.name)} size={24} color={c.text} />
       </View>
 
       <View style={{ flex: 1, gap: 4 }}>
@@ -107,7 +148,7 @@ function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }
           {Math.round(entry.calories)}
         </Text>
         <Text variant="caption" color="textFaint" style={{ fontSize: 9 }}>
-          kcal
+          cal
         </Text>
       </View>
       <Pressable onPress={onDelete} hitSlop={8}>
@@ -117,128 +158,61 @@ function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }
   );
 }
 
-// ─── Meal timeline section ───────────────────────────────────────────────────
-function MealCard({
-  meal,
-  entries,
-  onDelete,
-  onAdd,
-}: {
-  meal: MealKey;
-  entries: FoodEntry[];
-  onDelete: (id: string, name: string) => void;
-  onAdd: () => void;
-}) {
-  const { theme } = useTheme();
-  const c = theme.colors;
-  const meta = MEAL_META[meal];
-  const total = entries.reduce((s, e) => s + e.calories, 0);
-
-  return (
-    <View
-      style={{
-        backgroundColor: c.surface,
-        borderRadius: theme.radius["2xl"],
-        borderWidth: 1,
-        borderColor: c.border,
-        overflow: "hidden",
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.md,
-        }}
-      >
-        <View
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 17,
-            backgroundColor: ACCENT_GREEN_SOFT,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name={meta.icon} size={16} color={ACCENT_GREEN} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text variant="body" weight="bold">
-            {meta.label}
-          </Text>
-          {total > 0 ? (
-            <Text variant="caption" color="textMuted">
-              {Math.round(total)} kcal
-            </Text>
-          ) : (
-            <Text variant="caption" color="textFaint">
-              Nothing yet
-            </Text>
-          )}
-        </View>
-        <Pressable
-          onPress={onAdd}
-          hitSlop={8}
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 15,
-            backgroundColor: c.surfaceAlt,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name="add" size={18} color={c.text} />
-        </Pressable>
-      </View>
-
-      {entries.length > 0
-        ? entries.map((e, i) => (
-            <View key={e.id}>
-              {i === 0 ? <Separator inset={theme.spacing.lg} /> : null}
-              {i > 0 ? <Separator inset={theme.spacing["3xl"]} /> : null}
-              <FoodRow entry={e} onDelete={() => onDelete(e.id, e.name)} />
-            </View>
-          ))
-        : null}
-    </View>
-  );
-}
-
 // ─── Screen ──────────────────────────────────────────────────────────────────
 export function NutritionScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
+  const { goToProfile } = useTabNav();
   const [showLog, setShowLog] = useState(false);
+  const [showGoal, setShowGoal] = useState(false);
 
-  const { items, totals, goals: g } = useToday();
+  const [selectedDay, setSelectedDay] = useState<string>(() => toISODay());
+  const { data: allFood = [] } = useFoodEntries();
+  const { data: g } = useGoals();
   const goals = g ?? DEFAULT_GOALS;
   const del = useDeleteFood();
-  const { data: water } = useWater();
-  const waterMl = water?.[toISODay()] ?? 0;
-  const waterLabel = waterMl >= 100 ? `${(waterMl / 1000).toFixed(1)}L` : "—";
 
-  const grouped = useMemo(() => {
-    const buckets: Record<MealKey, FoodEntry[]> = {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-      snacks: [],
-    };
-    items.forEach((e) => buckets[mealFor(e.loggedAt)].push(e));
-    (Object.keys(buckets) as MealKey[]).forEach((k) =>
-      buckets[k].sort((a, b) => (a.loggedAt < b.loggedAt ? -1 : 1)),
-    );
-    return buckets;
-  }, [items]);
+  const items = allFood.filter((e) => e.date === selectedDay);
+  const totals = totalsForDay(allFood, selectedDay);
+
+  const sortedItems = [...items].sort((a, b) =>
+    a.loggedAt > b.loggedAt ? -1 : 1,
+  );
+
+  const isToday = selectedDay === toISODay();
+
+  // Fade the whole screen in on mount
+  const mount = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mount, {
+      toValue: 1,
+      duration: 480,
+      easing: Easing.bezier(0.22, 1, 0.36, 1),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  const mountTranslate = mount.interpolate({ inputRange: [0, 1], outputRange: [8, 0] });
+
+  // Smooth list add/remove
+  const prevCount = useRef(sortedItems.length);
+  useEffect(() => {
+    if (prevCount.current !== sortedItems.length) {
+      LayoutAnimation.configureNext(LIST_LAYOUT_ANIM);
+      prevCount.current = sortedItems.length;
+    }
+  }, [sortedItems.length]);
 
   const removeEntry = (id: string, name: string) => {
     Alert.alert(`Delete ${name}?`, undefined, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => del.mutate(id) },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          LayoutAnimation.configureNext(LIST_LAYOUT_ANIM);
+          del.mutate(id);
+        },
+      },
     ]);
   };
 
@@ -247,95 +221,132 @@ export function NutritionScreen() {
     setShowLog(true);
   };
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-  const remaining = Math.max(0, goals.calories - totals.calories);
+  const headerLabel = isToday
+    ? new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })
+    : new Date(selectedDay + "T00:00:00").toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
+
+  const onSelectDay = (iso: string) => {
+    LayoutAnimation.configureNext(LIST_LAYOUT_ANIM);
+    setSelectedDay(iso);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
+      {/* Moody backdrop — soft violet-to-amber wash bleeding out of the top */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          "rgba(139, 92, 246, 0.22)", // violet
+          "rgba(34, 197, 94, 0.10)",  // hint of green (nutrition accent)
+          "rgba(0, 0, 0, 0)",
+        ]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 420,
+        }}
+      />
       <Screen padded={false}>
-        <ScrollView
+        <Animated.ScrollView
           contentContainerStyle={{
             paddingHorizontal: theme.spacing.xl,
             paddingBottom: 140,
             gap: theme.spacing.xl,
           }}
           showsVerticalScrollIndicator={false}
+          style={{ opacity: mount, transform: [{ translateY: mountTranslate }] }}
         >
-          {/* ── Header ────────────────────────────────────────────────────── */}
-          <View style={{ paddingTop: theme.spacing.lg }}>
-            <Text variant="caption" color="textMuted">
-              {today}
-            </Text>
-            <Text variant="title" style={{ marginTop: 2 }}>
-              Nutrition
-            </Text>
-          </View>
-
-          {/* ── Daily summary hero ────────────────────────────────────────── */}
+          {/* Header */}
           <View
             style={{
-              backgroundColor: c.surface,
-              borderRadius: theme.radius["2xl"],
-              borderWidth: 1,
-              borderColor: c.border,
-              padding: theme.spacing.xl,
-              gap: theme.spacing.lg,
-              alignItems: "center",
+              paddingTop: theme.spacing.lg,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
             }}
           >
-            <CalorieRing eaten={totals.calories} goal={goals.calories} size={200} strokeWidth={14} />
-
-            {/* 3 quick stats */}
-            <View style={{ flexDirection: "row", width: "100%", marginTop: theme.spacing.sm }}>
-              <QuickStat icon="flame" iconColor="#F97316" value={remaining.toLocaleString()} label="Left" />
-              <StatDivider />
-              <QuickStat
-                icon="fitness"
-                iconColor="#EF4444"
-                value={`${Math.round(totals.protein)}g`}
-                label="Protein"
-              />
-              <StatDivider />
-              <QuickStat icon="water" iconColor="#3B82F6" value={waterLabel} label="Water" />
+            <View>
+              <Text variant="caption" color="textMuted">
+                {headerLabel}
+              </Text>
+              <Text variant="title" style={{ marginTop: 2 }}>
+                Nutrition
+              </Text>
             </View>
+            <AvatarButton size={40} onPress={goToProfile} />
           </View>
 
-          {/* ── Macros ───────────────────────────────────────────────────── */}
-          <MacroBars
+          {/* Week calendar */}
+          <WeekCalendar selected={selectedDay} onSelect={onSelectDay} />
+
+          {/* Rotating hero: ring+macros ⇄ weekly chart (auto every 20s, tap to swap) */}
+          <RotatingHero
+            eaten={totals.calories}
+            goalKcal={goals.calories}
             protein={{ value: totals.protein, goal: goals.protein }}
             carbs={{ value: totals.carbs, goal: goals.carbs }}
             fat={{ value: totals.fat, goal: goals.fat }}
+            onEditGoal={() => {
+              Haptics.selectionAsync().catch(() => {});
+              setShowGoal(true);
+            }}
           />
 
-          {/* ── Water tracker ────────────────────────────────────────────── */}
-          <WaterTracker />
-
-          {/* ── Weekly chart ─────────────────────────────────────────────── */}
-          <WeeklyChart goal={goals.calories} />
-
-          {/* ── Meals timeline ───────────────────────────────────────────── */}
-          <View style={{ gap: theme.spacing.md }}>
+          {/* Flat food list */}
+          <View style={{ gap: theme.spacing.sm }}>
             <Text variant="label" color="textMuted">
-              TODAY'S MEALS
+              {isToday ? "TODAY'S FOOD" : "FOOD"}
             </Text>
-            {(["breakfast", "lunch", "dinner", "snacks"] as MealKey[]).map((m) => (
-              <MealCard
-                key={m}
-                meal={m}
-                entries={grouped[m]}
-                onDelete={removeEntry}
-                onAdd={openLog}
-              />
-            ))}
+
+            {sortedItems.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: c.surface,
+                  borderRadius: theme.radius["2xl"],
+                  borderWidth: 1,
+                  borderColor: c.border,
+                  padding: theme.spacing.xl,
+                  alignItems: "center",
+                  gap: theme.spacing.md,
+                }}
+              >
+                <Ionicons name="restaurant-outline" size={28} color={c.textMuted} />
+                <Text variant="body" color="textMuted" center>
+                  Nothing logged yet.{"\n"}Tap + to add a food.
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={{
+                  backgroundColor: c.surface,
+                  borderRadius: theme.radius["2xl"],
+                  borderWidth: 1,
+                  borderColor: c.border,
+                  overflow: "hidden",
+                }}
+              >
+                {sortedItems.map((entry, i) => (
+                  <View key={entry.id}>
+                    {i > 0 ? <Separator inset={theme.spacing.lg} /> : null}
+                    <FoodRow entry={entry} onDelete={() => removeEntry(entry.id, entry.name)} />
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </Screen>
 
-      {/* ── Floating Scan FAB ─────────────────────────────────────────────── */}
+      {/* Floating + FAB (white) */}
       {!showLog ? (
         <View style={{ position: "absolute", bottom: theme.spacing.xl, right: theme.spacing.xl }}>
           <Pressable
@@ -343,16 +354,11 @@ export function NutritionScreen() {
             style={({ pressed }) => ({
               width: 60,
               height: 60,
-              borderRadius: theme.radius.xl,
+              borderRadius: 30,
               backgroundColor: c.inverseBg,
               alignItems: "center",
               justifyContent: "center",
               opacity: pressed ? 0.9 : 1,
-              shadowColor: c.inverseBg,
-              shadowOpacity: 0.28,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 8,
             })}
           >
             <Ionicons name="add" size={30} color={c.inverseText} />
@@ -361,39 +367,7 @@ export function NutritionScreen() {
       ) : null}
 
       <FoodLogSheet visible={showLog} onClose={() => setShowLog(false)} />
+      <GoalSheet visible={showGoal} onClose={() => setShowGoal(false)} />
     </View>
-  );
-}
-
-// ─── Small helpers ───────────────────────────────────────────────────────────
-function QuickStat({
-  icon,
-  iconColor,
-  value,
-  label,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  value: string;
-  label: string;
-}) {
-  const { theme } = useTheme();
-  return (
-    <View style={{ flex: 1, alignItems: "center", gap: 4 }}>
-      <Ionicons name={icon} size={16} color={iconColor} />
-      <Text weight="bold" style={{ fontSize: 15, color: theme.colors.text }}>
-        {value}
-      </Text>
-      <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function StatDivider() {
-  const { theme } = useTheme();
-  return (
-    <View style={{ width: 1, backgroundColor: theme.colors.border, marginVertical: 4 }} />
   );
 }

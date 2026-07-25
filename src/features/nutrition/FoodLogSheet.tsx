@@ -148,7 +148,7 @@ export function FoodLogSheet({
 
       {/* Calories */}
       <View style={{ marginBottom: theme.spacing.md }}>
-        <MacroInput label="Calories" value={calories} onChange={setCalories} unit="kcal" />
+        <MacroInput label="Calories" value={calories} onChange={setCalories} unit="cal" />
       </View>
 
       {/* Macros row */}

@@ -13,7 +13,11 @@ import { StreakCard } from "./components/StreakCard";
 import { YearHeatmap } from "./components/YearHeatmap";
 import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
 import { LogSheet } from "./components/LogSheet";
-
+import AvatarButton from "../../../components/AvatarButton";
+import { useTabNav } from "../../nav/tabNav";
+import { useEntitlement } from "../subscription/useEntitlement";
+import { VoiceLogSheet } from "../voiceLog/VoiceLogSheet";
+//weekly plan + br
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "morning";
@@ -25,9 +29,12 @@ export function TrainScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
   const router = useRouter();
+  const { goToProfile } = useTabNav();
 
   const [showLog, setShowLog] = useState(false);
   const [presetPlan, setPresetPlan] = useState<DayPlan | null>(null);
+  const [showVoice, setShowVoice] = useState(false);
+  const { isPremium } = useEntitlement();
 
   const openLog = (plan: DayPlan | null = null) => {
     setPresetPlan(plan);
@@ -61,19 +68,49 @@ export function TrainScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={{ paddingTop: theme.spacing.lg }}>
-            <Text variant="caption" color="textMuted">
-              Good {getGreeting()}
-              {firstName ? `, ${firstName}` : ""}
-            </Text>
-            <Text variant="title">Train</Text>
+          <View
+            style={{
+              paddingTop: theme.spacing.lg,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+            }}
+          >
+            <View>
+              <Text variant="caption" color="textMuted">
+                Good {getGreeting()}
+                {firstName ? `, ${firstName}` : ""}
+              </Text>
+              <Text variant="title">Train</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              {isPremium ? (
+                <Pressable
+                  onPress={() => setShowVoice(true)}
+                  hitSlop={8}
+                  style={({ pressed }) => ({
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: pressed ? c.surfaceAlt : c.surface,
+                    borderWidth: 1,
+                    borderColor: c.border,
+                  })}
+                >
+                  <Ionicons name="mic" size={18} color={c.text} />
+                </Pressable>
+              ) : null}
+              <AvatarButton size={40} onPress={goToProfile} />
+            </View>
           </View>
 
           {/* Streak card */}
           <StreakCard logs={logs} />
 
           {/* Yearly activity heatmap */}
-          <YearHeatmap logs={logs} />
+          {/* <YearHeatmap logs={logs} /> */}
 
 
           {/* Empty state or weekly plan preview */}
@@ -148,15 +185,10 @@ export function TrainScreen() {
             style={{
               width: 60,
               height: 60,
-              borderRadius: theme.radius.xl,
+              borderRadius: 30,
               backgroundColor: c.inverseBg,
               alignItems: "center",
               justifyContent: "center",
-              shadowColor: c.inverseBg,
-              shadowOpacity: 0.28,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 6 },
-              elevation: 8,
             }}
           >
             <Ionicons name="add" size={30} color={c.inverseText} />
@@ -170,6 +202,10 @@ export function TrainScreen() {
         initialExercises={presetPlan?.exercises}
         routineName={presetPlan?.name}
       />
+
+      {isPremium ? (
+        <VoiceLogSheet visible={showVoice} onClose={() => setShowVoice(false)} />
+      ) : null}
     </View>
   );
 }
