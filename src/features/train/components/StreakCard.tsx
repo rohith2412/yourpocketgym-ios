@@ -111,71 +111,74 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
   return (
     <Card padding="md">
       <Pressable onPress={() => setOpen((v) => !v)}>
-        {/* Header: streak + volume, tight */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "baseline",
-            gap: theme.spacing.xs,
-            marginBottom: theme.spacing.sm,
-          }}
-        >
+        {/* Header — the streak is the headline number, not a footnote. */}
+        <View style={{ marginBottom: theme.spacing.md }}>
           <Text
             style={{
-              fontSize: 18,
-              fontWeight: theme.fontWeight.heavy,
-              color: c.text,
-              letterSpacing: -0.5,
+              fontSize: 10,
+              letterSpacing: 1,
+              fontWeight: "700",
+              color: c.textMuted,
+              marginBottom: 2,
             }}
           >
-            {streak}
+            THIS WEEK
           </Text>
-          <Text variant="caption" color="textMuted">
-            / 7 sessions
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 40,
+                fontWeight: theme.fontWeight.heavy,
+                color: c.text,
+                letterSpacing: -2,
+                lineHeight: 44,
+              }}
+            >
+              {streak}
+            </Text>
+            <Text variant="body" color="textMuted" weight="semibold">
+              of 7 sessions
+            </Text>
+          </View>
           {weekVolume > 0 ? (
-            <Text variant="caption" color="textFaint">
-              {" · "}
-              {weekVolume.toLocaleString()} lb
+            <Text variant="caption" color="textFaint" style={{ marginTop: 2 }}>
+              {Math.round(weekVolume).toLocaleString()} lb moved
             </Text>
           ) : null}
         </View>
 
-        {/* Week dots */}
-        <View style={{ flexDirection: "row", gap: 4 }}>
+        {/* Week strip — minimal: weekday + date, tiny dot marks a workout */}
+        <View style={{ flexDirection: "row" }}>
           {week.map((d, i) => (
-            <View key={i} style={{ flex: 1, alignItems: "center", gap: 4 }}>
-              <View
-                style={{
-                  width: "100%",
-                  aspectRatio: 1,
-                  borderRadius: 999,
-                  backgroundColor: d.active ? c.text : c.surfaceAlt,
-                  borderWidth: d.today && !d.active ? 1.5 : 0,
-                  borderColor: c.text,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: d.active ? c.inverseText : c.text,
-                  }}
-                >
-                  {d.date}
-                </Text>
-              </View>
+            <View key={i} style={{ flex: 1, alignItems: "center", gap: 6 }}>
               <Text
                 style={{
-                  fontSize: 9,
-                  fontWeight: d.today ? "700" : "500",
+                  fontSize: 10,
+                  fontWeight: "600",
+                  letterSpacing: 0.5,
                   color: d.today ? c.text : c.textFaint,
+                  textTransform: "uppercase",
                 }}
               >
                 {d.label}
               </Text>
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: d.today ? "800" : "500",
+                  color: d.active || d.today ? c.text : c.textMuted,
+                }}
+              >
+                {d.date}
+              </Text>
+              <View
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: d.active ? c.text : "transparent",
+                }}
+              />
             </View>
           ))}
         </View>

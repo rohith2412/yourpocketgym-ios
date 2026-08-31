@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import { useDemoMode } from "../demo/useDemoMode";
+import { generateWorkoutLogs } from "../demo/demoData";
 
 export type TrackedSet = { setNumber: number; reps: number; weight: number };
 export type TrackedExercise = { name: string; muscleGroup: string; sets: TrackedSet[] };
@@ -18,9 +20,15 @@ export const trackingKeys = {
 };
 
 export function useWorkoutLogs(limit = 400) {
+  const { data: demoOn = false } = useDemoMode();
   return useQuery({
-    queryKey: trackingKeys.list(limit),
-    queryFn: () => api.get<ListResponse>(`/tracking?limit=${limit}`),
+    queryKey: [...trackingKeys.list(limit), demoOn ? "demo" : "live"],
+    queryFn: async () => {
+      if (demoOn) {
+        return { success: true as const, data: generateWorkoutLogs(120) };
+      }
+      return api.get<ListResponse>(`/tracking?limit=${limit}`);
+    },
     select: (r) => r.data,
     staleTime: 60_000,
   });

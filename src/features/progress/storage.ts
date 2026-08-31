@@ -33,6 +33,11 @@ export async function addWeight(lb: number, date?: string): Promise<WeightEntry>
   return entry;
 }
 
+export async function deleteWeight(id: string): Promise<void> {
+  const log = await loadWeightLog();
+  await saveWeightLog(log.filter((e) => e.id !== id));
+}
+
 export function latestWeight(log: WeightEntry[]): WeightEntry | null {
   if (log.length === 0) return null;
   return log[log.length - 1];

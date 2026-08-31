@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type ThemeMode = "light" | "dark";
@@ -70,22 +71,28 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("light");
+  const systemScheme = useColorScheme(); // live-updates when OS changes
+  // Stored preference: light / dark / system (or null = system by default).
+  const [pref, setPref] = useState<"light" | "dark" | "system">("system");
   const [ready, setReady] = useState(false);
 
-  // Load persisted choice on startup
   useEffect(() => {
     (async () => {
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved === "light" || saved === "dark") setModeState(saved);
+        if (saved === "light" || saved === "dark" || saved === "system") {
+          setPref(saved);
+        }
       } catch {}
       setReady(true);
     })();
   }, []);
 
+  const mode: ThemeMode =
+    pref === "system" ? (systemScheme === "dark" ? "dark" : "light") : pref;
+
   const setMode = (next: ThemeMode) => {
-    setModeState(next);
+    setPref(next);
     AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
   };
 

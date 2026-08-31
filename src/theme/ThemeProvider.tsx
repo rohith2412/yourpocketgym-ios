@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   lightColors,
@@ -19,10 +19,13 @@ import {
 } from "./tokens";
 import { STORAGE_KEYS } from "../lib/storage";
 
-export type ThemeMode = "light" | "dark";
+/** What the user picked. "system" tracks the OS setting live. */
+export type ThemeMode = "light" | "dark" | "system";
+/** What the app actually renders — always resolved to a concrete scheme. */
+export type ResolvedMode = "light" | "dark";
 
 export type Theme = {
-  mode: ThemeMode;
+  mode: ResolvedMode;
   colors: ColorTokens;
   spacing: typeof spacing;
   radius: typeof radius;
@@ -32,7 +35,7 @@ export type Theme = {
   statusBar: "light-content" | "dark-content";
 };
 
-function buildTheme(mode: ThemeMode): Theme {
+function buildTheme(mode: ResolvedMode): Theme {
   return {
     mode,
     colors: mode === "dark" ? darkColors : lightColors,
@@ -47,7 +50,10 @@ function buildTheme(mode: ThemeMode): Theme {
 
 type ThemeContextValue = {
   theme: Theme;
+  /** The user's stored preference — light / dark / system. */
   mode: ThemeMode;
+  /** The concrete scheme currently applied (system resolved). */
+  resolvedMode: ResolvedMode;
   setMode: (m: ThemeMode) => void;
   toggle: () => void;
   ready: boolean;
@@ -55,25 +61,32 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: buildTheme("light"),
-  mode: "light",
+  mode: "system",
+  resolvedMode: "light",
   setMode: () => {},
   toggle: () => {},
   ready: false,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("light");
+  const systemScheme = useColorScheme(); // "light" | "dark" | null — live updates
+  const [mode, setModeState] = useState<ThemeMode>("system");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEYS.themeMode);
-        if (saved === "light" || saved === "dark") setModeState(saved);
+        if (saved === "light" || saved === "dark" || saved === "system") {
+          setModeState(saved);
+        }
       } catch {}
       setReady(true);
     })();
   }, []);
+
+  const resolvedMode: ResolvedMode =
+    mode === "system" ? (systemScheme === "dark" ? "dark" : "light") : mode;
 
   const value = useMemo<ThemeContextValue>(() => {
     const setMode = (m: ThemeMode) => {
@@ -81,13 +94,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.setItem(STORAGE_KEYS.themeMode, m).catch(() => {});
     };
     return {
-      theme: buildTheme(mode),
+      theme: buildTheme(resolvedMode),
       mode,
+      resolvedMode,
       setMode,
-      toggle: () => setMode(mode === "dark" ? "light" : "dark"),
+      // Toggle only cycles between the two concrete modes — keeps the affordance
+      // meaningful. If you were on "system", it snaps to the opposite of what
+      // was resolved.
+      toggle: () => setMode(resolvedMode === "dark" ? "light" : "dark"),
       ready,
     };
-  }, [mode, ready]);
+  }, [mode, resolvedMode, ready]);
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

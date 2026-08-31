@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { View, Pressable, type GestureResponderEvent } from "react-native";
+import { View, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop, Text as SvgText } from "react-native-svg";
-import * as Haptics from "expo-haptics";
 import { Text } from "../../../ui";
 import { RangePicker, type ProgressRange } from "./RangePicker";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useProgressCardColor } from "../cardSurface";
+import { CardEdge } from "../CardEdge";
 import { useWeightLog } from "../hooks";
 import { toISODay } from "../../nutrition/storage";
 import type { WeightEntry } from "../storage";
@@ -49,8 +50,9 @@ function densify(log: WeightEntry[], n: number): { date: Date; lb: number | null
   return out;
 }
 
-export function WeightChart({ onPress }: { onPress: () => void }) {
+export function WeightChart() {
   const { theme } = useTheme();
+  const cardBg = useProgressCardColor();
   const c = theme.colors;
   const [range, setRange] = useState<Range>("30d");
   const [containerW, setContainerW] = useState(0);
@@ -124,22 +126,17 @@ export function WeightChart({ onPress }: { onPress: () => void }) {
   const rangeLabel =
     range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : range === "90d" ? "Last 3 months" : "Last year";
 
-  const handlePress = () => {
-    Haptics.selectionAsync().catch(() => {});
-    onPress();
-  };
-
   return (
-    <Pressable onPress={handlePress}>
+    <View>
       <View
         style={{
-          backgroundColor: c.surface,
+          backgroundColor: cardBg,
           borderRadius: theme.radius["2xl"],
-          borderWidth: 1,
-          borderColor: c.border,
           overflow: "hidden",
         }}
       >
+        <CardEdge radius={theme.radius["2xl"]} />
+
         <View
           style={{
             flexDirection: "row",
@@ -299,6 +296,6 @@ export function WeightChart({ onPress }: { onPress: () => void }) {
           </Text>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }

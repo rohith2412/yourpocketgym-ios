@@ -1,5 +1,12 @@
 import React from "react";
-import { View, ScrollView, StatusBar, type ViewStyle } from "react-native";
+import {
+  View,
+  ScrollView,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  type ViewStyle,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -25,25 +32,31 @@ export function Screen({
   contentContainerStyle,
 }: ScreenProps) {
   const { theme } = useTheme();
-  const pad = padded ? { paddingHorizontal: theme.spacing.xl } : null;
+  const pad = padded ? { paddingHorizontal: theme.spacing.lg } : null;
 
   return (
     <SafeAreaView
       style={[{ flex: 1, backgroundColor: theme.colors.bg }, style]}
-      edges={["top"]}
+      edges={["top", "bottom", "left", "right"]}
     >
       <StatusBar barStyle={theme.statusBar} />
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={[pad, contentContainerStyle]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[{ flex: 1 }, pad, contentContainerStyle]}>{children}</View>
-      )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[pad, contentContainerStyle]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[{ flex: 1 }, pad, contentContainerStyle]}>{children}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

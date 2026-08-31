@@ -237,6 +237,27 @@ export default function Register() {
                 <GoogleGLogo size={20} />
                 <Text style={s.googleBtnText}>{googleLoading ? "Signing in…" : "Continue with Google"}</Text>
               </Pressable>
+
+              <View style={s.dividerRow}>
+                <View style={s.dividerLine} />
+                <Text style={s.dividerText}>or</Text>
+                <View style={s.dividerLine} />
+              </View>
+
+              <Pressable
+                onPress={handleGoogleSignup}
+                disabled={googleLoading || loading}
+                style={[s.googleBtn, (googleLoading || loading) && s.btnDisabled]}
+              >
+                <Image
+                  source={require("../assets/images/google.png")}
+                  style={s.googleIcon}
+                  resizeMode="contain"
+                />
+                <Text style={s.googleBtnText}>
+                  {googleLoading ? "Signing in..." : "Continue with Google"}
+                </Text>
+              </Pressable>
             </View>
 
             <View style={{ flex: 1 }} />

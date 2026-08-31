@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Button } from "../../ui";
+import { Screen, Text, Card, Button, FabMenu, useHideOnScroll } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import { loadUser } from "../auth/session";
+import { useCurrentUser } from "../auth/useCurrentUser";
 import { useRoutines, useTodayPlan } from "../routines/hooks";
 import { WEEKDAYS, type DayPlan } from "../routines/storage";
 import { useWorkoutLogs } from "./api";
@@ -36,6 +35,7 @@ export function TrainScreen() {
   const [showVoice, setShowVoice] = useState(false);
   const { isPremium } = useEntitlement();
 
+
   const openLog = (plan: DayPlan | null = null) => {
     setPresetPlan(plan);
     setShowLog(true);
@@ -44,11 +44,9 @@ export function TrainScreen() {
     setShowLog(false);
     setPresetPlan(null);
   };
-  const [firstName, setFirstName] = useState("");
-
-  useEffect(() => {
-    loadUser().then((u) => u?.name && setFirstName(u.name.split(" ")[0] ?? ""));
-  }, []);
+  const { hidden: fabHidden, onScroll } = useHideOnScroll();
+  const { data: currentUser } = useCurrentUser();
+  const firstName = currentUser?.name?.split(" ")[0] ?? "";
 
   const { data: logs = [] } = useWorkoutLogs();
   const muscleStats = buildMuscleStats(logs);
@@ -61,11 +59,13 @@ export function TrainScreen() {
       <Screen padded={false}>
         <ScrollView
           contentContainerStyle={{
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: 140,
             gap: theme.spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={32}
         >
           {/* Header */}
           <View
@@ -84,24 +84,6 @@ export function TrainScreen() {
               <Text variant="title">Train</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              {isPremium ? (
-                <Pressable
-                  onPress={() => setShowVoice(true)}
-                  hitSlop={8}
-                  style={({ pressed }) => ({
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: pressed ? c.surfaceAlt : c.surface,
-                    borderWidth: 1,
-                    borderColor: c.border,
-                  })}
-                >
-                  <Ionicons name="mic" size={18} color={c.text} />
-                </Pressable>
-              ) : null}
               <AvatarButton size={40} onPress={goToProfile} />
             </View>
           </View>
@@ -174,26 +156,28 @@ export function TrainScreen() {
         </ScrollView>
       </Screen>
 
-      {/* FAB */}
       {!showLog ? (
-        <View style={{ position: "absolute", bottom: theme.spacing.xl, right: theme.spacing.xl }}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-              openLog(todayPlan ?? null);
-            }}
-            style={{
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: c.inverseBg,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Ionicons name="add" size={30} color={c.inverseText} />
-          </Pressable>
-        </View>
+        <FabMenu
+          hidden={fabHidden}
+          items={[
+            ...(isPremium
+              ? [
+                  {
+                    icon: "mic" as const,
+                    label: "Voice log",
+                    sublabel: "AI transcribes your sets",
+                    onPress: () => setShowVoice(true),
+                  },
+                ]
+              : []),
+            {
+              icon: "create-outline" as const,
+              label: "Write it",
+              sublabel: "Log a workout manually",
+              onPress: () => openLog(todayPlan ?? null),
+            },
+          ]}
+        />
       ) : null}
 
       <LogSheet

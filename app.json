@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketGym: AI Fitness Tracker",
     "slug": "yourpocketgym",
-    "version": "1.6.0",
+    "version": "1.8.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
@@ -11,10 +11,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.rohith.com.yourpocketgym",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses the camera to analyze your food for calorie tracking.",
-        "NSPhotoLibraryUsageDescription": "This app accesses your photos to analyze food for calorie tracking.",
-        "NSPhotoLibraryAddUsageDescription": "This app saves photos to your library.",
+        "NSCameraUsageDescription": "PocketGym uses the camera to scan food for calorie and macro estimation, and to take progress photos.",
+        "NSPhotoLibraryUsageDescription": "PocketGym accesses your photos to analyze food, save progress photos, and set your profile picture.",
+        "NSPhotoLibraryAddUsageDescription": "PocketGym saves progress photos and food-scan captures to your photo library when you choose to.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -42,9 +43,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/logo.png",
-          "imageWidth": 160,
+          "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#000000"
         }
       ],
       [

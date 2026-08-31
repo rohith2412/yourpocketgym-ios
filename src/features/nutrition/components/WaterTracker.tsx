@@ -24,7 +24,7 @@ export function WaterTracker() {
     add.mutate({ day: today, ml: delta });
   };
 
-  const BLUE = "#3B82F6";
+  const BLUE = "#38BDF8";
 
   return (
     <View

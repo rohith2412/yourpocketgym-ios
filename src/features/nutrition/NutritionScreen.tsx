@@ -6,6 +6,7 @@ import {
   Alert,
   Animated,
   Easing,
+  Image,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -25,16 +26,21 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 type MCIName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 import * as Haptics from "expo-haptics";
-import { Screen, Text, Separator } from "../../ui";
+import { Screen, Text, Separator, FabMenu, useHideOnScroll } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useFoodEntries, useGoals, useDeleteFood } from "./hooks";
-import { WeekCalendar } from "./components/WeekCalendar";
+import { WeekStrip } from "./components/WeekStrip";
+import { WaterCard } from "./components/WaterCard";
 import AvatarButton from "../../../components/AvatarButton";
 import { useTabNav } from "../../nav/tabNav";
 import { LinearGradient } from "expo-linear-gradient";
 import { FoodLogSheet } from "./FoodLogSheet";
 import { GoalSheet } from "./GoalSheet";
-import { RotatingHero } from "./components/RotatingHero";
+import { PhotoLogSheet } from "./photoLog/PhotoLogSheet";
+import { BarcodeLogSheet } from "./barcodeLog/BarcodeLogSheet";
+import { VoiceNutritionSheet } from "./voiceLog/VoiceNutritionSheet";
+import { useEntitlement } from "../subscription/useEntitlement";
+import { CalorieSummary } from "./components/CalorieSummary";
 import { DEFAULT_GOALS, toISODay, totalsForDay, type FoodEntry } from "./storage";
 
 // ─── Flat food row ───────────────────────────────────────────────────────────
@@ -42,7 +48,7 @@ const FOOD_ICONS: [RegExp, MCIName][] = [
   [/pizza/i, "pizza"],
   [/burger|cheeseburger/i, "hamburger"],
   [/fries|chips/i, "french-fries"],
-  [/hot ?dog/i, "hot-dog"],
+  [/hot ?dog/i, "food-hot-dog"],
   [/taco/i, "taco"],
   [/burrito|wrap/i, "food-takeout-box"],
   [/sushi|sashimi|maki/i, "rice"],
@@ -122,9 +128,14 @@ function FoodRow({ entry, onDelete }: { entry: FoodEntry; onDelete: () => void }
           backgroundColor: c.surfaceAlt,
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <MaterialCommunityIcons name={iconFor(entry.name)} size={24} color={c.text} />
+        {entry.photoUri ? (
+          <Image source={{ uri: entry.photoUri }} style={{ width: 44, height: 44 }} resizeMode="cover" />
+        ) : (
+          <MaterialCommunityIcons name={iconFor(entry.name)} size={24} color={c.text} />
+        )}
       </View>
 
       <View style={{ flex: 1, gap: 4 }}>
@@ -165,6 +176,12 @@ export function NutritionScreen() {
   const { goToProfile } = useTabNav();
   const [showLog, setShowLog] = useState(false);
   const [showGoal, setShowGoal] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
+  const [showBarcode, setShowBarcode] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
+  const { hidden: fabHidden, onScroll } = useHideOnScroll();
+  const { isPremium } = useEntitlement();
+
 
   const [selectedDay, setSelectedDay] = useState<string>(() => toISODay());
   const { data: allFood = [] } = useFoodEntries();
@@ -180,6 +197,22 @@ export function NutritionScreen() {
   );
 
   const isToday = selectedDay === toISODay();
+
+  // Consecutive days with something logged, counting back from today. Today not
+  // being logged yet doesn't break a streak — it just hasn't been extended, so
+  // the count starts from yesterday in that case.
+  const logStreak = (() => {
+    const logged = new Set(allFood.map((e) => e.date));
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    if (!logged.has(toISODay(d))) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (logged.has(toISODay(d))) {
+      n += 1;
+      d.setDate(d.getDate() - 1);
+    }
+    return n;
+  })();
 
   // Fade the whole screen in on mount
   const mount = useRef(new Animated.Value(0)).current;
@@ -258,11 +291,13 @@ export function NutritionScreen() {
       <Screen padded={false}>
         <Animated.ScrollView
           contentContainerStyle={{
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: 140,
             gap: theme.spacing.xl,
           }}
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={32}
           style={{ opacity: mount, transform: [{ translateY: mountTranslate }] }}
         >
           {/* Header */}
@@ -282,14 +317,36 @@ export function NutritionScreen() {
                 Nutrition
               </Text>
             </View>
-            <AvatarButton size={40} onPress={goToProfile} />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
+              {/* Days in a row with something logged — the one number worth
+                  carrying in the header, because it's the one people chase. */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  paddingHorizontal: 12,
+                  paddingVertical: 7,
+                  borderRadius: 999,
+                  backgroundColor: c.surface,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                }}
+              >
+                <MaterialCommunityIcons name="fire" size={15} color="#F59E0B" />
+                <Text variant="body" weight="bold" style={{ fontSize: 14 }}>
+                  {logStreak}
+                </Text>
+              </View>
+              <AvatarButton size={40} onPress={goToProfile} />
+            </View>
           </View>
 
           {/* Week calendar */}
-          <WeekCalendar selected={selectedDay} onSelect={onSelectDay} />
+          <WeekStrip selected={selectedDay} onSelect={onSelectDay} />
 
-          {/* Rotating hero: ring+macros ⇄ weekly chart (auto every 20s, tap to swap) */}
-          <RotatingHero
+          {/* Calories headline + the three macros under it */}
+          <CalorieSummary
             eaten={totals.calories}
             goalKcal={goals.calories}
             protein={{ value: totals.protein, goal: goals.protein }}
@@ -299,12 +356,15 @@ export function NutritionScreen() {
               Haptics.selectionAsync().catch(() => {});
               setShowGoal(true);
             }}
+            // Water is Pro-only, so free users get the macros with no pager at
+            // all rather than a second page that isn't theirs.
+            waterPage={isPremium ? <WaterCard /> : undefined}
           />
 
           {/* Flat food list */}
           <View style={{ gap: theme.spacing.sm }}>
-            <Text variant="label" color="textMuted">
-              {isToday ? "TODAY'S FOOD" : "FOOD"}
+            <Text variant="heading" style={{ marginBottom: 2 }}>
+              {isToday ? "Today's food" : "Food"}
             </Text>
 
             {sortedItems.length === 0 ? (
@@ -346,28 +406,67 @@ export function NutritionScreen() {
         </Animated.ScrollView>
       </Screen>
 
-      {/* Floating + FAB (white) */}
-      {!showLog ? (
-        <View style={{ position: "absolute", bottom: theme.spacing.xl, right: theme.spacing.xl }}>
-          <Pressable
-            onPress={openLog}
-            style={({ pressed }) => ({
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: c.inverseBg,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.9 : 1,
-            })}
-          >
-            <Ionicons name="add" size={30} color={c.inverseText} />
-          </Pressable>
-        </View>
-      ) : null}
+      {/* Kept mounted while a sheet is open, hidden rather than unmounted, so
+          the menu-close animation plays out instead of being ripped mid-flight. */}
+      <View
+        // Must fill the screen: FabMenu's backdrop is absolutely positioned
+        // against this View, so a zero-height wrapper leaves it nothing to
+        // cover and the blur never appears. box-none so only the button and
+        // menu take touches — the content behind stays interactive.
+        pointerEvents={showLog ? "none" : "box-none"}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: showLog ? 0 : 1,
+        }}
+      >
+        <FabMenu
+          hidden={fabHidden}
+          items={[
+            ...(isPremium
+              ? [
+                  {
+                    icon: "mic" as const,
+                    label: "Voice log",
+                    sublabel: "Say your meal and water",
+                    onPress: () => setShowVoice(true),
+                  },
+                  {
+                    icon: "camera" as const,
+                    label: "Photo log",
+                    sublabel: "AI reads your meal",
+                    onPress: () => setShowPhoto(true),
+                  },
+                  {
+                    icon: "barcode-outline" as const,
+                    label: "Barcode",
+                    sublabel: "Scan a packaged food",
+                    onPress: () => setShowBarcode(true),
+                  },
+                ]
+              : []),
+            {
+              icon: "create-outline" as const,
+              label: "Write it",
+              sublabel: "Log a meal manually",
+              onPress: openLog,
+            },
+          ]}
+        />
+      </View>
 
       <FoodLogSheet visible={showLog} onClose={() => setShowLog(false)} />
       <GoalSheet visible={showGoal} onClose={() => setShowGoal(false)} />
+      {isPremium ? (
+        <>
+          <PhotoLogSheet visible={showPhoto} onClose={() => setShowPhoto(false)} />
+          <BarcodeLogSheet visible={showBarcode} onClose={() => setShowBarcode(false)} />
+          <VoiceNutritionSheet visible={showVoice} onClose={() => setShowVoice(false)} />
+        </>
+      ) : null}
     </View>
   );
 }

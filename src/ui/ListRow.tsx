@@ -9,6 +9,7 @@ export function ListRow({
   title,
   subtitle,
   icon,
+  leading,
   right,
   onPress,
   danger = false,
@@ -17,6 +18,8 @@ export function ListRow({
   title: string;
   subtitle?: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Custom leading element (e.g. Avatar). Takes precedence over `icon`. */
+  leading?: React.ReactNode;
   right?: React.ReactNode;
   onPress?: () => void;
   danger?: boolean;
@@ -39,7 +42,9 @@ export function ListRow({
         opacity: pressed ? 0.6 : 1,
       })}
     >
-      {icon ? (
+      {leading ? (
+        leading
+      ) : icon ? (
         <Ionicons name={icon} size={20} color={danger ? c.danger : c.textMuted} />
       ) : null}
       <View style={{ flex: 1 }}>

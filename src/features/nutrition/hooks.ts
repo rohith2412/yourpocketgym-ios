@@ -6,7 +6,9 @@ import {
   loadFoodEntries,
   loadGoals,
   loadWater,
+  loadWaterGoal,
   saveGoals,
+  saveWaterGoal,
   toISODay,
   totalsForDay,
   type FoodEntry,
@@ -28,6 +30,20 @@ export function useAddWater() {
   return useMutation({
     mutationFn: ({ day, ml }: { day: string; ml: number }) => addWaterMl(day, ml),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.water }),
+  });
+}
+
+const WATER_GOAL_KEY = ["water-goal"] as const;
+
+export function useWaterGoal() {
+  return useQuery({ queryKey: WATER_GOAL_KEY, queryFn: loadWaterGoal });
+}
+
+export function useSaveWaterGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ml: number) => saveWaterGoal(ml),
+    onSuccess: () => qc.invalidateQueries({ queryKey: WATER_GOAL_KEY }),
   });
 }
 

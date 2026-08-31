@@ -5,39 +5,36 @@ import {
   Easing,
   Pressable,
   ScrollView,
-  Dimensions,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import type { ComponentProps } from "react";
 import { Text } from "../../../ui";
-
-type MCIName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 import { useTheme } from "../../../theme/ThemeProvider";
 import { CalorieRing } from "./CalorieRing";
 import { WeeklyChart } from "./WeeklyChart";
 
-const CARD_HEIGHT = 170;
+const CARD_HEIGHT = 184;
 
-function MiniMacro({
+/**
+ * One macro as a vertical column — value on top, bar filling bottom-up, label
+ * beneath. Colours match the macro series used across the nutrition and
+ * progress charts so the whole feature reads as one palette.
+ */
+function MacroBar({
   label,
   value,
   goal,
   color,
-  icon,
-  iconFlip,
 }: {
   label: string;
   value: number;
   goal: number;
   color: string;
-  icon: MCIName;
-  iconFlip?: boolean;
 }) {
   const { theme } = useTheme();
   const c = theme.colors;
-  const pct = Math.min(1, value / goal);
+  const pct = goal > 0 ? Math.min(1, value / goal) : 0;
+
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(anim, {
@@ -50,42 +47,40 @@ function MiniMacro({
   const height = anim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
 
   return (
-    <View style={{ flex: 1, alignItems: "center", gap: 4 }}>
-      <Text variant="caption" weight="bold" style={{ fontSize: 10, color: c.text }}>
+    <View style={{ flex: 1, alignItems: "stretch", gap: 6 }}>
+      <Text style={{ fontSize: 12, fontWeight: "700", color: c.text, textAlign: "center" }}>
         {Math.round(value)}
-        <Text variant="caption" color="textFaint" style={{ fontSize: 10 }}>
-          /{goal}g
+        <Text style={{ fontSize: 10, fontWeight: "500", color: c.textFaint }}>
+          /{goal}
         </Text>
       </Text>
-      <Text
-        variant="caption"
-        color="textMuted"
-        weight="bold"
-        style={{ letterSpacing: 0.5, fontSize: 9 }}
-      >
-        {label.toUpperCase()}
-      </Text>
-      {/* Vertical bar — fills bottom to top */}
+
+      {/* Track fills the column width — bar grows from the bottom */}
       <View
         style={{
           flex: 1,
-          width: 26,
-          borderRadius: 13,
+          borderRadius: 8,
           backgroundColor: c.surfaceAlt,
           overflow: "hidden",
           justifyContent: "flex-end",
         }}
       >
-        <Animated.View style={{ width: "100%", height, backgroundColor: color, borderRadius: 13 }} />
-      </View>
-      <View style={{ width: 22, height: 22, alignItems: "center", justifyContent: "center" }}>
-        <MaterialCommunityIcons
-          name={icon}
-          size={22}
-          color={c.textMuted}
-          style={iconFlip ? { transform: [{ scaleX: -1 }, { rotate: "-25deg" }] } : undefined}
+        <Animated.View
+          style={{ width: "100%", height, backgroundColor: color, borderRadius: 8 }}
         />
       </View>
+
+      <Text
+        style={{
+          fontSize: 9,
+          letterSpacing: 0.6,
+          fontWeight: "700",
+          color: c.textMuted,
+          textAlign: "center",
+        }}
+      >
+        {label.toUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -102,7 +97,10 @@ type Props = {
 export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal }: Props) {
   const { theme } = useTheme();
   const c = theme.colors;
-  const [pageWidth, setPageWidth] = useState(Dimensions.get("window").width);
+  // Wait for onLayout to give the actual container width — using Dimensions.window
+  // here means the wrong value on real devices where the container is inset from
+  // the screen edge, causing the pager to snap to the wrong offset.
+  const [pageWidth, setPageWidth] = useState(0);
   const [page, setPage] = useState<0 | 1>(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -140,7 +138,7 @@ export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal 
         decelerationRate="fast"
         style={{ height: CARD_HEIGHT }}
       >
-        {/* Page 0 — ring + macros */}
+        {/* Page 0 — calorie ring + vertical macro bars */}
         <View style={{ width: pageWidth }}>
           <View
             style={{
@@ -151,12 +149,21 @@ export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal 
             }}
           >
             <Pressable onPress={onEditGoal} hitSlop={6}>
-              <CalorieRing eaten={eaten} goal={goalKcal} size={110} strokeWidth={9} />
+              <CalorieRing eaten={eaten} goal={goalKcal} size={118} strokeWidth={11} />
             </Pressable>
-            <View style={{ flex: 1, flexDirection: "row", gap: 10, alignSelf: "stretch" }}>
-              <MiniMacro label="Protein" value={protein.value} goal={protein.goal} color="#EF4444" icon="food-drumstick" />
-              <MiniMacro label="Carbs" value={carbs.value} goal={carbs.goal} color="#F59E0B" icon="bread-slice" />
-              <MiniMacro label="Fat" value={fat.value} goal={fat.goal} color="#8B5CF6" icon="pizza" iconFlip />
+
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                gap: 8,
+                alignSelf: "stretch",
+                paddingVertical: 2,
+              }}
+            >
+              <MacroBar label="Protein" value={protein.value} goal={protein.goal} color="#EF4444" />
+              <MacroBar label="Carbs" value={carbs.value} goal={carbs.goal} color="#F59E0B" />
+              <MacroBar label="Fat" value={fat.value} goal={fat.goal} color="#8B5CF6" />
             </View>
           </View>
         </View>

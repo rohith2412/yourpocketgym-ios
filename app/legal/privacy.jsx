@@ -7,96 +7,105 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme, LIGHT } from "../../src/theme/ThemeContext";
+import { useTheme } from "../../src/theme/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SECTIONS = [
   {
     title: "Information We Collect",
-    body: `We collect the following information when you use Your Pocket Gym:
+    body: `We collect the following when you use PocketGym:
 
 Account Information
 • Name and email address when you register
-• Password (stored as a secure hash - we never store plain-text passwords)
+• Password (stored as a secure hash — we never store plain-text passwords)
 • If you use Google Sign-In: your name and email from Google
 
-Fitness Profile (collected during onboarding and editable in settings)
+Fitness Profile (collected during onboarding, editable in settings)
 • Age, height, weight, biological sex
 • Fitness goal (e.g. lose fat, gain muscle, strength)
 • Experience level and workout days per week
 
-Workout Data
-• Exercises logged, sets, reps, and weights
-• Workout dates and session history
+Workout & Activity Data
+• Exercises, sets, reps, weights, and session dates
+• Weekly routines you create
+• Body weight entries and progress photos (progress photos stay on your device unless you enable Sync Data)
 
 Nutrition Data
-• Meal logs including calorie and macro estimates
-• Food photos you take or select for AI analysis
-• Daily nutrition goals you set
+• Manual food entries, water intake, macro & calorie goals
+• Food photos submitted to the AI scanner (Pro)
 
-AI Trainer Conversations
-• Messages you send to the AI Trainer are transmitted to our AI service to generate responses
-• Conversation history may be stored to maintain context within a session
+Recovery Data
+• Sleep hours and quality, mindset check-ins
+• The derived recovery score
 
-Recipe Requests
-• Ingredients and meal preferences you select when generating recipes are sent to our AI service`,
+AI Coach & Voice
+• Chat messages you send to the AI Coach (Pro)
+• Short voice clips submitted for workout, meal and water transcription (Pro)
+
+Cloud Sync (Pro)
+• If you enable Sync Data, a snapshot of the above local state is uploaded to your account so it can be restored on another device.
+
+Subscription
+• We receive an anonymised subscription status from Apple / RevenueCat (active / cancelled / expired). We never see your card, Apple ID password, or payment details.`,
   },
   {
     title: "How We Use Your Information",
     body: `We use your data to:
 
 • Provide and personalise the app experience
-• Generate AI workout plans based on your fitness profile, equipment, and goals
-• Analyse food photos to estimate calories and macros
-• Generate recipe suggestions based on your selected ingredients and dietary goals
-• Display your workout history, volume tracking, and progress stats
-• Calculate BMI and personalised nutrition goals from your profile
-• Respond to your messages in the AI Trainer feature`,
+• Compute stats — workout volume, macros, recovery score, weight trends
+• Power AI features (coach, food scan, voice logging, meal plans, workout planning)
+• Restore your data on new devices via cloud sync (Pro)
+• Confirm your subscription entitlement
+• Investigate bugs and abuse
+
+We do not use your data for advertising or profiling.`,
   },
   {
     title: "AI Features & Data Processing",
-    body: `Your Pocket Gym uses artificial intelligence in several features:
+    body: `Pro AI features send limited data to our AI providers to generate responses:
 
-AI Trainer (Chat)
-Messages you type are sent to our AI service to generate fitness coaching responses. Chat history may be retained temporarily to maintain conversation context.
+AI Coach (Chat) — the messages you type are transmitted to generate coaching replies. Recent chat context may be included with each request.
 
-Food Photo Analysis
-Photos you take or select are transmitted securely to our AI service to estimate the nutritional content of your meal. Photos are processed and are not permanently stored on our servers after analysis.
+Food Photo Scanner — the photo you take is transmitted to estimate calories and macros. Photos are not retained after analysis.
 
-Recipe Generation
-Ingredients and meal preferences you select are sent to our AI service to generate recipe suggestions. No photos are involved in this feature.
+Voice Logging — short audio clips are transmitted for transcription and structured into a workout, meal, or water entry. Clips are not retained after transcription.
 
-Workout Plan Generation
-Your fitness profile (goal, experience level, equipment, focus area) is sent to our AI service to generate personalised workout plans.
+Meal & Workout Plans — your goals and preferences are transmitted to generate plans.
 
-All AI-generated content is for informational purposes only and may not be 100% accurate.`,
+All AI outputs may contain errors; they are for informational purposes only.`,
   },
   {
     title: "Google Sign-In",
     body: `If you choose to sign in with Google, we receive your name and email address from Google. We do not receive or store your Google password. Your use of Google Sign-In is also governed by Google's Privacy Policy at policies.google.com/privacy.`,
   },
   {
-    title: "Camera & Photo Library Access",
-    body: `The App requests camera and photo library access solely for the food photo analysis feature in Nutrition Tracking. We do not access your camera or photos for any other purpose. Photos are transmitted securely and are not stored after AI analysis is complete.`,
+    title: "Camera, Photos & Microphone",
+    body: `• Camera & photo library — used only for the food scanner and progress photos. We access nothing else.
+• Microphone — used only when you tap the voice-log button. We are not recording in the background.
+• Progress photos stay on your device by default and are only uploaded if you enable Sync Data.`,
   },
   {
     title: "Data Sharing",
     body: `We do not sell your personal information. We share data only with:
 
-• AI service providers - to power the AI Trainer, food analysis, recipe generation, and workout plan features
-• Google - for authentication if you use Google Sign-In
+• AI service providers — to power AI Coach, food scanner, voice transcription, and plan generation
+• Apple & RevenueCat — for subscription verification
+• Google — for authentication if you use Google Sign-In
+• Hosting providers — to run the servers this app depends on
 
-All third-party providers are bound by data processing agreements and may not use your data for their own purposes.`,
+Providers are bound by data-processing agreements and may not use your data for their own purposes.`,
   },
   {
     title: "Data Storage & Security",
     body: `Your data is stored on secure servers. We use:
 
-• HTTPS encryption for all data transmitted between the app and our servers
-• Secure token-based authentication (JWT)
+• HTTPS encryption for all traffic between the app and our servers
+• JWT-based authentication with tokens stored in the device's secure enclave
 • Hashed password storage
+• Snapshot uploads (Sync Data) are private to your account and never publicly indexed
 
-We retain your data for as long as your account is active. Workout logs, meal logs, and fitness profile data are deleted when you delete your account.`,
+We retain your data for as long as your account is active.`,
   },
   {
     title: "Your Rights & Account Deletion",
@@ -104,27 +113,27 @@ We retain your data for as long as your account is active. Workout logs, meal lo
 
 • Access the data we hold about you
 • Correct inaccurate data via the profile edit screen
-• Delete your account and all associated data
+• Delete your account and every associated record (including workouts, meal logs, chats, and cloud snapshots)
 
-To delete your account, tap "Delete Account" on the Profile screen or email us at privacy@yourpocketgym.com. Account deletion is processed within 30 days.`,
+To delete your account, tap "Delete Account" on the Profile screen or email rayandteamsupport@gmail.com. Deletion is processed within 30 days.`,
   },
   {
     title: "Children's Privacy",
-    body: `Your Pocket Gym is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided us with personal information, please contact us immediately.`,
+    body: `PocketGym is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided us information, contact us immediately.`,
   },
   {
     title: "Changes to This Policy",
-    body: `We may update this Privacy Policy from time to time. We will notify you of significant changes through the app. Continued use of the app after changes are posted constitutes your acceptance of the updated policy.`,
+    body: `We may update this Privacy Policy from time to time. Material changes will be flagged in the app when practical. Continued use after changes take effect constitutes your acceptance.`,
   },
   {
     title: "Contact",
-    body: `For privacy-related questions or requests:\n\nprivacy@yourpocketgym.com`,
+    body: `Privacy questions or requests: rayandteamsupport@gmail.com`,
   },
 ];
 
 export default function PrivacyScreen() {
   const { colors } = useTheme();
-  s = makeS(colors);
+  const s = makeS(colors);
   const router = useRouter();
 
   return (
@@ -144,11 +153,11 @@ export default function PrivacyScreen() {
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={s.updated}>Last updated: May 18, 2025</Text>
+        <Text style={s.updated}>Last updated: July 2026</Text>
         <Text style={s.intro}>
-          Your Pocket Gym ("we", "us", or "our") is committed to protecting your
-          privacy. This policy explains what data we collect across all features
-          of the app, how we use it, and your rights over it.
+          PocketGym ("we", "us", or "our") is committed to protecting your
+          privacy. This policy explains what data we collect across every
+          feature of the app, how we use it, and your rights over it.
         </Text>
 
         {SECTIONS.map((sec, i) => (
@@ -217,4 +226,3 @@ const makeS = (c) => StyleSheet.create({
   },
   sectionBody: { fontSize: 13, color: c.textMuted, lineHeight: 21 },
 });
-let s = makeS(LIGHT);

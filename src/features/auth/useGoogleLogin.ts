@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { signInWithGoogle, GoogleCancelled } from "./googleSignIn";
 import { saveSession, type AuthUser } from "./session";
+import { restoreFromCloud } from "../sync/restore";
 
 type GoogleAuthResponse = {
   success: boolean;
@@ -32,6 +33,9 @@ export function useGoogleLogin(opts?: {
         photo: data.user.photo ?? google.photo,
       };
       await saveSession({ token: data.token, user });
+      // Pull cloud snapshot so returning users land with their data already in.
+      // Silent failure — never blocks login.
+      await restoreFromCloud();
       return user;
     },
     onSuccess: (user) => opts?.onSuccess?.(user),

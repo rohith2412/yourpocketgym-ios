@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Image, Alert, Linking, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -6,6 +7,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 import GoogleGLogo from "../../../components/GoogleGLogo";
 import { useGoogleLogin } from "./useGoogleLogin";
 import { ApiError } from "../../api/client";
+import { EmailAuthSheet } from "./EmailAuthSheet";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -13,10 +15,11 @@ const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 export function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const { mutate: login, isPending } = useGoogleLogin({
     onSuccess: (user) =>
-      router.replace(user.hasIntro ? "/(tabs)" : "/startersIntro"),
+      router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any),
   });
 
   const handleGoogle = () => {
@@ -89,13 +92,31 @@ export function LoginScreen() {
             </View>
           </View>
 
-          <Button
-            title={isPending ? "Signing in…" : "Continue with Google"}
-            variant="secondary"
-            loading={isPending}
-            onPress={handleGoogle}
-            left={<GoogleGLogo size={20} />}
-          />
+          <View style={{ gap: theme.spacing.sm }}>
+            <Button
+              title={isPending ? "Signing in…" : "Continue with Google"}
+              variant="secondary"
+              loading={isPending}
+              onPress={handleGoogle}
+              left={<GoogleGLogo size={20} />}
+            />
+
+            {/* Divider */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm, marginVertical: theme.spacing.xs }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
+              <Text variant="caption" color="textFaint">
+                or
+              </Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: theme.colors.border }} />
+            </View>
+
+            <Button
+              title="Continue with email"
+              variant="secondary"
+              onPress={() => setEmailOpen(true)}
+              left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} />}
+            />
+          </View>
         </View>
 
         {/* ── Terms ── */}
@@ -125,6 +146,14 @@ export function LoginScreen() {
           </Text>
         </Text>
       </View>
+
+      <EmailAuthSheet
+        visible={emailOpen}
+        onClose={() => setEmailOpen(false)}
+        onSuccess={(session) =>
+          router.replace((session.user.hasIntro ? "/(tabs)" : "/region-intro") as any)
+        }
+      />
     </Screen>
   );
 }

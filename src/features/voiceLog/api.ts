@@ -8,8 +8,7 @@
  *   → 200 { transcript: string, exercises: ParsedExercise[] }
  */
 
-import { API_BASE_URL } from "../../api/client";
-import { getSecureToken } from "../../lib/storage";
+import { api } from "../../api/client";
 import type { VoiceParseResponse } from "./types";
 
 export async function parseVoice(audioUri: string): Promise<VoiceParseResponse> {
@@ -21,19 +20,5 @@ export async function parseVoice(audioUri: string): Promise<VoiceParseResponse> 
     type: "audio/m4a",
   } as unknown as Blob);
 
-  const token = await getSecureToken();
-  const res = await fetch(`${API_BASE_URL}/voice/parse`, {
-    method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      // Don't set Content-Type — the runtime adds the multipart boundary.
-    },
-    body: form,
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`voice/parse failed (${res.status}): ${text}`);
-  }
-  return (await res.json()) as VoiceParseResponse;
+  return api.upload<VoiceParseResponse>("/voice/parse", form);
 }

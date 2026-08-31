@@ -33,9 +33,14 @@ async function request<T>(
 ): Promise<T> {
   const { auth = true, signal } = opts;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  // FormData goes up as multipart. The runtime has to set Content-Type itself
+  // so it can append the boundary — setting it by hand produces a body the
+  // server can't parse.
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+
+  const headers: Record<string, string> = isForm
+    ? {}
+    : { "Content-Type": "application/json" };
   if (auth) {
     const token = await getSecureToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -46,7 +51,11 @@ async function request<T>(
     res = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: isForm
+        ? (body as FormData)
+        : body !== undefined
+        ? JSON.stringify(body)
+        : undefined,
       signal,
     });
   } catch (e: any) {
@@ -92,4 +101,7 @@ export const api = {
     request<T>("PUT", path, body, opts),
   del: <T>(path: string, opts?: RequestOptions) =>
     request<T>("DELETE", path, undefined, opts),
+  /** POST multipart/form-data — file uploads (audio clips, images). */
+  upload: <T>(path: string, form: FormData, opts?: RequestOptions) =>
+    request<T>("POST", path, form, opts),
 };

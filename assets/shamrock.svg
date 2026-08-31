@@ -1,0 +1,14 @@
+<svg viewBox="170 0 340 340" role="img" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blacken" color-interpolation-filters="sRGB">
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncR type="linear" slope="0"/>
+        <feFuncG type="linear" slope="0"/>
+        <feFuncB type="linear" slope="0"/>
+        <feFuncA type="linear" slope="1"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <text x="340" y="310" text-anchor="middle" font-size="320" filter="url(#blacken)" style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif">☘️</text>
+</svg>

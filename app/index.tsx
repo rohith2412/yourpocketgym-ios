@@ -107,7 +107,12 @@ export default function Index() {
 
   const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
 
-  if (!checking && destination) return <Redirect href={destination as any} />;
+  // While checking auth, render nothing — expo-splash-screen stays visible.
+  // As soon as we know where to send the user, redirect immediately. This
+  // removes the empty dark flash the old index screen produced between the
+  // splash and the real destination.
+  if (checking) return null;
+  if (destination) return <Redirect href={destination as any} />;
 
   return (
     <Animated.View style={[s.root, { opacity: fadeAnim }]}>
@@ -126,7 +131,7 @@ export default function Index() {
       {/* ── Buttons (always visible) ── */}
       <View style={s.bottom}>
         <Pressable
-          onPress={() => router.push("/startersIntro")}
+          onPress={() => router.push("/region-intro")}
           style={({ pressed }) => [s.primaryBtn, pressed && { opacity: 0.85 }]}
         >
           <Text style={s.primaryBtnText}>Create account</Text>

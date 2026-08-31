@@ -11,6 +11,7 @@ import {
   getJSON,
   setJSON,
   clearStaleSubscriptionCache,
+  clearUserScopedData,
 } from "../../lib/storage";
 
 export type AuthUser = {
@@ -24,6 +25,16 @@ export type AuthUser = {
 export type Session = { token: string; user: AuthUser };
 
 export async function saveSession({ token, user }: Session) {
+  // If a *different* account is signing in, drop the previous user's local
+  // data first. Local storage is device-wide, so without this someone else's
+  // food, weight and chat history would surface under the new login.
+  // Same-user re-logins are left alone so nothing is lost on a routine
+  // sign-out/sign-in.
+  const previous = await getJSON<AuthUser>(STORAGE_KEYS.user);
+  if (previous?.id && previous.id !== user.id) {
+    await clearUserScopedData();
+  }
+
   await saveSecureToken(token);
   await AsyncStorage.setItem(STORAGE_KEYS.token, token);
   await setJSON(STORAGE_KEYS.user, user);

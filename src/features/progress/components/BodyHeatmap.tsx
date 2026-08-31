@@ -3,6 +3,8 @@ import { View } from "react-native";
 import Body, { type Slug, type ExtendedBodyPart } from "react-native-body-highlighter";
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useProgressCardColor } from "../cardSurface";
+import { CardEdge } from "../CardEdge";
 import { useWorkoutLogs } from "../../train/api";
 import { totalVolSets } from "../../train/data";
 import { toISODay } from "../../nutrition/storage";
@@ -29,6 +31,7 @@ const HEAT_COLORS = [
 
 export function BodyHeatmap() {
   const { theme } = useTheme();
+  const cardBg = useProgressCardColor();
   const c = theme.colors;
   const { data: workouts = [] } = useWorkoutLogs();
 
@@ -72,14 +75,14 @@ export function BodyHeatmap() {
   return (
     <View
       style={{
-        backgroundColor: c.surface,
+        backgroundColor: cardBg,
         borderRadius: theme.radius["2xl"],
-        borderWidth: 1,
-        borderColor: c.border,
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
       }}
     >
+      <CardEdge radius={theme.radius["2xl"]} />
+
       <View style={{ marginBottom: theme.spacing.sm }}>
         <Text variant="body" weight="bold">Muscle balance</Text>
         <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>This week</Text>

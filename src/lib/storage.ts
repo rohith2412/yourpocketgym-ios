@@ -43,6 +43,46 @@ export async function getJSON<T>(key: string): Promise<T | null> {
 export const setJSON = (key: string, value: unknown) =>
   AsyncStorage.setItem(key, JSON.stringify(value));
 
+/**
+ * Every AsyncStorage key that belongs to a specific user rather than to the
+ * device. Wiped when a *different* account signs in, so one person's food,
+ * weight and chat history can never surface under someone else's login.
+ *
+ * Deliberately excludes device preferences (`themeMode`) and the dev override,
+ * which should survive an account switch.
+ */
+export const USER_SCOPED_KEYS = [
+  // Nutrition
+  "@food_entries",
+  "@macro_goals",
+  "@water_state",
+  "@water_goal_ml",
+  "@meal_plan",
+  // Training
+  "@routines",
+  // Body
+  "@weight_log",
+  "@progress_photos",
+  "@photo_log_usage",
+  // Recovery
+  "@sleep_log",
+  "@mood_log",
+  // Coach
+  "@coach_messages",
+  "@coach_usage",
+  // Onboarding / sync bookkeeping
+  "@user_region",
+  "@last_synced_at",
+  "@demo_mode",
+] as const;
+
+/** Wipe all per-user local data. Pro users get theirs back from the cloud
+ *  snapshot on next sync; free users start clean, which is the correct
+ *  outcome when the account has actually changed. */
+export async function clearUserScopedData() {
+  await AsyncStorage.multiRemove([...USER_SCOPED_KEYS]);
+}
+
 // ── Clear all subscription cache (v1 prefixed keys) ───────────────────────────
 export async function clearStaleSubscriptionCache() {
   const keys = await AsyncStorage.getAllKeys();

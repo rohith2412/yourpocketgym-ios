@@ -132,7 +132,7 @@ export function RoutineEditor() {
           flexDirection: "row",
           alignItems: "center",
           gap: theme.spacing.md,
-          paddingHorizontal: theme.spacing.xl,
+          paddingHorizontal: theme.spacing.lg,
           paddingTop: theme.spacing.sm,
           paddingBottom: theme.spacing.md,
         }}
@@ -155,7 +155,7 @@ export function RoutineEditor() {
 
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: theme.spacing.xl,
+          paddingHorizontal: theme.spacing.lg,
           paddingBottom: 140,
           gap: theme.spacing.lg,
         }}

@@ -15,7 +15,7 @@ const N = 7;
 type MacroKey = "calories" | "protein" | "carbs" | "fat";
 type MacroDef = { key: MacroKey; label: string; color: string; icon: MCIName; unit: string };
 const MACROS: MacroDef[] = [
-  { key: "calories", label: "Calories", color: "#22C55E", icon: "fire", unit: "cal" },
+  { key: "calories", label: "Calories", color: "#4ADE80", icon: "fire", unit: "cal" },
   { key: "protein", label: "Protein", color: "#EF4444", icon: "food-drumstick", unit: "g" },
   { key: "carbs", label: "Carbs", color: "#F59E0B", icon: "bread-slice", unit: "g" },
   { key: "fat", label: "Fat", color: "#8B5CF6", icon: "pizza", unit: "g" },

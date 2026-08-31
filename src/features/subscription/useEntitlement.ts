@@ -5,6 +5,8 @@ import {
   addPremiumStatusListener,
 } from "../../services/iapService";
 import { useDevPremium } from "./devOverride";
+import { isReviewAccount } from "./reviewAccounts";
+import { useCurrentUser } from "../auth/useCurrentUser";
 
 export type Plan = "free" | "premium";
 
@@ -36,6 +38,11 @@ export function useEntitlement(): Entitlement {
   // DEV: local override toggle from Profile page (persisted in AsyncStorage).
   const { data: devForcePremium = false } = useDevPremium();
 
+  // App Review: the demo account we hand Apple gets Pro without purchasing, so
+  // the reviewer can exercise every gated surface.
+  const { data: user } = useCurrentUser();
+  const reviewAccount = isReviewAccount(user?.email);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,7 +65,8 @@ export function useEntitlement(): Entitlement {
     [],
   );
 
-  const isPremium = devForcePremium || ownPremium === true || duoActive;
+  const isPremium =
+    devForcePremium || reviewAccount || ownPremium === true || duoActive;
 
   return {
     plan: isPremium ? "premium" : "free",

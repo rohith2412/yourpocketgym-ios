@@ -17,6 +17,8 @@ export type FoodEntry = {
   protein: number;
   carbs: number;
   fat: number;
+  /** Local file:// uri of a photo of the food (only when logged via photo). */
+  photoUri?: string;
 };
 
 export type MacroGoals = {
@@ -35,8 +37,14 @@ export const DEFAULT_GOALS: MacroGoals = {
 
 const KEYS = { food: "@food_entries", goals: "@macro_goals", water: "@water_state" };
 
-// Water goal (ml/day). Simple constant for now; can become user-editable later.
+// Water goal (ml/day). Constant default; users can override via loadWaterGoal.
 export const WATER_GOAL_ML = 3000;
+
+const WATER_GOAL_KEY = "@water_goal_ml";
+export async function loadWaterGoal(): Promise<number> {
+  return (await getJSON<number>(WATER_GOAL_KEY)) ?? WATER_GOAL_ML;
+}
+export const saveWaterGoal = (ml: number) => setJSON(WATER_GOAL_KEY, ml);
 
 // Water: map of ISO day → ml consumed
 export type WaterState = Record<string, number>;

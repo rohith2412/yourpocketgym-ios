@@ -12,3 +12,5 @@ export { Progress } from "./Progress";
 export { Skeleton } from "./Skeleton";
 export { SegmentedControl } from "./SegmentedControl";
 export { ListRow } from "./ListRow";
+export { FabMenu, type FabMenuItem } from "./FabMenu";
+export { useHideOnScroll } from "./useHideOnScroll";

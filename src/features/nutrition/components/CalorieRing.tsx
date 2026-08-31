@@ -6,6 +6,11 @@ import { useTheme } from "../../../theme/ThemeProvider";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+/** Calories accent — same green the macro charts use for the calories series. */
+const GREEN_LIGHT = "#86EFAC";
+const GREEN = "#4ADE80";
+const OVER = "#F59E0B"; // amber — over goal isn't an error, just a heads-up
+
 type Props = {
   eaten: number;
   goal: number;
@@ -21,7 +26,7 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.min(1, eaten / goal);
+  const pct = goal > 0 ? Math.min(1, eaten / goal) : 0;
 
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -37,15 +42,21 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
     outputRange: [circumference, 0],
   });
 
+  // Type scale derived from the ring size so it reads well at 110 and at 200.
+  const bigFont = Math.round(size * 0.26);
+  const microFont = Math.max(8, Math.round(size * 0.052));
+
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: "-90deg" }] }}>
         <Defs>
           <LinearGradient id="calGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0%" stopColor={c.inverseBg} stopOpacity="1" />
-            <Stop offset="100%" stopColor={c.inverseBg} stopOpacity="0.7" />
+            <Stop offset="0%" stopColor={over ? OVER : GREEN_LIGHT} stopOpacity="1" />
+            <Stop offset="100%" stopColor={over ? OVER : GREEN} stopOpacity="1" />
           </LinearGradient>
         </Defs>
+
+        {/* Track */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -54,6 +65,8 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
           strokeWidth={strokeWidth}
           fill="none"
         />
+
+        {/* Progress */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -67,41 +80,41 @@ export function CalorieRing({ eaten, goal, size = 200, strokeWidth = 14 }: Props
         />
       </Svg>
 
-      {(() => {
-        const bigFont = Math.round(size * 0.24);
-        const lineH = Math.round(bigFont * 1.05);
-        return (
-          <View style={{ position: "absolute", alignItems: "center" }}>
-            <Text
-              variant="caption"
-              color="textMuted"
-              weight="bold"
-              style={{ letterSpacing: 1, fontSize: Math.max(9, Math.round(size * 0.055)) }}
-            >
-              {over ? "OVER" : "LEFT"}
-            </Text>
-            <Text
-              style={{
-                fontSize: bigFont,
-                fontWeight: theme.fontWeight.heavy,
-                color: c.text,
-                letterSpacing: -2,
-                lineHeight: lineH,
-                marginTop: 2,
-              }}
-            >
-              {(over ? eaten - goal : remaining).toLocaleString()}
-            </Text>
-            <Text
-              variant="caption"
-              color="textFaint"
-              style={{ marginTop: 2, fontSize: Math.max(9, Math.round(size * 0.055)) }}
-            >
-              of {goal.toLocaleString()}
-            </Text>
-          </View>
-        );
-      })()}
+      {/* Center readout */}
+      <View style={{ position: "absolute", alignItems: "center" }}>
+        <Text
+          weight="bold"
+          style={{
+            letterSpacing: 1,
+            fontSize: microFont,
+            color: over ? OVER : c.textMuted,
+          }}
+        >
+          {over ? "OVER" : "LEFT"}
+        </Text>
+        <Text
+          style={{
+            fontSize: bigFont,
+            fontWeight: theme.fontWeight.heavy,
+            color: c.text,
+            letterSpacing: -1.5,
+            lineHeight: Math.round(bigFont * 1.08),
+            marginTop: 1,
+          }}
+        >
+          {(over ? eaten - goal : remaining).toLocaleString()}
+        </Text>
+        <Text
+          style={{
+            marginTop: 1,
+            fontSize: microFont,
+            color: c.textFaint,
+            fontWeight: "600",
+          }}
+        >
+          of {goal.toLocaleString()}
+        </Text>
+      </View>
     </View>
   );
 }

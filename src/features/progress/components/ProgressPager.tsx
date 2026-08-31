@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useProgressCardColor } from "../cardSurface";
 import { DualLineChart } from "./DualLineChart";
 import { WeightChart } from "./WeightChart";
 import { BodyHeatmap } from "./BodyHeatmap";
@@ -25,9 +26,9 @@ import { CalorieRing } from "../../nutrition/components/CalorieRing";
  *   │  (own   │  │           │
  *   │  card)  │  │           │
  *   └─────────┘  │           │
- *   ┌───────────────────────┐
- *   │ Protein / Carbs / Fat │   ← macros fill the L's bottom bar
- *   └───────────────────────┘
+  *   ┌───────────────────────┐
+  *   │ Protein / Carbs / Fat │   ← macros fill the L's bottom bar
+  *   └───────────────────────┘
  */
 
 // Geometry — Weight sits inside the L's notch. GAP_H = breathing room to the
@@ -37,7 +38,7 @@ const WEIGHT_H = 200; // height of the Weight card
 const BOTTOM_H = 200; // height of the macros bar
 const RADIUS = 20; // corner radius
 const GAP_H = 14; // horizontal gap between Weight and TODAY column
-const GAP_V = -21; // vertical gap below Weight before the macros bar
+const GAP_V = -27; // vertical gap below Weight before the macros bar
 const CUT_H = WEIGHT_H + GAP_V; // notch height inside the L
 const TOTAL_H = CUT_H + BOTTOM_H;
 
@@ -52,7 +53,10 @@ function LShapePath({
 }) {
   if (width <= 0) return null;
   const W = width;
-  const weightW = (W - GAP_H) / 2; // Weight + ring column split 50/50, GAP_H between
+  // Round to whole pixels — a fractional split lands the SVG notch on a subpixel
+  // and the overlaid Views on the next one, giving a hairline seam on real 2×
+  // devices (invisible on simulator).
+  const weightW = Math.round((W - GAP_H) / 2);
   const cutW = weightW + GAP_H; // notch right edge — GAP_H away from Weight
   const cutH = CUT_H; // notch bottom edge — GAP_V below Weight
   const R = RADIUS;
@@ -76,19 +80,52 @@ function LShapePath({
     `Z`,
   ].join(" ");
 
+  // Bottom + right only, to match the CSS `borderRightWidth`/`borderBottomWidth`
+  // on the other Progress cards. Traced as a separate open path since SVG has
+  // no per-side border. Inset by half the stroke so it isn't clipped by the
+  // viewport edge.
+  const SW = 1;
+  const half = SW / 2;
+  const edge = [
+    `M${W - R},${half}`,
+    `A${R} ${R} 0 0 1 ${W - half},${R}`, // top-right corner
+    `L${W - half},${TOTAL_H - R}`, // right edge
+    `A${R} ${R} 0 0 1 ${W - R},${TOTAL_H - half}`, // bottom-right corner
+    `L${R},${TOTAL_H - half}`, // bottom edge
+    `A${R} ${R} 0 0 1 ${half},${TOTAL_H - R}`, // bottom-left corner
+  ].join(" ");
+
   return (
     <Svg
       width={W}
       height={TOTAL_H}
       style={{ position: "absolute", top: 0, left: 0 }}
     >
-      <Path d={d} fill={color} stroke={border} strokeWidth={1} />
+      <Defs>
+        {/* Top-right → bottom-left. The bottom-right corner projects to the
+            midpoint of that axis, so the bright stop at 0.5 lands there and
+            the stroke fades out toward both ends. */}
+        <LinearGradient id="lEdge" x1="1" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={border} stopOpacity="0" />
+          <Stop offset="0.5" stopColor={border} stopOpacity="1" />
+          <Stop offset="1" stopColor={border} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Path d={d} fill={color} />
+      <Path
+        d={edge}
+        fill="none"
+        stroke="url(#lEdge)"
+        strokeWidth={SW}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
-function NutritionLBlock({ onOpenWeight }: { onOpenWeight: () => void }) {
+function NutritionLBlock() {
   const { theme } = useTheme();
+  const cardBg = useProgressCardColor();
   const c = theme.colors;
   const { perDay, goals, macros } = useNutritionSeries();
   const [containerW, setContainerW] = useState(0);
@@ -97,7 +134,9 @@ function NutritionLBlock({ onOpenWeight }: { onOpenWeight: () => void }) {
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
   const calGoal = goals.calories;
 
-  const weightW = containerW > 0 ? (containerW - GAP_H) / 2 : 0;
+  // Must exactly match the L-shape SVG's weightW so the notch, Weight card,
+  // and calorie column all land on the same pixel.
+  const weightW = containerW > 0 ? Math.round((containerW - GAP_H) / 2) : 0;
   const ringLeft = weightW + GAP_H; // ring column starts right after the notch
   const ringW = containerW - ringLeft;
 
@@ -107,7 +146,7 @@ function NutritionLBlock({ onOpenWeight }: { onOpenWeight: () => void }) {
       onLayout={(e: LayoutChangeEvent) => setContainerW(e.nativeEvent.layout.width)}
     >
       {/* L-shape background */}
-      <LShapePath width={containerW} color={c.surface} border={c.border} />
+      <LShapePath width={containerW} color={cardBg} border={c.border} />
 
       {/* 7-day calorie bar chart — sits inside the L's top-right column */}
       {containerW > 0 ? (
@@ -202,20 +241,20 @@ function NutritionLBlock({ onOpenWeight }: { onOpenWeight: () => void }) {
             height: WEIGHT_H,
           }}
         >
-          <WeightChart onPress={onOpenWeight} />
+          <WeightChart />
         </View>
       ) : null}
     </View>
   );
 }
 
-export function ProgressPager({ onOpenWeight }: { onOpenWeight: () => void }) {
+export function ProgressPager() {
   const { theme } = useTheme();
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
       <DualLineChart />
-      <NutritionLBlock onOpenWeight={onOpenWeight} />
+      <NutritionLBlock />
       <BodyHeatmap />
     </View>
   );

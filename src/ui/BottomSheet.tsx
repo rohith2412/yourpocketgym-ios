@@ -5,8 +5,11 @@ import {
   Animated,
   Easing,
   View,
+  ScrollView,
   StyleSheet,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
@@ -75,37 +78,52 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
         <Pressable style={{ flex: 1 }} onPress={close} />
       </Animated.View>
 
-      {/* Sheet */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: theme.radius["2xl"],
-          borderTopRightRadius: theme.radius["2xl"],
-          paddingHorizontal: theme.spacing.xl,
-          paddingTop: theme.spacing.md,
-          paddingBottom: insets.bottom + theme.spacing.xl,
-          borderTopWidth: 1,
-          borderColor: theme.colors.border,
-          transform: [{ translateY: slide }],
-        }}
+      {/* Sheet — wrapped in KAV so text inputs lift above the keyboard */}
+      <KeyboardAvoidingView
+        pointerEvents="box-none"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}
       >
-        {/* Grabber */}
-        <View
+        <Animated.View
           style={{
-            width: 40,
-            height: 5,
-            borderRadius: 99,
-            backgroundColor: theme.colors.border,
-            alignSelf: "center",
-            marginBottom: theme.spacing.lg,
+            // Cap the sheet so a tall form pushed up by the keyboard can never
+            // run its header off the top of the screen — the ScrollView below
+            // takes over once content exceeds the cap.
+            maxHeight: H * 0.9,
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: theme.radius["2xl"],
+            borderTopRightRadius: theme.radius["2xl"],
+            paddingTop: theme.spacing.md,
+            borderTopWidth: 1,
+            borderColor: theme.colors.border,
+            transform: [{ translateY: slide }],
           }}
-        />
-        {children}
-      </Animated.View>
+        >
+          {/* Grabber */}
+          <View
+            style={{
+              width: 40,
+              height: 5,
+              borderRadius: 99,
+              backgroundColor: theme.colors.border,
+              alignSelf: "center",
+              marginBottom: theme.spacing.lg,
+            }}
+          />
+
+          <ScrollView
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: theme.spacing.xl,
+              paddingBottom: insets.bottom + theme.spacing.xl,
+            }}
+          >
+            {children}
+          </ScrollView>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

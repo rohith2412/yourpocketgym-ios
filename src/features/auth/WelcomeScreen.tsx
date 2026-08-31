@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Image, Animated, Easing, Alert, Linking } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text, Button, BottomSheet } from "../../ui";
+import { Screen, Text, Button } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import GoogleGLogo from "../../../components/GoogleGLogo";
 import { useGoogleLogin } from "./useGoogleLogin";
 import { ApiError } from "../../api/client";
+import { EmailAuthSheet } from "./EmailAuthSheet";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -64,12 +66,11 @@ export function WelcomeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const typed = useTypewriter(PHRASES);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const { mutate: login, isPending } = useGoogleLogin({
     onSuccess: (user) => {
-      setSheetOpen(false);
-      router.replace(user.hasIntro ? "/(tabs)" : "/startersIntro");
+      router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any);
     },
   });
 
@@ -101,21 +102,17 @@ export function WelcomeScreen() {
   return (
     <Screen>
       <Animated.View style={{ flex: 1, opacity: fade }}>
-        {/* ── Top: logo + name ── */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: theme.spacing.sm,
-            paddingTop: theme.spacing.lg,
-          }}
-        >
-          <Image
-            source={require("../../../assets/images/logo-v2.png")}
-            style={{ width: 26, height: 26, tintColor: theme.colors.text }}
-            resizeMode="contain"
-          />
-          <Text variant="heading" weight="bold">
+        {/* ── Top: brand mark (Didot, no icon) ── */}
+        <View style={{ paddingTop: theme.spacing.lg }}>
+          <Text
+            style={{
+              fontFamily: "Didot",
+              fontSize: 32,
+              fontWeight: "700",
+              letterSpacing: -0.5,
+              color: theme.colors.text,
+            }}
+          >
             PocketGym
           </Text>
         </View>
@@ -166,65 +163,63 @@ export function WelcomeScreen() {
           </Text> */}
         </View>
 
-        {/* ── Bottom: CTA ── */}
-        <View style={{ paddingBottom: theme.spacing.xl }}>
+        {/* ── Bottom: auth buttons ── */}
+        <View style={{ paddingBottom: theme.spacing.xl, gap: theme.spacing.sm }}>
           <Button
-            title="Get Started"
-            variant="primary"
+            title={isPending ? "Signing in…" : "Sign in with Google"}
+            variant={theme.mode === "light" ? "secondary" : "primary"}
             radius="full"
             size="lg"
-            glow
+            loading={isPending}
             haptic="medium"
-            onPress={() => setSheetOpen(true)}
+            onPress={handleGoogle}
+            left={<GoogleGLogo size={20} />}
           />
+
+          <Button
+            title="Continue with email"
+            variant="secondary"
+            radius="full"
+            size="lg"
+            onPress={() => setEmailOpen(true)}
+            left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} />}
+          />
+
+          <Text
+            variant="caption"
+            color="textFaint"
+            center
+            style={{ lineHeight: 18, marginTop: theme.spacing.sm }}
+          >
+            By continuing you agree to our{" "}
+            <Text
+              variant="caption"
+              color="textMuted"
+              onPress={() => Linking.openURL(TERMS_URL)}
+              style={{ textDecorationLine: "underline" }}
+            >
+              Terms
+            </Text>{" "}
+            &{" "}
+            <Text
+              variant="caption"
+              color="textMuted"
+              onPress={() => Linking.openURL(PRIVACY_URL)}
+              style={{ textDecorationLine: "underline" }}
+            >
+              Privacy Policy
+            </Text>
+          </Text>
         </View>
       </Animated.View>
 
-      {/* ── Sign-in sheet ── */}
-      <BottomSheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
-        <View style={{ gap: theme.spacing.xs, marginBottom: theme.spacing.xl }}>
-          <Text variant="title">Sign in</Text>
-          <Text variant="body" color="textMuted">
-            Continue with your Google account to get started.
-          </Text>
-        </View>
-
-        <Button
-          title={isPending ? "Signing in…" : "Sign in with Google"}
-          variant="primary"
-          radius="full"
-          size="lg"
-          loading={isPending}
-          onPress={handleGoogle}
-          left={<GoogleGLogo size={20} />}
-        />
-
-        <Text
-          variant="caption"
-          color="textFaint"
-          center
-          style={{ lineHeight: 18, marginTop: theme.spacing.lg }}
-        >
-          By continuing you agree to our{" "}
-          <Text
-            variant="caption"
-            color="textMuted"
-            onPress={() => Linking.openURL(TERMS_URL)}
-            style={{ textDecorationLine: "underline" }}
-          >
-            Terms
-          </Text>{" "}
-          &{" "}
-          <Text
-            variant="caption"
-            color="textMuted"
-            onPress={() => Linking.openURL(PRIVACY_URL)}
-            style={{ textDecorationLine: "underline" }}
-          >
-            Privacy Policy
-          </Text>
-        </Text>
-      </BottomSheet>
+      <EmailAuthSheet
+        visible={emailOpen}
+        onClose={() => setEmailOpen(false)}
+        onSuccess={(session) =>
+          router.replace((session.user.hasIntro ? "/(tabs)" : "/region-intro") as any)
+        }
+      />
     </Screen>
   );
 }

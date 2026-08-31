@@ -13,6 +13,8 @@ import Svg, {
 import { Text } from "../../../ui";
 import { RangePicker, type ProgressRange } from "./RangePicker";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useProgressCardColor } from "../cardSurface";
+import { CardEdge } from "../CardEdge";
 import { useFoodEntries } from "../../nutrition/hooks";
 import { totalsForDay, toISODay } from "../../nutrition/storage";
 import { useWorkoutLogs } from "../../train/api";
@@ -38,6 +40,7 @@ function smooth(pts: { x: number; y: number }[]) {
 
 export function DualLineChart() {
   const { theme } = useTheme();
+  const cardBg = useProgressCardColor();
   const c = theme.colors;
   const [range, setRange] = useState<Range>("7d");
   const [containerW, setContainerW] = useState(0);
@@ -138,13 +141,13 @@ export function DualLineChart() {
   return (
     <View
       style={{
-        backgroundColor: c.surface,
+        backgroundColor: cardBg,
         borderRadius: theme.radius["2xl"],
-        borderWidth: 1,
-        borderColor: c.border,
         overflow: "hidden",
       }}
     >
+      <CardEdge radius={theme.radius["2xl"]} />
+
       {/* Header */}
       <View
         style={{
