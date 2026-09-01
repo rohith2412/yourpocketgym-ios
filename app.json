@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketGym: AI Fitness Tracker",
     "slug": "yourpocketgym",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
@@ -17,7 +17,8 @@
         "NSPhotoLibraryUsageDescription": "PocketGym accesses your photos to analyze food, save progress photos, and set your profile picture.",
         "NSPhotoLibraryAddUsageDescription": "PocketGym saves progress photos and food-scan captures to your photo library when you choose to.",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -63,7 +64,8 @@
         {
           "microphonePermission": "PocketGym uses the microphone so Pro members can log workouts by voice."
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -56,7 +56,14 @@ export default function AppTabsLayout() {
       <TabView
         hapticFeedbackEnabled
         translucent
-        tabBarStyle={{ backgroundColor: "transparent" }}
+        // A fully transparent bar leaves iOS 26 free to fall back on its default
+        // light glass material, which reads as a pale dock over a black app. A
+        // translucent tint in the theme's own ground colour keeps the blur while
+        // pushing the material to the right side of light/dark.
+        tabBarStyle={{
+          backgroundColor:
+            theme.mode === "dark" ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)",
+        }}
         tabBarActiveTintColor={theme.colors.text}
         tabBarInactiveTintColor={theme.colors.textMuted}
         scrollEdgeAppearance="transparent"

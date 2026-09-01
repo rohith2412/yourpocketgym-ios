@@ -42,3 +42,6 @@ app-example
 /ios
 /android
 .claude/worktrees/
+
+# EAS local build artifacts — huge, and they inflate the EAS upload archive.
+build-*.ipa

@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { View, Image, Alert, Linking, Pressable } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Image, Alert, Linking, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Screen, Text, Button } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
 import GoogleGLogo from "../../../components/GoogleGLogo";
 import { useGoogleLogin } from "./useGoogleLogin";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { useAppleLogin } from "./useAppleLogin";
+import { isAppleSignInAvailable } from "./appleSignIn";
 import { ApiError } from "../../api/client";
 import { EmailAuthSheet } from "./EmailAuthSheet";
 
@@ -17,10 +20,37 @@ export function LoginScreen() {
   const router = useRouter();
   const [emailOpen, setEmailOpen] = useState(false);
 
-  const { mutate: login, isPending } = useGoogleLogin({
-    onSuccess: (user) =>
-      router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any),
+  const afterLogin = (user: { hasIntro?: boolean }) =>
+    router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any);
+
+  const { mutate: login, isPending } = useGoogleLogin({ onSuccess: afterLogin });
+  const { mutate: appleLogin, isPending: applePending } = useAppleLogin({
+    onSuccess: afterLogin,
   });
+
+  // Visible on iOS by default, and the async check can only ever turn it ON.
+  // Guideline 4.8 makes this button mandatory alongside Google, so the one
+  // outcome we can't afford is it quietly vanishing because a availability
+  // probe hiccuped — that ships a rejectable build that looks fine locally.
+  // Every iOS version this app supports has Sign in with Apple anyway.
+  const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
+  useEffect(() => {
+    isAppleSignInAvailable().then((ok) => {
+      if (ok) setAppleAvailable(true);
+    });
+  }, []);
+
+  const handleApple = () => {
+    appleLogin(undefined, {
+      onError: (err) => {
+        const msg =
+          err instanceof ApiError
+            ? err.message
+            : "Sign in with Apple failed. Please try again.";
+        Alert.alert("Sign-in failed", msg);
+      },
+    });
+  };
 
   const handleGoogle = () => {
     login(undefined, {
@@ -87,12 +117,26 @@ export function LoginScreen() {
                 Log in
               </Text>
               <Text variant="body" color="textMuted" center>
-                Continue with your Google account.
+                Sign in to pick up where you left off.
               </Text>
             </View>
           </View>
 
           <View style={{ gap: theme.spacing.sm }}>
+            {appleAvailable ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  theme.mode === "dark"
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={theme.radius.lg}
+                style={{ height: 50, width: "100%", opacity: applePending ? 0.6 : 1 }}
+                onPress={handleApple}
+              />
+            ) : null}
+
             <Button
               title={isPending ? "Signing in…" : "Continue with Google"}
               variant="secondary"
