@@ -1,28 +1,25 @@
-import { useEffect, useRef, useState } from "react";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Easing,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Animated,
+    Easing,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { saveToken } from "../src/auth/storage";
 import { signInWithGoogle, isCancelled } from "../src/auth/google";
-
-export default function Register() {
+//handleLogin
+export default function Login() {
   const router = useRouter();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,50 +58,44 @@ export default function Register() {
     outputRange: ["0deg", "360deg"],
   });
 
-  const handleRegister = async () => {
-    if (!name || !email || !password) return;
+  // Replace the entire handleLogin function:
+  const handleLogin = async () => {
+    if (!email || !password) return;
     setLoading(true);
+
     try {
-      const res = await fetch("https://yourpocketgym.com/api/auth/register", {
+      const res = await fetch("https://yourpocketgym.com/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || "Registration failed");
+
+      if (!res.ok || !data.success) {
+        alert(data.error || "Login failed");
         return;
       }
-
       await saveToken(data.token);
 
-      // Check if user intro exists (same as login)
-      const introRes = await fetch(
-        "https://yourpocketgym.com/api/user-intro",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.token}`,
-          },
-        },
-      );
+      // Save both token AND user object - useAuth needs both
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
-      const introData = await introRes.json();
-
-      if (!introRes.ok || !introData?.exists) {
+      // Redirect based on hasIntro from login response (no extra fetch needed)
+      if (!data.user.hasIntro) {
         router.replace("/startersIntro");
       } else {
         router.replace("/tracking");
       }
     } catch (err) {
-      alert("Something went wrong");
+      alert("Something went wrong. Check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
       const google = await signInWithGoogle();
@@ -122,7 +113,7 @@ export default function Register() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert(data.error || "Google sign-in failed");
+        alert(data.error || "Google login failed");
         return;
       }
 
@@ -143,7 +134,7 @@ export default function Register() {
     }
   };
 
-  const isValid = name && email && password.length >= 6;
+  const isValid = email && password;
 
   return (
     <View style={s.root}>
@@ -166,122 +157,108 @@ export default function Register() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <Animated.View
+          style={[
+            s.inner,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
         >
-          <Animated.View
-            style={[
-              s.inner,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
-            {/* HEADER handleRegister */}
-            <View style={s.headerSection}>
-              <View style={s.logoRow}>
-                <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                  <Image
-                    source={require("../assets/images/logo.png")}
-                    style={s.logoSmall}
-                    resizeMode="contain"
-                  />
-                </Animated.View>
-                <Text style={s.logoName}>PocketGym</Text>
-              </View>
-              <Text style={s.title}>
-                Create your{"\n"}
-                <Text style={s.titleOrange}>account.</Text>
-              </Text>
-              <Text style={s.subtitle}>Start your fitness journey today.</Text>
-            </View>
-
-            {/* FORM */}
-            <View style={s.form}>
-              <View style={s.inputWrapper}>
-                <Text style={s.label}>Full Name</Text>
-                <TextInput
-                  style={s.input}
-                  placeholder="John Doe"
-                  placeholderTextColor="#ccc"
-                  value={name}
-                  onChangeText={setName}
-                />
-              </View>
-
-              <View style={s.inputWrapper}>
-                <Text style={s.label}>Email</Text>
-                <TextInput
-                  style={s.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor="#ccc"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
-
-              <View style={s.inputWrapper}>
-                <Text style={s.label}>Password</Text>
-                <TextInput
-                  style={s.input}
-                  placeholder="Min. 6 characters"
-                  placeholderTextColor="#ccc"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
-
-              <Pressable
-                onPress={handleRegister}
-                disabled={!isValid || loading}
-                style={[s.btn, (!isValid || loading) && s.btnDisabled]}
-              >
-                <Text style={s.btnText}>
-                  {loading ? "Creating account..." : "Create Account →"}
-                </Text>
-              </Pressable>
-
-              <View style={s.dividerRow}>
-                <View style={s.dividerLine} />
-                <Text style={s.dividerText}>or</Text>
-                <View style={s.dividerLine} />
-              </View>
-
-              <Pressable
-                onPress={handleGoogleSignup}
-                disabled={googleLoading || loading}
-                style={[s.googleBtn, (googleLoading || loading) && s.btnDisabled]}
-              >
+          {/* HEADER handleLogin */}
+          <View style={s.headerSection}>
+            <View style={s.logoRow}>
+              <Animated.View style={{ transform: [{ rotate: spin }] }}>
                 <Image
-                  source={require("../assets/images/google.png")}
-                  style={s.googleIcon}
+                  source={require("../assets/images/logo.png")}
+                  style={s.logoSmall}
                   resizeMode="contain"
                 />
-                <Text style={s.googleBtnText}>
-                  {googleLoading ? "Signing in..." : "Continue with Google"}
-                </Text>
-              </Pressable>
+              </Animated.View>
+              <Text style={s.logoName}>PocketGym</Text>
+            </View>
+            <Text style={s.title}>
+              Welcome{"\n"}
+              <Text style={s.titleOrange}>back.</Text>
+            </Text>
+            <Text style={s.subtitle}>Sign in to continue your journey.</Text>
+          </View>
+
+          {/* FORM */}
+          <View style={s.form}>
+            <View style={s.inputWrapper}>
+              <Text style={s.label}>Email</Text>
+              <TextInput
+                style={s.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#ccc"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
             </View>
 
-            {/* FOOTER */}
-            <View style={s.footer}>
-              <Pressable onPress={() => router.replace("/login")}>
-                <Text style={s.footerText}>
-                  Already have an account?{" "}
-                  <Text style={s.footerLink}>Sign in</Text>
-                </Text>
-              </Pressable>
-              <Text style={s.terms}>
-                By continuing, you agree to our{" "}
-                <Text style={s.termsLink}>Terms of Service</Text> and{" "}
-                <Text style={s.termsLink}>Privacy Policy</Text>.
-              </Text>
+            <View style={s.inputWrapper}>
+              <Text style={s.label}>Password</Text>
+              <TextInput
+                style={s.input}
+                placeholder="Your password"
+                placeholderTextColor="#ccc"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
             </View>
-          </Animated.View>
-        </ScrollView>
+
+            <Pressable
+              onPress={handleLogin}
+              disabled={!isValid || loading}
+              style={[s.btn, (!isValid || loading) && s.btnDisabled]}
+            >
+              <Text style={s.btnText}>
+                {loading ? "Signing in..." : "Sign In →"}
+              </Text>
+            </Pressable>
+
+            <View style={s.dividerRow}>
+              <View style={s.dividerLine} />
+              <Text style={s.dividerText}>or</Text>
+              <View style={s.dividerLine} />
+            </View>
+
+            <Pressable
+              onPress={handleGoogleLogin}
+              disabled={googleLoading || loading}
+              style={[s.googleBtn, (googleLoading || loading) && s.btnDisabled]}
+            >
+              <Image
+                source={require("../assets/images/google.png")}
+                style={s.googleIcon}
+                resizeMode="contain"
+              />
+              <Text style={s.googleBtnText}>
+                {googleLoading ? "Signing in..." : "Continue with Google"}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* SPACER */}
+          <View style={s.spacer} />
+
+          {/* FOOTER */}
+          <View style={s.footer}>
+            <Pressable onPress={() => router.replace("/register")}>
+              <Text style={s.footerText}>
+                Don't have an account?{" "}
+                <Text style={s.footerLink}>Create one</Text>
+              </Text>
+            </Pressable>
+            <Text style={s.terms}>
+              By continuing, you agree to our{" "}
+              <Text style={s.termsLink}>Terms of Service</Text> and{" "}
+              <Text style={s.termsLink}>Privacy Policy</Text>.
+            </Text>
+          </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -297,7 +274,6 @@ const s = StyleSheet.create({
     height: 600,
     borderRadius: 300,
   },
-  scroll: { flexGrow: 1 },
   inner: {
     flex: 1,
     paddingHorizontal: 28,
@@ -382,6 +358,7 @@ const s = StyleSheet.create({
     color: "#fff",
     letterSpacing: 0.2,
   },
+  spacer: { flex: 1 },
   footer: { gap: 14, alignItems: "center" },
   footerText: { fontSize: 13, color: "#aaa" },
   footerLink: { color: "#ff6b35", fontWeight: "700" },

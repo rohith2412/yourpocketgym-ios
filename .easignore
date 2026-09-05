@@ -1,0 +1,16 @@
+# EAS regenerates ios/ and android/ via prebuild — uploading a local ios/
+# ships stale Pods/, build/, and DerivedData, which is what was making
+# `pod install` fail on the server and the archive balloon to 680 MB.
+ios/
+android/
+
+# Local build artifacts.
+build-*.ipa
+*.ipa
+Pods/
+DerivedData/
+build/
+
+# The other repo-root offenders.
+.expo/
+.expo-shared/

@@ -1,24 +1,16 @@
 {
   "expo": {
-    "name": "PocketGym: AI Fitness Tracker",
+    "name": "gym-ios",
     "slug": "yourpocketgym",
-    "version": "1.9.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.rohith.com.yourpocketgym",
-      "buildNumber": "1",
-      "infoPlist": {
-        "NSCameraUsageDescription": "PocketGym uses the camera to scan food for calorie and macro estimation, and to take progress photos.",
-        "NSPhotoLibraryUsageDescription": "PocketGym accesses your photos to analyze food, save progress photos, and set your profile picture.",
-        "NSPhotoLibraryAddUsageDescription": "PocketGym saves progress photos and food-scan captures to your photo library when you choose to.",
-        "ITSAppUsesNonExemptEncryption": false
-      },
-      "usesAppleSignIn": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rohith.com.yourpocketgym"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,10 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.rohith.com.yourpocketgym",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "package": "com.rohith.com.yourpocketgym"
     },
     "web": {
       "output": "static",
@@ -43,10 +32,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo.png",
-          "imageWidth": 240,
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
         }
       ],
       [
@@ -55,17 +47,8 @@
           "iosUrlScheme": "com.googleusercontent.apps.387235327844-liqf9v0o9o6hid6195l0t9qq00png4jc"
         }
       ],
-      "expo-image-picker",
       "expo-secure-store",
-      "expo-web-browser",
-      "react-native-bottom-tabs",
-      [
-        "expo-audio",
-        {
-          "microphonePermission": "PocketGym uses the microphone so Pro members can log workouts by voice."
-        }
-      ],
-      "expo-apple-authentication"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
