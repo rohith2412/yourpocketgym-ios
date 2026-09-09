@@ -444,12 +444,12 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.75 : 1 }}>
+        <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
           <DualLineChart previewWorkouts={previewWorkouts} previewFoods={previewFoods} />
         </View>
       </LogOverlay>
 
-      <View style={{ opacity: initialEmpty === true ? 0.75 : 1 }}>
+      <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
         <NutritionLBlock previewFoods={previewFoods} previewWeights={previewWeights} />
       </View>
 
@@ -459,7 +459,7 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.75 : 1 }}>
+        <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
           <BodyHeatmap previewData={previewWorkouts} />
         </View>
       </LogOverlay>
