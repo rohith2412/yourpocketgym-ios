@@ -139,7 +139,9 @@ function NutritionLBlock() {
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
   const { data: foods = [] } = useFoodEntries();
+  const { data: weights = [] } = useWeightLog();
   const foodsEmpty = foods.length === 0;
+  const weightsEmpty = weights.length === 0;
 
   const restMacros = macros.filter((m) => m.key !== "calories");
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
@@ -347,6 +349,67 @@ function NutritionLBlock() {
           }}
         >
           <WeightChart />
+        </View>
+      ) : null}
+
+      {/* Weight overlay — only when there is no weight log yet. Goes over the
+          top-left notch area only. Rounded on all four corners because the
+          weight card in the notch has all corners rounded (it's not part of
+          the L outline, it's a floating card in the concave). */}
+      {containerW > 0 && weightsEmpty ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: weightW,
+            height: WEIGHT_H,
+            overflow: "hidden",
+            borderTopLeftRadius: theme.radius["2xl"],
+            borderTopRightRadius: theme.radius["2xl"],
+            borderBottomLeftRadius: theme.radius["2xl"],
+            borderBottomRightRadius: theme.radius["2xl"],
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <BlurView
+            intensity={35}
+            tint={theme.mode === "dark" ? "dark" : "light"}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor:
+                theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+            }}
+          />
+          <Pressable
+            onPress={() => router.push("/body-weight" as never)}
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 999,
+              backgroundColor: c.inverseBg,
+              opacity: pressed ? 0.85 : 1,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 4,
+            })}
+          >
+            <Ionicons name="scale-outline" size={16} color={c.inverseText} />
+            <Text variant="body" weight="bold" style={{ color: c.inverseText, fontSize: 13 }}>
+              Log weight
+            </Text>
+          </Pressable>
         </View>
       ) : null}
     </View>
