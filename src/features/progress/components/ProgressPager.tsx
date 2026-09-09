@@ -8,6 +8,7 @@ import { DualLineChart } from "./DualLineChart";
 import { WeightChart } from "./WeightChart";
 import { BodyHeatmap } from "./BodyHeatmap";
 import { LogOverlay } from "./LogOverlay";
+import { BlurView } from "expo-blur";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useWorkoutLogs } from "../../train/api";
@@ -444,13 +445,29 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.4 : 1 }}>
+        <View style={{ position: "relative" }}>
           <DualLineChart previewWorkouts={previewWorkouts} previewFoods={previewFoods} />
+          {initialEmpty === true ? (
+            <BlurView
+              pointerEvents="none"
+              intensity={14}
+              tint={theme.mode === "dark" ? "dark" : "light"}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: theme.radius["2xl"] }}
+            />
+          ) : null}
         </View>
       </LogOverlay>
 
-      <View style={{ opacity: initialEmpty === true ? 0.4 : 1 }}>
+      <View style={{ position: "relative" }}>
         <NutritionLBlock previewFoods={previewFoods} previewWeights={previewWeights} />
+        {initialEmpty === true ? (
+          <BlurView
+            pointerEvents="none"
+            intensity={14}
+            tint={theme.mode === "dark" ? "dark" : "light"}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: theme.radius["2xl"] }}
+          />
+        ) : null}
       </View>
 
       <LogOverlay
@@ -459,8 +476,16 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.4 : 1 }}>
+        <View style={{ position: "relative" }}>
           <BodyHeatmap previewData={previewWorkouts} />
+          {initialEmpty === true ? (
+            <BlurView
+              pointerEvents="none"
+              intensity={14}
+              tint={theme.mode === "dark" ? "dark" : "light"}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: theme.radius["2xl"] }}
+            />
+          ) : null}
         </View>
       </LogOverlay>
     </View>
