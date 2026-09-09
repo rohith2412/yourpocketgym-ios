@@ -212,15 +212,20 @@ export function WelcomeScreen() {
 
           <Button
             title="Sign in with email"
-            variant="secondary"
+            variant={theme.mode === "light" ? "secondary" : "primary"}
             radius="full"
             size="lg"
             onPress={() => router.push("/email-auth" as never)}
-            left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} 
-          titleStyle={{ fontSize: 21, fontWeight: "600" }}
-          />}
-          
-          titleStyle={{ fontSize: 21, fontWeight: "600" }}
+            left={
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={
+                  theme.mode === "light" ? theme.colors.text : theme.colors.inverseText
+                }
+              />
+            }
+            titleStyle={{ fontSize: 21, fontWeight: "600" }}
           />
 
           <Text
