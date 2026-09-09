@@ -312,7 +312,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
                 borderRadius: 999,
                 backgroundColor: c.surface,
                 borderWidth: 1,
-                borderColor: c.text,
+                borderColor: c.textMuted,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -374,7 +374,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
               borderRadius: 999,
               backgroundColor: c.surface,
               borderWidth: 1,
-              borderColor: c.text,
+              borderColor: c.textMuted,
               opacity: pressed ? 0.85 : 1,
             })}
           >
