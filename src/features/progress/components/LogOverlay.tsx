@@ -57,13 +57,18 @@ export function LogOverlay({
           <BlurView
             intensity={35}
             tint={theme.mode === "dark" ? "dark" : "light"}
-            style={StyleSheetAbsoluteFill as any}
+            style={{
+              ...StyleSheetAbsoluteFill,
+              borderRadius: theme.radius["2xl"],
+              overflow: "hidden",
+            }}
           />
           {/* A tinted wash keeps the button legible over the blur — pure
               blur alone can still be busy when the chart has grid lines. */}
           <View
             style={{
               ...StyleSheetAbsoluteFill,
+              borderRadius: theme.radius["2xl"],
               backgroundColor:
                 theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
             }}
