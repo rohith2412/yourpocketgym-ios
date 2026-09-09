@@ -8,7 +8,6 @@ import { DualLineChart } from "./DualLineChart";
 import { WeightChart } from "./WeightChart";
 import { BodyHeatmap } from "./BodyHeatmap";
 import { LogOverlay } from "./LogOverlay";
-import { BlurView } from "expo-blur";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useWorkoutLogs } from "../../train/api";
@@ -264,19 +263,6 @@ function NutritionLBlock() {
               borderBottomRightRadius: 0,
             }}
           >
-            <BlurView
-              intensity={20}
-              tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor:
-                  theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
-              }}
-            />
           </View>
 
           {/* Bottom bar blur (macros) with the single CTA centred on it */}
@@ -297,19 +283,6 @@ function NutritionLBlock() {
               justifyContent: "center",
             }}
           >
-            <BlurView
-              intensity={20}
-              tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor:
-                  theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
-              }}
-            />
             <Pressable
               onPress={() => router.push("/(tabs)/nutrition" as never)}
               style={({ pressed }) => ({
@@ -374,19 +347,6 @@ function NutritionLBlock() {
             justifyContent: "center",
           }}
         >
-          <BlurView
-            intensity={20}
-            tint={theme.mode === "dark" ? "dark" : "light"}
-            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: 0, left: 0, right: 0, bottom: 0,
-              backgroundColor:
-                theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
-            }}
-          />
           <Pressable
             onPress={() => router.push("/body-weight" as never)}
             style={({ pressed }) => ({

@@ -1,22 +1,16 @@
 import { View, Pressable } from "react-native";
-import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 
 /**
- * A frosted CTA layer for empty charts.
+ * A floating CTA pill layered over an empty chart.
  *
- * On Progress a fresh install would otherwise show flatline curves and "0 lb
- * moved" — reads as broken. Instead, when the chart underneath has no data,
- * we keep it in place as a preview (so users see what the chart *will* look
- * like once they log) and float a blurred call-to-action on top of it.
- *
- * Wrap a chart with this component to get the pattern:
- *
- *   <LogOverlay visible={workouts.length === 0} label="Log a workout" onPress={…}>
- *     <ActivityChart />
- *   </LogOverlay>
+ * We tried blurring the chart underneath but it read as a stack of loose
+ * blur boxes with pills instead of the actual chart with a prompt. Cleaner:
+ * let the empty chart show through and float a single high-contrast pill
+ * over it, centred. The empty chart itself is the hint of what the user is
+ * about to fill in.
  */
 export function LogOverlay({
   visible,
@@ -39,41 +33,14 @@ export function LogOverlay({
       {children}
       {visible ? (
         <View
-          // Cover the child, but let normal children still be measurable
-          // (blur here would break onLayout etc. underneath if we used a
-          // proper overlay pattern — this way is simplest and works because
-          // the chart underneath is inert while empty).
+          pointerEvents="box-none"
           style={{
-            ...StyleSheetAbsoluteFill,
+            position: "absolute",
+            top: 0, left: 0, right: 0, bottom: 0,
             alignItems: "center",
             justifyContent: "center",
-            overflow: "hidden",
-            borderRadius: theme.radius["2xl"],
           }}
-          pointerEvents="box-none"
         >
-          {/* The blur softens the empty chart behind the button so the
-              flatline stops looking like a broken axis. */}
-          <BlurView
-            intensity={20}
-            tint={theme.mode === "dark" ? "dark" : "light"}
-            style={{
-              ...StyleSheetAbsoluteFill,
-              borderRadius: theme.radius["2xl"],
-              overflow: "hidden",
-            }}
-          />
-          {/* A tinted wash keeps the button legible over the blur — pure
-              blur alone can still be busy when the chart has grid lines. */}
-          <View
-            style={{
-              ...StyleSheetAbsoluteFill,
-              borderRadius: theme.radius["2xl"],
-              backgroundColor:
-                theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
-            }}
-          />
-
           <Pressable
             onPress={onPress}
             style={({ pressed }) => ({
@@ -85,7 +52,6 @@ export function LogOverlay({
               borderRadius: 999,
               backgroundColor: c.inverseBg,
               opacity: pressed ? 0.85 : 1,
-              // Small lift so the pill reads as floating rather than pasted.
               shadowColor: "#000",
               shadowOpacity: 0.15,
               shadowRadius: 12,
@@ -103,12 +69,3 @@ export function LogOverlay({
     </View>
   );
 }
-
-// Inline to avoid an extra file and stay readable at the call sites.
-const StyleSheetAbsoluteFill = {
-  position: "absolute" as const,
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-};
