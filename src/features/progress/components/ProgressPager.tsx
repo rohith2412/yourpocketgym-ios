@@ -290,6 +290,7 @@ function NutritionLBlock() {
               width: containerW,
               height: BOTTOM_H,
               overflow: "hidden",
+              borderTopLeftRadius: RADIUS,
               borderBottomLeftRadius: RADIUS,
               borderBottomRightRadius: RADIUS,
               alignItems: "center",
@@ -302,6 +303,7 @@ function NutritionLBlock() {
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
+                borderTopLeftRadius: RADIUS,
                 borderBottomLeftRadius: RADIUS,
                 borderBottomRightRadius: RADIUS,
                 overflow: "hidden",
@@ -311,6 +313,7 @@ function NutritionLBlock() {
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
+                borderTopLeftRadius: RADIUS,
                 borderBottomLeftRadius: RADIUS,
                 borderBottomRightRadius: RADIUS,
                 backgroundColor:
