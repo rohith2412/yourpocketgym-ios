@@ -438,7 +438,15 @@ export function ProgressPager() {
         onPress={() => tabNav.goTo("train")}
       >
         <View style={{ opacity: initialEmpty ? 0.7 : 1 }}>
-          <DualLineChart previewWorkouts={previewWorkouts} previewFoods={previewFoods} />
+          {/* Activity: once workouts are real, calories go to their real
+              (empty) value — a flatline — instead of a bogus preview trend
+              that would suggest the user has been logging meals. Preview
+              foods only feed in while workouts are also still empty, i.e.
+              the fresh-install first-visit state. */}
+          <DualLineChart
+            previewWorkouts={previewWorkouts}
+            previewFoods={workoutsEmpty ? previewFoods : undefined}
+          />
         </View>
       </LogOverlay>
 
