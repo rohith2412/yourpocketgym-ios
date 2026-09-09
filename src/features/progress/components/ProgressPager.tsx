@@ -375,17 +375,14 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
               paddingHorizontal: 14,
               paddingVertical: 10,
               borderRadius: 999,
-              backgroundColor: c.inverseBg,
+              backgroundColor: c.surface,
+              borderWidth: 1,
+              borderColor: c.border,
               opacity: pressed ? 0.85 : 1,
-              shadowColor: "#000",
-              shadowOpacity: 0.15,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: 4,
             })}
           >
-            <Ionicons name="scale-outline" size={16} color={c.inverseText} />
-            <Text variant="body" weight="bold" style={{ color: c.inverseText, fontSize: 13 }}>
+            <Ionicons name="scale-outline" size={16} color={c.text} />
+            <Text variant="body" weight="bold" style={{ color: c.text, fontSize: 13 }}>
               Log weight
             </Text>
           </Pressable>

@@ -50,17 +50,14 @@ export function LogOverlay({
               paddingHorizontal: 18,
               paddingVertical: 12,
               borderRadius: 999,
-              backgroundColor: c.inverseBg,
+              backgroundColor: c.surface,
+              borderWidth: 1,
+              borderColor: c.border,
               opacity: pressed ? 0.85 : 1,
-              shadowColor: "#000",
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 4,
             })}
           >
-            <Ionicons name={icon} size={18} color={c.inverseText} />
-            <Text variant="body" weight="bold" style={{ color: c.inverseText, fontSize: 15 }}>
+            <Ionicons name={icon} size={18} color={c.text} />
+            <Text variant="body" weight="bold" style={{ color: c.text, fontSize: 15 }}>
               {label}
             </Text>
           </Pressable>
