@@ -10,7 +10,6 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useAppleLogin } from "./useAppleLogin";
 import { isAppleSignInAvailable } from "./appleSignIn";
 import { ApiError } from "../../api/client";
-import { EmailAuthSheet } from "./EmailAuthSheet";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -69,7 +68,6 @@ export function WelcomeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const typed = useTypewriter(PHRASES);
-  const [emailOpen, setEmailOpen] = useState(false);
 
   const afterLogin = (user: { hasIntro?: boolean }) => {
     router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any);
@@ -134,21 +132,6 @@ export function WelcomeScreen() {
   return (
     <Screen>
       <Animated.View style={{ flex: 1, opacity: fade }}>
-        {/* ── Top: brand mark (Didot, no icon) ── */}
-        <View style={{ paddingTop: theme.spacing.lg }}>
-          <Text
-            style={{
-              fontFamily: "Didot",
-              fontSize: 32,
-              fontWeight: "700",
-              letterSpacing: -0.5,
-              color: theme.colors.text,
-            }}
-          >
-            PocketGym
-          </Text>
-        </View>
-
         {/* ── Center: typewriter hero ── */}
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <View
@@ -224,15 +207,20 @@ export function WelcomeScreen() {
             haptic="medium"
             onPress={handleGoogle}
             left={<GoogleGLogo size={20} />}
+            titleStyle={{ fontSize: 21, fontWeight: "600" }}
           />
 
           <Button
-            title="Continue with email"
+            title="Sign in with email"
             variant="secondary"
             radius="full"
             size="lg"
-            onPress={() => setEmailOpen(true)}
-            left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} />}
+            onPress={() => router.push("/email-auth" as never)}
+            left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} 
+          titleStyle={{ fontSize: 21, fontWeight: "600" }}
+          />}
+          
+          titleStyle={{ fontSize: 21, fontWeight: "600" }}
           />
 
           <Text
@@ -262,14 +250,6 @@ export function WelcomeScreen() {
           </Text>
         </View>
       </Animated.View>
-
-      <EmailAuthSheet
-        visible={emailOpen}
-        onClose={() => setEmailOpen(false)}
-        onSuccess={(session) =>
-          router.replace((session.user.hasIntro ? "/(tabs)" : "/region-intro") as any)
-        }
-      />
-    </Screen>
+</Screen>
   );
 }

@@ -15,6 +15,7 @@ import {
 import { useTheme } from "../../theme/ThemeProvider";
 import { useEntitlement } from "../subscription/useEntitlement";
 import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
+import { PAYWALL_ENABLED } from "../subscription/useEntitlement";
 import { useDemoMode, useSetDemoMode } from "../demo/useDemoMode";
 import { isReviewAccount } from "../subscription/reviewAccounts";
 import { PremiumCta } from "../subscription/PremiumCta";
@@ -174,16 +175,34 @@ export default function ProfileDetailScreen() {
 
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
-                <Text variant="body" weight="semibold">Force premium</Text>
-                <Text variant="caption" color="textMuted">Currently: {plan}</Text>
+                <Text variant="body" weight="semibold">
+                  {PAYWALL_ENABLED ? "Force premium" : "View as"}
+                </Text>
+                <Text variant="caption" color="textMuted">
+                  {PAYWALL_ENABLED
+                    ? `Currently: ${plan}`
+                    : "Pick which experience you see. Everyone else gets Pro."}
+                </Text>
               </View>
             </View>
-            <SegmentedControl<"free" | "premium">
-              value={devPremium ? "premium" : "free"}
-              onChange={(v) => setDevPremium.mutate(v === "premium")}
+            {/* Segment → storage mapping:
+                  PAYWALL_ENABLED = true  → Free/Premium mean "off/on" for the
+                                            force-premium switch.
+                  PAYWALL_ENABLED = false → Pro is the default (devToggle=false),
+                                            Free is the opt-out (devToggle=true). */}
+            <SegmentedControl<"pro" | "free">
+              value={
+                PAYWALL_ENABLED
+                  ? devPremium ? "pro" : "free"        // pro = force premium on
+                  : devPremium ? "free" : "pro"        // pro = default, free = opt-out
+              }
+              onChange={(v) => {
+                const on = PAYWALL_ENABLED ? v === "pro" : v === "free";
+                setDevPremium.mutate(on);
+              }}
               segments={[
+                { value: "pro", label: PAYWALL_ENABLED ? "Premium" : "Pro" },
                 { value: "free", label: "Free" },
-                { value: "premium", label: "Premium" },
               ]}
             />
 

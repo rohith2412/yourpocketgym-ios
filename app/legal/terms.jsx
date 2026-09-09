@@ -51,7 +51,9 @@ AI outputs may contain errors. Always consult a qualified professional before st
   },
   {
     title: "User Accounts",
-    body: `You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information and to notify us immediately of any unauthorized use of your account.`,
+    body: `You can create an account with an email and password, or by signing in with Google or Apple. Sign in with Apple supports "Hide My Email," which uses a private relay address — you receive email from us normally, and we don't see your real address.
+
+You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information and to notify us immediately of any unauthorized use of your account.`,
   },
   {
     title: "Prohibited Conduct",

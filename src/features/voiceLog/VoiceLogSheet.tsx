@@ -68,6 +68,12 @@ export function VoiceLogSheet({ visible, onClose }: Props) {
     if (recorder.isRecording) {
       const result = await recorder.stop();
       if (!result || !result.uri) return;
+      if (result.tooLong) {
+        // Cap fired: don't upload. Hard limit protects billing and the backend
+        // times out on long clips anyway.
+        setHint("Recording stopped at 1 minute. Try a shorter take.");
+        return;
+      }
       if (result.durationMs < MIN_DURATION_MS) {
         setHint("Too short - hold on longer and say a set.");
         return;

@@ -74,6 +74,10 @@ export function VoiceNutritionSheet({ visible, onClose }: Props) {
     if (recorder.isRecording) {
       const result = await recorder.stop();
       if (!result || !result.uri) return;
+      if (result.tooLong) {
+        setHint("Recording stopped at 1 minute. Try a shorter take.");
+        return;
+      }
       if (result.durationMs < MIN_DURATION_MS) {
         setHint("Too short — hold on longer and say what you ate.");
         return;

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { Screen, Text, Card } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
+import { PAYWALL_ENABLED } from "../subscription/useEntitlement";
 
 type Feature = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -82,27 +83,65 @@ export default function AboutScreen() {
         </Text>
       </Card>
 
-      {/* Core */}
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
-          FOR EVERYONE
-        </Text>
-        <Card padding="lg" style={{ gap: theme.spacing.lg }}>
-          {CORE.map((f, i) => (
-            <FeatureRow key={i} feature={f} c={c} theme={theme} />
-          ))}
-        </Card>
-      </View>
+      {/* Features. While the paywall is off, everything is one list — showing
+          "PRO" badges next to features the user can already use just reads as
+          upsell theatre. When PAYWALL_ENABLED flips back the split returns. */}
+      {PAYWALL_ENABLED ? (
+        <>
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
+              FOR EVERYONE
+            </Text>
+            <Card padding="lg" style={{ gap: theme.spacing.lg }}>
+              {CORE.map((f, i) => (
+                <FeatureRow key={i} feature={f} c={c} theme={theme} />
+              ))}
+            </Card>
+          </View>
 
-      {/* Pro */}
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
+              PRO FEATURES
+            </Text>
+            <Card padding="lg" style={{ gap: theme.spacing.lg }}>
+              {PRO.map((f, i) => (
+                <FeatureRow key={i} feature={f} c={c} theme={theme} />
+              ))}
+            </Card>
+          </View>
+        </>
+      ) : (
+        <View style={{ gap: theme.spacing.sm }}>
+          <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
+            WHAT'S INSIDE
+          </Text>
+          <Card padding="lg" style={{ gap: theme.spacing.lg }}>
+            {[...CORE, ...PRO.map((f) => ({ ...f, pro: false }))].map((f, i) => (
+              <FeatureRow key={i} feature={f} c={c} theme={theme} />
+            ))}
+          </Card>
+        </View>
+      )}
+
+      {/* Fair use — client-side caps that keep AI costs sane. Users find out
+          about these when they hit them; better to say up front. */}
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
-          PRO FEATURES
+          FAIR USE
         </Text>
-        <Card padding="lg" style={{ gap: theme.spacing.lg }}>
-          {PRO.map((f, i) => (
-            <FeatureRow key={i} feature={f} c={c} theme={theme} />
-          ))}
+        <Card padding="lg" style={{ gap: theme.spacing.sm }}>
+          <Text variant="body" style={{ lineHeight: 20 }}>
+            AI features are metered so a hot mic or a runaway upload can't burn
+            through the day for everyone else:
+          </Text>
+          <View style={{ gap: 4, marginTop: 2 }}>
+            <Text variant="body" color="textMuted" style={{ lineHeight: 20 }}>
+              • Photo food scan — 5 per day
+            </Text>
+            <Text variant="body" color="textMuted" style={{ lineHeight: 20 }}>
+              • Voice logging — capped at 1 minute per take
+            </Text>
+          </View>
         </Card>
       </View>
 
@@ -113,9 +152,10 @@ export default function AboutScreen() {
         </Text>
         <Card padding="lg" style={{ gap: theme.spacing.sm }}>
           <Text variant="body" style={{ lineHeight: 20 }}>
-            Built by a small team who lift, cook, and sleep badly like everyone
-            else. If something's broken or missing, tell us — we read every
-            email.
+            Built by a small team of people who train, eat, and sleep like
+            everyone else — and got tired of stitching together five apps to
+            keep track of it. If something's broken or missing, tell us. Every
+            email lands in a real inbox.
           </Text>
           <Pressable
             onPress={() => Linking.openURL("mailto:rayandteamsupport@gmail.com").catch(() => {})}

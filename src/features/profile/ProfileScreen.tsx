@@ -259,8 +259,8 @@ export function ProfileScreen() {
         </View>
       </Card>
 
-      {/* Get Premium CTA */}
-      <PremiumCta onPress={() => router.push("/premium")} />
+      {/* Get Premium CTA — hidden while everyone gets Pro. */}
+      {plan === "free" ? <PremiumCta onPress={() => router.push("/premium")} /> : null}
 
       {/* Body weight — chart + log button inline */}
       <FreeWeightSection />

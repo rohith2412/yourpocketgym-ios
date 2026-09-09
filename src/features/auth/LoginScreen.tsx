@@ -10,7 +10,6 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { useAppleLogin } from "./useAppleLogin";
 import { isAppleSignInAvailable } from "./appleSignIn";
 import { ApiError } from "../../api/client";
-import { EmailAuthSheet } from "./EmailAuthSheet";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -18,7 +17,6 @@ const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 export function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const [emailOpen, setEmailOpen] = useState(false);
 
   const afterLogin = (user: { hasIntro?: boolean }) =>
     router.replace((user.hasIntro ? "/(tabs)" : "/region-intro") as any);
@@ -93,33 +91,13 @@ export function LoginScreen() {
             gap: theme.spacing.xl,
           }}
         >
-          <View style={{ alignItems: "center", gap: theme.spacing.lg }}>
-            <View
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: theme.radius["2xl"],
-                backgroundColor: theme.colors.surfaceAlt,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Image
-                source={require("../../../assets/images/logo-v2.png")}
-                style={{ width: 42, height: 42, tintColor: theme.colors.text }}
-                resizeMode="contain"
-              />
-            </View>
-            <View style={{ gap: theme.spacing.xs, alignItems: "center" }}>
-              <Text variant="title" center>
-                Log in
-              </Text>
-              <Text variant="body" color="textMuted" center>
-                Sign in to pick up where you left off.
-              </Text>
-            </View>
+          <View style={{ alignItems: "center", gap: theme.spacing.sm }}>
+            <Text variant="title" center>
+              Welcome back
+            </Text>
+            <Text variant="body" color="textMuted" center>
+              Sign in to pick up where you left off.
+            </Text>
           </View>
 
           <View style={{ gap: theme.spacing.sm }}>
@@ -131,18 +109,22 @@ export function LoginScreen() {
                     ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                     : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
                 }
-                cornerRadius={theme.radius.lg}
-                style={{ height: 50, width: "100%", opacity: applePending ? 0.6 : 1 }}
+                // Match our Button size="lg" radius="full": height 58, pill.
+                cornerRadius={29}
+                style={{ height: 58, width: "100%", opacity: applePending ? 0.6 : 1 }}
                 onPress={handleApple}
               />
             ) : null}
 
             <Button
-              title={isPending ? "Signing in…" : "Continue with Google"}
+              title={isPending ? "Signing in…" : "Sign in with Google"}
               variant="secondary"
+              radius="full"
+              size="lg"
               loading={isPending}
               onPress={handleGoogle}
               left={<GoogleGLogo size={20} />}
+              titleStyle={{ fontSize: 21, fontWeight: "600" }}
             />
 
             {/* Divider */}
@@ -155,11 +137,17 @@ export function LoginScreen() {
             </View>
 
             <Button
-              title="Continue with email"
+              title="Sign in with email"
+              radius="full"
+              size="lg"
               variant="secondary"
-              onPress={() => setEmailOpen(true)}
-              left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} />}
-            />
+              onPress={() => router.push("/email-auth" as never)}
+              left={<Ionicons name="mail-outline" size={20} color={theme.colors.text} 
+            titleStyle={{ fontSize: 21, fontWeight: "600" }}
+          />}
+            
+            titleStyle={{ fontSize: 21, fontWeight: "600" }}
+          />
           </View>
         </View>
 
@@ -190,14 +178,6 @@ export function LoginScreen() {
           </Text>
         </Text>
       </View>
-
-      <EmailAuthSheet
-        visible={emailOpen}
-        onClose={() => setEmailOpen(false)}
-        onSuccess={(session) =>
-          router.replace((session.user.hasIntro ? "/(tabs)" : "/region-intro") as any)
-        }
-      />
-    </Screen>
+</Screen>
   );
 }

@@ -33,6 +33,11 @@ export async function saveSession({ token, user }: Session) {
   const previous = await getJSON<AuthUser>(STORAGE_KEYS.user);
   if (previous?.id && previous.id !== user.id) {
     await clearUserScopedData();
+  } else if (!previous?.id) {
+    // No stored user record, but scoped data on disk means either a v1 install
+    // that never wrote one, or the "sign out didn't clear scoped data" leak
+    // this file used to have. Either way, wipe rather than adopt it.
+    await clearUserScopedData();
   }
 
   await saveSecureToken(token);
@@ -46,6 +51,12 @@ export async function loadUser(): Promise<AuthUser | null> {
 }
 
 export async function clearSession() {
+  // Wipe scoped data at sign-out, not only on account-switch inside
+  // saveSession. Otherwise: user A signs out (token + user cleared), user B
+  // signs up on the same device — the "different id" check in saveSession
+  // finds no previous user record, decides nothing needs clearing, and B
+  // lands into A's food, weight, routines, and everything else.
+  await clearUserScopedData();
   await removeSecureToken();
   await AsyncStorage.multiRemove([STORAGE_KEYS.token, STORAGE_KEYS.user]);
 }

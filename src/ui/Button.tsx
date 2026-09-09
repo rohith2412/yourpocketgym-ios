@@ -4,6 +4,7 @@ import {
   View,
   type PressableProps,
   type GestureResponderEvent,
+  type TextStyle,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Text } from "./Text";
@@ -37,6 +38,10 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   glow?: boolean;
   /** Tap vibration. Default: "light". Set "none" to disable. */
   haptic?: Haptic;
+  /** Override the label's Text style — for one-off font size or weight tweaks
+   *  where a whole new variant would be overkill (e.g. matching Apple's
+   *  native SignIn button label size on auth screens). */
+  titleStyle?: TextStyle;
 };
 
 export function Button({
@@ -50,6 +55,7 @@ export function Button({
   size = "md",
   glow = false,
   haptic = "light",
+  titleStyle,
   onPress,
   ...rest
 }: ButtonProps) {
@@ -118,7 +124,7 @@ export function Button({
             variant="body"
             weight="semibold"
             color={fg}
-            style={{ fontSize: size === "lg" ? theme.fontSize.lg : theme.fontSize.md }}
+            style={[{ fontSize: size === "lg" ? theme.fontSize.lg : theme.fontSize.md }, titleStyle]}
           >
             {title}
           </Text>

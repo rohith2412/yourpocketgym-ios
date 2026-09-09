@@ -74,6 +74,9 @@ export const USER_SCOPED_KEYS = [
   "@user_region",
   "@last_synced_at",
   "@demo_mode",
+  // Dev-only toggles. Grouped here so signing out on the admin device does
+  // not leave someone else's account with force-premium or a stale demo flag.
+  "@dev_force_premium",
 ] as const;
 
 /** Wipe all per-user local data. Pro users get theirs back from the cloud
