@@ -51,8 +51,14 @@ export default function AppTabsLayout() {
   const safeIndex = Math.min(index, routes.length - 1);
   const profileIndex = routes.findIndex((r) => r.key === "profile");
   const nav = useMemo<TabNav>(
-    () => ({ goToProfile: () => profileIndex >= 0 && setIndex(profileIndex) }),
-    [profileIndex],
+    () => ({
+      goTo: (key) => {
+        const i = routes.findIndex((r) => r.key === key);
+        if (i >= 0) setIndex(i);
+      },
+      goToProfile: () => profileIndex >= 0 && setIndex(profileIndex),
+    }),
+    [routes, profileIndex],
   );
   const navigationState = useMemo(() => ({ index: safeIndex, routes }), [safeIndex, routes]);
 

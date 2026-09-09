@@ -14,6 +14,7 @@ import { useWorkoutLogs } from "../../train/api";
 import { useFoodEntries } from "../../nutrition/hooks";
 import { useWeightLog } from "../hooks";
 import { useRouter } from "expo-router";
+import { useTabNav } from "../../../nav/tabNav";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateWorkoutLogs, generateFoodEntries, generateWeightLog } from "../../demo/demoData";
@@ -136,6 +137,7 @@ function LShapePath({
 
 function NutritionLBlock() {
   const { theme } = useTheme();
+  const tabNav = useTabNav();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
   const { perDay, goals, macros } = useNutritionSeries();
@@ -296,7 +298,7 @@ function NutritionLBlock() {
             }}
           >
             <Pressable
-              onPress={() => router.push("/(tabs)/nutrition" as never)}
+              onPress={() => tabNav.goTo("nutrition")}
               style={({ pressed }) => ({
                 flexDirection: "row",
                 alignItems: "center",
@@ -392,6 +394,7 @@ export function ProgressPager() {
   const { theme } = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
+  const tabNav = useTabNav();
 
   // React Query returns the default [] on the very first render before any
   // data has loaded, so a naive length check flags every user as empty. We
@@ -435,7 +438,7 @@ export function ProgressPager() {
         visible={activityEmpty}
         label="Log a workout"
         icon="barbell-outline"
-        onPress={() => router.push("/(tabs)/train" as never)}
+        onPress={() => tabNav.goTo("train")}
       >
         <DualLineChart />
       </LogOverlay>
@@ -446,7 +449,7 @@ export function ProgressPager() {
         visible={heatmapEmpty}
         label="Log a workout"
         icon="barbell-outline"
-        onPress={() => router.push("/(tabs)/train" as never)}
+        onPress={() => tabNav.goTo("train")}
       >
         <BodyHeatmap />
       </LogOverlay>
