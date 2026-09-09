@@ -50,7 +50,8 @@ function densify(log: WeightEntry[], n: number): { date: Date; lb: number | null
   return out;
 }
 
-export function WeightChart() {
+import type { WeightEntry as _WE } from "../storage";
+export function WeightChart({ previewData }: { previewData?: _WE[] } = {}) {
   const { theme } = useTheme();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
@@ -59,9 +60,10 @@ export function WeightChart() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const N = RANGE_DAYS[range];
 
-  const { data: log = [] } = useWeightLog();
+  const { data: log = previewData ?? [] } = useWeightLog();
+  const effectiveLog = previewData ?? log;
 
-  const days = useMemo(() => densify(log, N), [log, N]);
+  const days = useMemo(() => densify(effectiveLog, N), [log, N]);
 
   const W = 320;
   const H = 80;

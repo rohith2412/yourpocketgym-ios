@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { useFoodEntries, useGoals } from "../hooks";
+import type { FoodEntry } from "../storage";
 import { DEFAULT_GOALS, toISODay, totalsForDay } from "../storage";
 
 type MCIName = ComponentProps<typeof MaterialCommunityIcons>["name"];
@@ -112,8 +113,9 @@ export function MacroRow({
 
 /** Shared hook: 7-day totals + goals so pieces of the chart can be composed
  *  in unusual layouts (like the Progress page L-shape). */
-export function useNutritionSeries() {
-  const { data: foods = [] } = useFoodEntries();
+export function useNutritionSeries(previewFoods?: FoodEntry[]) {
+  const { data: foodsHook = [] } = useFoodEntries();
+  const foods = previewFoods ?? foodsHook;
   const { data: g } = useGoals();
   const goals = g ?? DEFAULT_GOALS;
 

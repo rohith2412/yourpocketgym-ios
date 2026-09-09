@@ -38,7 +38,9 @@ function smooth(pts: { x: number; y: number }[]) {
   return d;
 }
 
-export function DualLineChart() {
+import type { WorkoutLog as _DWL } from "../../train/api";
+import type { FoodEntry as _DFE } from "../../nutrition/storage";
+export function DualLineChart({ previewWorkouts, previewFoods }: { previewWorkouts?: _DWL[]; previewFoods?: _DFE[] } = {}) {
   const { theme } = useTheme();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
@@ -47,8 +49,10 @@ export function DualLineChart() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const N = RANGE_DAYS[range];
 
-  const { data: foods = [] } = useFoodEntries();
-  const { data: workouts = [] } = useWorkoutLogs();
+  const { data: foodsHook = [] } = useFoodEntries();
+  const foods = previewFoods ?? foodsHook;
+  const { data: workoutsHook = [] } = useWorkoutLogs();
+  const workouts = previewWorkouts ?? workoutsHook;
 
   const days = useMemo(() => {
     const out: { iso: string; date: Date; kcal: number; volume: number }[] = [];

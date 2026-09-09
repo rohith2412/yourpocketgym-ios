@@ -29,11 +29,13 @@ const HEAT_COLORS = [
   "#F97316FF", // hot
 ] as const;
 
-export function BodyHeatmap() {
+import type { WorkoutLog as _WL } from "../../train/api";
+export function BodyHeatmap({ previewData }: { previewData?: _WL[] } = {}) {
   const { theme } = useTheme();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
   const { data: workouts = [] } = useWorkoutLogs();
+  const effectiveWorkouts = previewData ?? workouts;
 
   const { data, mostGroup, leastGroup } = useMemo(() => {
     const cutoff = new Date();
@@ -45,7 +47,7 @@ export function BodyHeatmap() {
       Chest: 0, Back: 0, Shoulders: 0, Arms: 0, Legs: 0, Core: 0,
     };
 
-    workouts.forEach((w) => {
+    effectiveWorkouts.forEach((w) => {
       if (toISODay(new Date(w.date)) < cutoffIso) return;
       w.exercises.forEach((ex) => {
         const g = (ex.muscleGroup as Group) ?? null;
@@ -70,7 +72,7 @@ export function BodyHeatmap() {
     const leastGroup = worked.length > 1 ? worked.reduce((a, b) => (b[1] < a[1] ? b : a))[0] : null;
 
     return { data, mostGroup, leastGroup };
-  }, [workouts]);
+  }, [effectiveWorkouts]);
 
   return (
     <View
@@ -133,7 +135,7 @@ export function BodyHeatmap() {
           </View>
         ) : null}
         {!mostGroup ? (
-          <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>No workouts this week yet.</Text>
+          <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>No effectiveWorkouts this week yet.</Text>
         ) : null}
       </View>
     </View>

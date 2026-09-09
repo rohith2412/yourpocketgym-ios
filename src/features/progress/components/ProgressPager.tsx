@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { Text } from "../../../ui";
@@ -16,9 +16,7 @@ import { useWeightLog } from "../hooks";
 import { useRouter } from "expo-router";
 import { useTabNav } from "../../../nav/tabNav";
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { generateWorkoutLogs, generateFoodEntries, generateWeightLog } from "../../demo/demoData";
-import { trackingKeys } from "../../train/api";
 import {
   MacroRow,
   useNutritionSeries,
@@ -135,12 +133,12 @@ function LShapePath({
   );
 }
 
-function NutritionLBlock() {
+function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any; previewWeights?: any }) {
   const { theme } = useTheme();
   const tabNav = useTabNav();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
-  const { perDay, goals, macros } = useNutritionSeries();
+  const { perDay, goals, macros } = useNutritionSeries(previewFoods);
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
   // Same shape as ProgressPager: snapshot once, only after both queries
@@ -335,7 +333,7 @@ function NutritionLBlock() {
             height: WEIGHT_H,
           }}
         >
-          <WeightChart />
+          <WeightChart previewData={previewWeights} />
         </View>
       ) : null}
 
@@ -393,7 +391,6 @@ function NutritionLBlock() {
 export function ProgressPager() {
   const { theme } = useTheme();
   const router = useRouter();
-  const qc = useQueryClient();
   const tabNav = useTabNav();
 
   // React Query returns the default [] on the very first render before any
@@ -418,16 +415,23 @@ export function ProgressPager() {
     setInitialEmpty(empty);
     if (!empty) return;
 
-    // Cache-only preview: seed the demo generators so the charts render
-    // populated. Nothing is written to AsyncStorage — a real log wins on
-    // next refetch.
-    qc.setQueryData(trackingKeys.list(400), {
-      success: true as const,
-      data: generateWorkoutLogs(45),
-    });
-    qc.setQueryData(["food-entries"], generateFoodEntries(30));
-    qc.setQueryData(["weight-log"], generateWeightLog(60));
-  }, [initialEmpty, allFetched, workouts.length, foods.length, weights.length, qc]);
+  }, [initialEmpty, allFetched, workouts.length, foods.length, weights.length]);
+
+  // Preview data lives locally in this component and is passed straight into
+  // the charts as props. Nothing enters the React Query cache — Nutrition,
+  // Train and the standalone Weight page stay empty as they should.
+  const previewWorkouts = useMemo(
+    () => (initialEmpty ? generateWorkoutLogs(45) : undefined),
+    [initialEmpty],
+  );
+  const previewFoods = useMemo(
+    () => (initialEmpty ? generateFoodEntries(30) : undefined),
+    [initialEmpty],
+  );
+  const previewWeights = useMemo(
+    () => (initialEmpty ? generateWeightLog(60) : undefined),
+    [initialEmpty],
+  );
 
   const activityEmpty = initialEmpty === true;
   const heatmapEmpty = initialEmpty === true;
@@ -440,10 +444,10 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <DualLineChart />
+        <DualLineChart previewWorkouts={previewWorkouts} previewFoods={previewFoods} />
       </LogOverlay>
 
-      <NutritionLBlock />
+      <NutritionLBlock previewFoods={previewFoods} previewWeights={previewWeights} />
 
       <LogOverlay
         visible={heatmapEmpty}
@@ -451,7 +455,7 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <BodyHeatmap />
+        <BodyHeatmap previewData={previewWorkouts} />
       </LogOverlay>
     </View>
   );
