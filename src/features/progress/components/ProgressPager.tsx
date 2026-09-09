@@ -408,34 +408,57 @@ export function ProgressPager() {
   const weights = weightsQ.data ?? [];
   const allFetched = workoutsQ.isFetched && foodsQ.isFetched && weightsQ.isFetched;
 
-  const [initialEmpty, setInitialEmpty] = useState<boolean | null>(null);
+  // Per-category emptiness snapshots — captured once each has actually
+  // resolved. So a user who logs a workout keeps preview meals + weight
+  // (they haven't touched those yet), and a user who logs a meal keeps
+  // preview workouts, and so on. Every side of Progress fills in as it earns
+  // real data.
+  const [workoutsInitiallyEmpty, setWorkoutsInitiallyEmpty] = useState<boolean | null>(null);
+  const [foodsInitiallyEmpty, setFoodsInitiallyEmpty] = useState<boolean | null>(null);
+  const [weightsInitiallyEmpty, setWeightsInitiallyEmpty] = useState<boolean | null>(null);
   useEffect(() => {
-    if (initialEmpty !== null) return; // one-shot per session
-    if (!allFetched) return; // wait until all queries have resolved
-    const empty = workouts.length + foods.length + weights.length === 0;
-    setInitialEmpty(empty);
-    if (!empty) return;
-
-  }, [initialEmpty, allFetched, workouts.length, foods.length, weights.length]);
+    if (workoutsInitiallyEmpty === null && workoutsQ.isFetched) {
+      setWorkoutsInitiallyEmpty(workouts.length === 0);
+    }
+    if (foodsInitiallyEmpty === null && foodsQ.isFetched) {
+      setFoodsInitiallyEmpty(foods.length === 0);
+    }
+    if (weightsInitiallyEmpty === null && weightsQ.isFetched) {
+      setWeightsInitiallyEmpty(weights.length === 0);
+    }
+  }, [
+    workoutsInitiallyEmpty, foodsInitiallyEmpty, weightsInitiallyEmpty,
+    workoutsQ.isFetched, foodsQ.isFetched, weightsQ.isFetched,
+    workouts.length, foods.length, weights.length,
+  ]);
 
   // Preview data lives locally in this component and is passed straight into
   // the charts as props. Nothing enters the React Query cache — Nutrition,
   // Train and the standalone Weight page stay empty as they should.
   const previewWorkouts = useMemo(
-    () => (initialEmpty ? generateWorkoutLogs(45) : undefined),
-    [initialEmpty],
+    () => (workoutsInitiallyEmpty === true ? generateWorkoutLogs(45) : undefined),
+    [workoutsInitiallyEmpty],
   );
   const previewFoods = useMemo(
-    () => (initialEmpty ? generateFoodEntries(30) : undefined),
-    [initialEmpty],
+    () => (foodsInitiallyEmpty === true ? generateFoodEntries(30) : undefined),
+    [foodsInitiallyEmpty],
   );
   const previewWeights = useMemo(
-    () => (initialEmpty ? generateWeightLog(60) : undefined),
-    [initialEmpty],
+    () => (weightsInitiallyEmpty === true ? generateWeightLog(60) : undefined),
+    [weightsInitiallyEmpty],
   );
 
-  const activityEmpty = initialEmpty === true;
-  const heatmapEmpty = initialEmpty === true;
+  // Activity chart cares about *either* workouts or foods; only preview it
+  // (and only show its "Log a workout" pill) if both are empty. Heatmap
+  // only cares about workouts.
+  const activityEmpty = workoutsInitiallyEmpty === true && foodsInitiallyEmpty === true;
+  const heatmapEmpty = workoutsInitiallyEmpty === true;
+  // `initialEmpty` still used further down for the wrapping opacity — keep it
+  // truthy when *any* side is still previewing so the charts fade uniformly.
+  const initialEmpty =
+    workoutsInitiallyEmpty === true ||
+    foodsInitiallyEmpty === true ||
+    weightsInitiallyEmpty === true;
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
