@@ -14,6 +14,10 @@ import { useWorkoutLogs } from "../../train/api";
 import { useFoodEntries } from "../../nutrition/hooks";
 import { useWeightLog } from "../hooks";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { generateWorkoutLogs, generateFoodEntries, generateWeightLog } from "../../demo/demoData";
+import { trackingKeys } from "../../train/api";
 import {
   MacroRow,
   useNutritionSeries,
@@ -137,10 +141,13 @@ function NutritionLBlock() {
   const { perDay, goals, macros } = useNutritionSeries();
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
+  // Follow ProgressPager's per-session snapshot — the outer pager is the
+  // one that keeps track of whether the current visitor started with an
+  // empty account, and that's the flag the overlays should key on.
   const { data: foods = [] } = useFoodEntries();
   const { data: weights = [] } = useWeightLog();
-  const foodsEmpty = foods.length === 0;
-  const weightsEmpty = weights.length === 0;
+  const [foodsEmpty] = useState(() => foods.length === 0);
+  const [weightsEmpty] = useState(() => weights.length === 0);
 
   const restMacros = macros.filter((m) => m.key !== "calories");
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
@@ -379,19 +386,35 @@ function NutritionLBlock() {
 export function ProgressPager() {
   const { theme } = useTheme();
   const router = useRouter();
+  const qc = useQueryClient();
 
-  // Each chart gets its own overlay when the data it needs is empty. The
-  // chart itself still renders underneath so users see the shape of what
-  // they're about to fill in — the overlay just adds a blurred CTA on top.
+  // We snapshot emptiness on mount so the seeded preview below doesn't turn
+  // the pills off the moment it lands — the pills should track "this user
+  // has no real data yet", not "the query happens to have data right now".
   const { data: workouts = [] } = useWorkoutLogs();
   const { data: foods = [] } = useFoodEntries();
   const { data: weights = [] } = useWeightLog();
 
-  // The DualLineChart shows workout volume + calories. It's meaningful once
-  // *either* has data; only overlay if both are empty.
-  const activityEmpty = workouts.length === 0 && foods.length === 0;
-  // Heatmap needs workouts only.
-  const heatmapEmpty = workouts.length === 0;
+  const [initialEmpty] = useState(
+    () => workouts.length + foods.length + weights.length === 0,
+  );
+
+  // Seed the query cache with realistic demo data so a new user sees the
+  // page populated the way it will look when they've been logging for a
+  // couple of weeks. Cache-only — we never write to AsyncStorage, so the
+  // moment the user logs anything real, the real hook wins on next refetch.
+  useEffect(() => {
+    if (!initialEmpty) return;
+    qc.setQueryData(trackingKeys.list(400), {
+      success: true as const,
+      data: generateWorkoutLogs(45),
+    });
+    qc.setQueryData(["food-entries"], generateFoodEntries(30));
+    qc.setQueryData(["weight-log"], generateWeightLog(60));
+  }, [initialEmpty, qc]);
+
+  const activityEmpty = initialEmpty;
+  const heatmapEmpty = initialEmpty;
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
