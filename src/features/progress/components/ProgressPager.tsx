@@ -134,27 +134,24 @@ function LShapePath({
 }
 
 function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any; previewWeights?: any }) {
-  const preview = previewFoods !== undefined || previewWeights !== undefined;
-  const chartOpacity = preview ? 0.7 : 1;
   const { theme } = useTheme();
   const tabNav = useTabNav();
   const cardBg = useProgressCardColor();
   const c = theme.colors;
-  const { perDay, goals, macros } = useNutritionSeries(previewFoods);
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
-  // Same shape as ProgressPager: snapshot once, only after both queries
-  // have resolved, so we never flash a pill over real data.
-  const foodsQ = useFoodEntries();
-  const weightsQ = useWeightLog();
-  const foods = foodsQ.data ?? [];
-  const weights = weightsQ.data ?? [];
-  const [foodsEmpty, setFoodsEmpty] = useState<boolean | null>(null);
-  const [weightsEmpty, setWeightsEmpty] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (foodsEmpty === null && foodsQ.isFetched) setFoodsEmpty(foods.length === 0);
-    if (weightsEmpty === null && weightsQ.isFetched) setWeightsEmpty(weights.length === 0);
-  }, [foodsEmpty, weightsEmpty, foodsQ.isFetched, weightsQ.isFetched, foods.length, weights.length]);
+
+  // Same simple model as the outer pager — read the cache directly.
+  const { data: foods = [] } = useFoodEntries();
+  const { data: weights = [] } = useWeightLog();
+  const foodsEmpty = foods.length === 0;
+  const weightsEmpty = weights.length === 0;
+
+  // Preview signal: the parent passed us demo arrays for whichever
+  // side is empty. Fade the chart portions when previewing.
+  const preview = previewFoods !== undefined || previewWeights !== undefined;
+  const chartOpacity = preview ? 0.7 : 1;
+  const { perDay, goals, macros } = useNutritionSeries(previewFoods);
 
   const restMacros = macros.filter((m) => m.key !== "calories");
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
@@ -263,7 +260,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
       {/* Blurred food-only prompt — covers the calorie column (top-right) and
           the macros bar (bottom-full-width), leaves the weight notch alone.
           Clears itself when the first meal is logged. */}
-      {containerW > 0 && foodsEmpty === true ? (
+      {containerW > 0 && foodsEmpty ? (
         <>
           {/* Top-right column blur (calories) */}
           <View
@@ -345,7 +342,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
           top-left notch area only. Rounded on all four corners because the
           weight card in the notch has all corners rounded (it's not part of
           the L outline, it's a floating card in the concave). */}
-      {containerW > 0 && weightsEmpty === true ? (
+      {containerW > 0 && weightsEmpty ? (
         <View
           pointerEvents="box-none"
           style={{
@@ -394,71 +391,43 @@ export function ProgressPager() {
   const router = useRouter();
   const tabNav = useTabNav();
 
-  // React Query returns the default [] on the very first render before any
-  // data has loaded, so a naive length check flags every user as empty. We
-  // gate off `isFetched` and only snapshot once all three queries have
-  // actually resolved — otherwise an established user would briefly look
-  // empty, we'd seed the demo generators over their real cache, and they'd
-  // watch their own numbers get replaced.
-  const workoutsQ = useWorkoutLogs();
-  const foodsQ = useFoodEntries();
-  const weightsQ = useWeightLog();
-  const workouts = workoutsQ.data ?? [];
-  const foods = foodsQ.data ?? [];
-  const weights = weightsQ.data ?? [];
-  const allFetched = workoutsQ.isFetched && foodsQ.isFetched && weightsQ.isFetched;
+  // Simple derived model: whatever the cache holds right now is truth.
+  // Each side (workouts / foods / weights) gets its own preview data
+  // when its cache is empty. No snapshots, no isFetched races — the
+  // moment a real log lands, that side's preview goes undefined,
+  // the chart re-renders on real data, the pill hides. The other
+  // sides keep their preview until they earn their own real data.
+  const { data: workouts = [] } = useWorkoutLogs();
+  const { data: foods = [] } = useFoodEntries();
+  const { data: weights = [] } = useWeightLog();
 
-  // Per-category emptiness snapshots — captured once each has actually
-  // resolved. So a user who logs a workout keeps preview meals + weight
-  // (they haven't touched those yet), and a user who logs a meal keeps
-  // preview workouts, and so on. Every side of Progress fills in as it earns
-  // real data.
-  const [workoutsInitiallyEmpty, setWorkoutsInitiallyEmpty] = useState<boolean | null>(null);
-  const [foodsInitiallyEmpty, setFoodsInitiallyEmpty] = useState<boolean | null>(null);
-  const [weightsInitiallyEmpty, setWeightsInitiallyEmpty] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (workoutsInitiallyEmpty === null && workoutsQ.isFetched) {
-      setWorkoutsInitiallyEmpty(workouts.length === 0);
-    }
-    if (foodsInitiallyEmpty === null && foodsQ.isFetched) {
-      setFoodsInitiallyEmpty(foods.length === 0);
-    }
-    if (weightsInitiallyEmpty === null && weightsQ.isFetched) {
-      setWeightsInitiallyEmpty(weights.length === 0);
-    }
-  }, [
-    workoutsInitiallyEmpty, foodsInitiallyEmpty, weightsInitiallyEmpty,
-    workoutsQ.isFetched, foodsQ.isFetched, weightsQ.isFetched,
-    workouts.length, foods.length, weights.length,
-  ]);
+  const workoutsEmpty = workouts.length === 0;
+  const foodsEmpty = foods.length === 0;
+  const weightsEmpty = weights.length === 0;
 
-  // Preview data lives locally in this component and is passed straight into
-  // the charts as props. Nothing enters the React Query cache — Nutrition,
-  // Train and the standalone Weight page stay empty as they should.
+  // Preview data stays local to this component — nothing enters the
+  // React Query cache, so Nutrition / Train / Body-weight pages remain
+  // untouched.
   const previewWorkouts = useMemo(
-    () => (workoutsInitiallyEmpty === true ? generateWorkoutLogs(45) : undefined),
-    [workoutsInitiallyEmpty],
+    () => (workoutsEmpty ? generateWorkoutLogs(45) : undefined),
+    [workoutsEmpty],
   );
   const previewFoods = useMemo(
-    () => (foodsInitiallyEmpty === true ? generateFoodEntries(30) : undefined),
-    [foodsInitiallyEmpty],
+    () => (foodsEmpty ? generateFoodEntries(30) : undefined),
+    [foodsEmpty],
   );
   const previewWeights = useMemo(
-    () => (weightsInitiallyEmpty === true ? generateWeightLog(60) : undefined),
-    [weightsInitiallyEmpty],
+    () => (weightsEmpty ? generateWeightLog(60) : undefined),
+    [weightsEmpty],
   );
 
-  // Activity chart cares about *either* workouts or foods; only preview it
-  // (and only show its "Log a workout" pill) if both are empty. Heatmap
-  // only cares about workouts.
-  const activityEmpty = workoutsInitiallyEmpty === true && foodsInitiallyEmpty === true;
-  const heatmapEmpty = workoutsInitiallyEmpty === true;
-  // `initialEmpty` still used further down for the wrapping opacity — keep it
-  // truthy when *any* side is still previewing so the charts fade uniformly.
-  const initialEmpty =
-    workoutsInitiallyEmpty === true ||
-    foodsInitiallyEmpty === true ||
-    weightsInitiallyEmpty === true;
+  // Activity shows workout volume AND calories — only "empty" when both
+  // are empty. Heatmap only cares about workouts.
+  const activityEmpty = workoutsEmpty && foodsEmpty;
+  const heatmapEmpty = workoutsEmpty;
+  // If *any* side is still previewing, fade the whole page slightly so
+  // the placeholder read is consistent.
+  const initialEmpty = workoutsEmpty || foodsEmpty || weightsEmpty;
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
@@ -468,7 +437,7 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
+        <View style={{ opacity: initialEmpty ? 0.7 : 1 }}>
           <DualLineChart previewWorkouts={previewWorkouts} previewFoods={previewFoods} />
         </View>
       </LogOverlay>
@@ -481,7 +450,7 @@ export function ProgressPager() {
         icon="barbell-outline"
         onPress={() => tabNav.goTo("train")}
       >
-        <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
+        <View style={{ opacity: initialEmpty ? 0.7 : 1 }}>
           <BodyHeatmap previewData={previewWorkouts} />
         </View>
       </LogOverlay>
