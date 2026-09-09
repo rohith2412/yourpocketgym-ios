@@ -7,6 +7,11 @@ import { useProgressCardColor } from "../cardSurface";
 import { DualLineChart } from "./DualLineChart";
 import { WeightChart } from "./WeightChart";
 import { BodyHeatmap } from "./BodyHeatmap";
+import { LogOverlay } from "./LogOverlay";
+import { useWorkoutLogs } from "../../train/api";
+import { useFoodEntries } from "../../nutrition/hooks";
+import { useWeightLog } from "../hooks";
+import { useRouter } from "expo-router";
 import {
   MacroRow,
   useNutritionSeries,
@@ -250,12 +255,52 @@ function NutritionLBlock() {
 
 export function ProgressPager() {
   const { theme } = useTheme();
+  const router = useRouter();
+
+  // Each chart gets its own overlay when the data it needs is empty. The
+  // chart itself still renders underneath so users see the shape of what
+  // they're about to fill in — the overlay just adds a blurred CTA on top.
+  const { data: workouts = [] } = useWorkoutLogs();
+  const { data: foods = [] } = useFoodEntries();
+  const { data: weights = [] } = useWeightLog();
+
+  // The DualLineChart shows workout volume + calories. It's meaningful once
+  // *either* has data; only overlay if both are empty.
+  const activityEmpty = workouts.length === 0 && foods.length === 0;
+  // The L-block combines weight (in the notch) and nutrition. Overlay if
+  // both are empty — a common state for a fresh install.
+  const nutritionBlockEmpty = weights.length === 0 && foods.length === 0;
+  // Heatmap needs workouts only.
+  const heatmapEmpty = workouts.length === 0;
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
-      <DualLineChart />
-      <NutritionLBlock />
-      <BodyHeatmap />
+      <LogOverlay
+        visible={activityEmpty}
+        label="Log a workout"
+        icon="barbell-outline"
+        onPress={() => router.push("/(tabs)/train" as never)}
+      >
+        <DualLineChart />
+      </LogOverlay>
+
+      <LogOverlay
+        visible={nutritionBlockEmpty}
+        label="Log a meal"
+        icon="restaurant-outline"
+        onPress={() => router.push("/(tabs)/nutrition" as never)}
+      >
+        <NutritionLBlock />
+      </LogOverlay>
+
+      <LogOverlay
+        visible={heatmapEmpty}
+        label="Log a workout"
+        icon="barbell-outline"
+        onPress={() => router.push("/(tabs)/train" as never)}
+      >
+        <BodyHeatmap />
+      </LogOverlay>
     </View>
   );
 }
