@@ -134,6 +134,8 @@ function LShapePath({
 }
 
 function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any; previewWeights?: any }) {
+  const preview = previewFoods !== undefined || previewWeights !== undefined;
+  const chartOpacity = preview ? 0.7 : 1;
   const { theme } = useTheme();
   const tabNav = useTabNav();
   const cardBg = useProgressCardColor();
@@ -170,7 +172,9 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
       onLayout={(e: LayoutChangeEvent) => setContainerW(e.nativeEvent.layout.width)}
     >
       {/* L-shape background */}
-      <LShapePath width={containerW} color={cardBg} border={c.border} />
+      <View style={{ opacity: chartOpacity, position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+        <LShapePath width={containerW} color={cardBg} border={c.border} />
+      </View>
 
       {/* 7-day calorie bar chart — sits inside the L's top-right column */}
       {containerW > 0 ? (
@@ -183,6 +187,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
             height: CUT_H,
             padding: theme.spacing.md,
             gap: 6,
+            opacity: chartOpacity,
           }}
           pointerEvents="box-none"
         >
@@ -245,6 +250,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
             padding: theme.spacing.md,
             gap: theme.spacing.md,
             justifyContent: "center",
+            opacity: chartOpacity,
           }}
           pointerEvents="box-none"
         >
@@ -331,6 +337,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
             left: 0,
             width: weightW,
             height: WEIGHT_H,
+            opacity: chartOpacity,
           }}
         >
           <WeightChart previewData={previewWeights} />
@@ -449,9 +456,7 @@ export function ProgressPager() {
         </View>
       </LogOverlay>
 
-      <View style={{ opacity: initialEmpty === true ? 0.7 : 1 }}>
-        <NutritionLBlock previewFoods={previewFoods} previewWeights={previewWeights} />
-      </View>
+      <NutritionLBlock previewFoods={previewFoods} previewWeights={previewWeights} />
 
       <LogOverlay
         visible={heatmapEmpty}
