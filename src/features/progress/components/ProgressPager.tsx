@@ -8,6 +8,9 @@ import { DualLineChart } from "./DualLineChart";
 import { WeightChart } from "./WeightChart";
 import { BodyHeatmap } from "./BodyHeatmap";
 import { LogOverlay } from "./LogOverlay";
+import { BlurView } from "expo-blur";
+import { Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useWorkoutLogs } from "../../train/api";
 import { useFoodEntries } from "../../nutrition/hooks";
 import { useWeightLog } from "../hooks";
@@ -134,6 +137,9 @@ function NutritionLBlock() {
   const c = theme.colors;
   const { perDay, goals, macros } = useNutritionSeries();
   const [containerW, setContainerW] = useState(0);
+  const router = useRouter();
+  const { data: foods = [] } = useFoodEntries();
+  const foodsEmpty = foods.length === 0;
 
   const restMacros = macros.filter((m) => m.key !== "calories");
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
@@ -235,6 +241,95 @@ function NutritionLBlock() {
         </View>
       ) : null}
 
+      {/* Blurred food-only prompt — covers the calorie column (top-right) and
+          the macros bar (bottom-full-width), leaves the weight notch alone.
+          Clears itself when the first meal is logged. */}
+      {containerW > 0 && foodsEmpty ? (
+        <>
+          {/* Top-right column blur (calories) */}
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: ringLeft,
+              width: ringW,
+              height: CUT_H,
+              overflow: "hidden",
+              borderTopRightRadius: RADIUS,
+            }}
+          >
+            <BlurView
+              intensity={35}
+              tint={theme.mode === "dark" ? "dark" : "light"}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor:
+                  theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+              }}
+            />
+          </View>
+
+          {/* Bottom bar blur (macros) with the single CTA centred on it */}
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: "absolute",
+              top: CUT_H,
+              left: 0,
+              width: containerW,
+              height: BOTTOM_H,
+              overflow: "hidden",
+              borderBottomLeftRadius: RADIUS,
+              borderBottomRightRadius: RADIUS,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <BlurView
+              intensity={35}
+              tint={theme.mode === "dark" ? "dark" : "light"}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor:
+                  theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+              }}
+            />
+            <Pressable
+              onPress={() => router.push("/(tabs)/nutrition" as never)}
+              style={({ pressed }) => ({
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 18,
+                paddingVertical: 12,
+                borderRadius: 999,
+                backgroundColor: c.inverseBg,
+                opacity: pressed ? 0.85 : 1,
+                shadowColor: "#000",
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 4,
+              })}
+            >
+              <Ionicons name="restaurant-outline" size={18} color={c.inverseText} />
+              <Text variant="body" weight="bold" style={{ color: c.inverseText, fontSize: 15 }}>
+                Log a meal
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      ) : null}
+
       {/* Weight card — floats in the L's top-left notch with GAP breathing room */}
       {containerW > 0 ? (
         <View
@@ -267,9 +362,6 @@ export function ProgressPager() {
   // The DualLineChart shows workout volume + calories. It's meaningful once
   // *either* has data; only overlay if both are empty.
   const activityEmpty = workouts.length === 0 && foods.length === 0;
-  // The L-block combines weight (in the notch) and nutrition. Overlay if
-  // both are empty — a common state for a fresh install.
-  const nutritionBlockEmpty = weights.length === 0 && foods.length === 0;
   // Heatmap needs workouts only.
   const heatmapEmpty = workouts.length === 0;
 
@@ -284,14 +376,7 @@ export function ProgressPager() {
         <DualLineChart />
       </LogOverlay>
 
-      <LogOverlay
-        visible={nutritionBlockEmpty}
-        label="Log a meal"
-        icon="restaurant-outline"
-        onPress={() => router.push("/(tabs)/nutrition" as never)}
-      >
-        <NutritionLBlock />
-      </LogOverlay>
+      <NutritionLBlock />
 
       <LogOverlay
         visible={heatmapEmpty}
