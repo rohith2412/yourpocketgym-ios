@@ -256,24 +256,21 @@ function NutritionLBlock() {
               width: ringW,
               height: CUT_H,
               overflow: "hidden",
+              borderTopLeftRadius: 0,
               borderTopRightRadius: RADIUS,
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
             }}
           >
             <BlurView
               intensity={35}
               tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                borderTopRightRadius: RADIUS,
-                overflow: "hidden",
-              }}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
             />
             <View
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
-                borderTopRightRadius: RADIUS,
                 backgroundColor:
                   theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
               }}
@@ -291,6 +288,7 @@ function NutritionLBlock() {
               height: BOTTOM_H,
               overflow: "hidden",
               borderTopLeftRadius: RADIUS,
+              borderTopRightRadius: 0,
               borderBottomLeftRadius: RADIUS,
               borderBottomRightRadius: RADIUS,
               alignItems: "center",
@@ -300,22 +298,12 @@ function NutritionLBlock() {
             <BlurView
               intensity={35}
               tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{
-                position: "absolute",
-                top: 0, left: 0, right: 0, bottom: 0,
-                borderTopLeftRadius: RADIUS,
-                borderBottomLeftRadius: RADIUS,
-                borderBottomRightRadius: RADIUS,
-                overflow: "hidden",
-              }}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
             />
             <View
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
-                borderTopLeftRadius: RADIUS,
-                borderBottomLeftRadius: RADIUS,
-                borderBottomRightRadius: RADIUS,
                 backgroundColor:
                   theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
               }}
