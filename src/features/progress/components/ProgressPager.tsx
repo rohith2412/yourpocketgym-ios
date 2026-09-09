@@ -141,13 +141,18 @@ function NutritionLBlock() {
   const { perDay, goals, macros } = useNutritionSeries();
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
-  // Follow ProgressPager's per-session snapshot — the outer pager is the
-  // one that keeps track of whether the current visitor started with an
-  // empty account, and that's the flag the overlays should key on.
-  const { data: foods = [] } = useFoodEntries();
-  const { data: weights = [] } = useWeightLog();
-  const [foodsEmpty] = useState(() => foods.length === 0);
-  const [weightsEmpty] = useState(() => weights.length === 0);
+  // Same shape as ProgressPager: snapshot once, only after both queries
+  // have resolved, so we never flash a pill over real data.
+  const foodsQ = useFoodEntries();
+  const weightsQ = useWeightLog();
+  const foods = foodsQ.data ?? [];
+  const weights = weightsQ.data ?? [];
+  const [foodsEmpty, setFoodsEmpty] = useState<boolean | null>(null);
+  const [weightsEmpty, setWeightsEmpty] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (foodsEmpty === null && foodsQ.isFetched) setFoodsEmpty(foods.length === 0);
+    if (weightsEmpty === null && weightsQ.isFetched) setWeightsEmpty(weights.length === 0);
+  }, [foodsEmpty, weightsEmpty, foodsQ.isFetched, weightsQ.isFetched, foods.length, weights.length]);
 
   const restMacros = macros.filter((m) => m.key !== "calories");
   const eatenToday = perDay.calories[perDay.calories.length - 1] ?? 0;
@@ -252,7 +257,7 @@ function NutritionLBlock() {
       {/* Blurred food-only prompt — covers the calorie column (top-right) and
           the macros bar (bottom-full-width), leaves the weight notch alone.
           Clears itself when the first meal is logged. */}
-      {containerW > 0 && foodsEmpty ? (
+      {containerW > 0 && foodsEmpty === true ? (
         <>
           {/* Top-right column blur (calories) */}
           <View
@@ -336,7 +341,7 @@ function NutritionLBlock() {
           top-left notch area only. Rounded on all four corners because the
           weight card in the notch has all corners rounded (it's not part of
           the L outline, it's a floating card in the concave). */}
-      {containerW > 0 && weightsEmpty ? (
+      {containerW > 0 && weightsEmpty === true ? (
         <View
           pointerEvents="box-none"
           style={{
@@ -388,33 +393,41 @@ export function ProgressPager() {
   const router = useRouter();
   const qc = useQueryClient();
 
-  // We snapshot emptiness on mount so the seeded preview below doesn't turn
-  // the pills off the moment it lands — the pills should track "this user
-  // has no real data yet", not "the query happens to have data right now".
-  const { data: workouts = [] } = useWorkoutLogs();
-  const { data: foods = [] } = useFoodEntries();
-  const { data: weights = [] } = useWeightLog();
+  // React Query returns the default [] on the very first render before any
+  // data has loaded, so a naive length check flags every user as empty. We
+  // gate off `isFetched` and only snapshot once all three queries have
+  // actually resolved — otherwise an established user would briefly look
+  // empty, we'd seed the demo generators over their real cache, and they'd
+  // watch their own numbers get replaced.
+  const workoutsQ = useWorkoutLogs();
+  const foodsQ = useFoodEntries();
+  const weightsQ = useWeightLog();
+  const workouts = workoutsQ.data ?? [];
+  const foods = foodsQ.data ?? [];
+  const weights = weightsQ.data ?? [];
+  const allFetched = workoutsQ.isFetched && foodsQ.isFetched && weightsQ.isFetched;
 
-  const [initialEmpty] = useState(
-    () => workouts.length + foods.length + weights.length === 0,
-  );
-
-  // Seed the query cache with realistic demo data so a new user sees the
-  // page populated the way it will look when they've been logging for a
-  // couple of weeks. Cache-only — we never write to AsyncStorage, so the
-  // moment the user logs anything real, the real hook wins on next refetch.
+  const [initialEmpty, setInitialEmpty] = useState<boolean | null>(null);
   useEffect(() => {
-    if (!initialEmpty) return;
+    if (initialEmpty !== null) return; // one-shot per session
+    if (!allFetched) return; // wait until all queries have resolved
+    const empty = workouts.length + foods.length + weights.length === 0;
+    setInitialEmpty(empty);
+    if (!empty) return;
+
+    // Cache-only preview: seed the demo generators so the charts render
+    // populated. Nothing is written to AsyncStorage — a real log wins on
+    // next refetch.
     qc.setQueryData(trackingKeys.list(400), {
       success: true as const,
       data: generateWorkoutLogs(45),
     });
     qc.setQueryData(["food-entries"], generateFoodEntries(30));
     qc.setQueryData(["weight-log"], generateWeightLog(60));
-  }, [initialEmpty, qc]);
+  }, [initialEmpty, allFetched, workouts.length, foods.length, weights.length, qc]);
 
-  const activityEmpty = initialEmpty;
-  const heatmapEmpty = initialEmpty;
+  const activityEmpty = initialEmpty === true;
+  const heatmapEmpty = initialEmpty === true;
 
   return (
     <View style={{ gap: theme.spacing.xl }}>
