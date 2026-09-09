@@ -23,9 +23,14 @@ function makeRoutes(plan: "free" | "premium", tint: string) {
   const profileFree = { key: "profile", title: "Profile", focusedIcon: { sfSymbol: "person.fill" }, activeTintColor: tint };
   const profilePro = { key: "profile", title: "More", focusedIcon: { sfSymbol: "ellipsis.circle" }, activeTintColor: tint };
 
+  // Nutrition first so it's the landing tab — logging what you ate is the
+  // highest-frequency action, and starting there gives new users a screen
+  // with an immediate call-to-action rather than a Progress page waiting on
+  // data. Train sits second (paired with what you fuel it with), Progress is
+  // now the reflective third tab.
   return plan === "premium"
-    ? [progress, train, nutrition, profilePro]
-    : [progress, train, nutrition, profileFree];
+    ? [nutrition, train, progress, profilePro]
+    : [nutrition, train, progress, profileFree];
 }
 
 // Scenes run the full height and content passes beneath the tab bar — that's
