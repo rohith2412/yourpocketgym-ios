@@ -265,7 +265,7 @@ function NutritionLBlock() {
             }}
           >
             <BlurView
-              intensity={35}
+              intensity={20}
               tint={theme.mode === "dark" ? "dark" : "light"}
               style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
             />
@@ -274,7 +274,7 @@ function NutritionLBlock() {
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor:
-                  theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                  theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
               }}
             />
           </View>
@@ -298,7 +298,7 @@ function NutritionLBlock() {
             }}
           >
             <BlurView
-              intensity={35}
+              intensity={20}
               tint={theme.mode === "dark" ? "dark" : "light"}
               style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
             />
@@ -307,7 +307,7 @@ function NutritionLBlock() {
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
                 backgroundColor:
-                  theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                  theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
               }}
             />
             <Pressable
@@ -375,7 +375,7 @@ function NutritionLBlock() {
           }}
         >
           <BlurView
-            intensity={35}
+            intensity={20}
             tint={theme.mode === "dark" ? "dark" : "light"}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
@@ -384,7 +384,7 @@ function NutritionLBlock() {
               position: "absolute",
               top: 0, left: 0, right: 0, bottom: 0,
               backgroundColor:
-                theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
             }}
           />
           <Pressable

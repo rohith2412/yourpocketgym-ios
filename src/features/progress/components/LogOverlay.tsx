@@ -55,7 +55,7 @@ export function LogOverlay({
           {/* The blur softens the empty chart behind the button so the
               flatline stops looking like a broken axis. */}
           <BlurView
-            intensity={35}
+            intensity={20}
             tint={theme.mode === "dark" ? "dark" : "light"}
             style={{
               ...StyleSheetAbsoluteFill,
@@ -70,7 +70,7 @@ export function LogOverlay({
               ...StyleSheetAbsoluteFill,
               borderRadius: theme.radius["2xl"],
               backgroundColor:
-                theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
+                theme.mode === "dark" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.20)",
             }}
           />
 
