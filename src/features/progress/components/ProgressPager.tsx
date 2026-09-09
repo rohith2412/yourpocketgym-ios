@@ -262,12 +262,18 @@ function NutritionLBlock() {
             <BlurView
               intensity={35}
               tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+              style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                borderTopRightRadius: RADIUS,
+                overflow: "hidden",
+              }}
             />
             <View
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
+                borderTopRightRadius: RADIUS,
                 backgroundColor:
                   theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
               }}
@@ -293,12 +299,20 @@ function NutritionLBlock() {
             <BlurView
               intensity={35}
               tint={theme.mode === "dark" ? "dark" : "light"}
-              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+              style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                borderBottomLeftRadius: RADIUS,
+                borderBottomRightRadius: RADIUS,
+                overflow: "hidden",
+              }}
             />
             <View
               style={{
                 position: "absolute",
                 top: 0, left: 0, right: 0, bottom: 0,
+                borderBottomLeftRadius: RADIUS,
+                borderBottomRightRadius: RADIUS,
                 backgroundColor:
                   theme.mode === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
               }}
