@@ -33,7 +33,7 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   /** Corner radius token. Default: "md". Use "full" for a pill. */
   radius?: Radius;
   /** Height/emphasis. Default: "md". */
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
   /** Soft glowing halo in the button's own color (sparkle effect). */
   glow?: boolean;
   /** Tap vibration. Default: "light". Set "none" to disable. */
@@ -61,7 +61,8 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme();
   const c = theme.colors;
-  const height = size === "lg" ? 58 : 50;
+  const height = size === "lg" ? 58 : size === "sm" ? 38 : 50;
+  const padH = size === "sm" ? theme.spacing.md : theme.spacing.lg;
 
   const handlePress = (e: GestureResponderEvent) => {
     if (haptic !== "none") {
@@ -104,7 +105,7 @@ export function Button({
           justifyContent: "center",
           flexDirection: "row",
           gap: theme.spacing.sm,
-          paddingHorizontal: theme.spacing.lg,
+          paddingHorizontal: padH,
           backgroundColor: bg,
           borderWidth: variant === "secondary" ? 1 : 0,
           borderColor: c.border,
@@ -124,7 +125,17 @@ export function Button({
             variant="body"
             weight="semibold"
             color={fg}
-            style={[{ fontSize: size === "lg" ? theme.fontSize.lg : theme.fontSize.md }, titleStyle]}
+            style={[
+              {
+                fontSize:
+                  size === "lg"
+                    ? theme.fontSize.lg
+                    : size === "sm"
+                    ? theme.fontSize.sm
+                    : theme.fontSize.md,
+              },
+              titleStyle,
+            ]}
           >
             {title}
           </Text>

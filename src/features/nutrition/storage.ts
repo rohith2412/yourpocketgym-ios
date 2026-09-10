@@ -35,7 +35,37 @@ export const DEFAULT_GOALS: MacroGoals = {
   fat: 70,
 };
 
-const KEYS = { food: "@food_entries", goals: "@macro_goals", water: "@water_state" };
+const KEYS = {
+  food: "@food_entries",
+  goals: "@macro_goals",
+  water: "@water_state",
+  /**
+   * Local map { [mealLogId]: file:// uri } so photos never leave the device.
+   * The food entry itself is persisted to Mongo; this keeps the photo attached.
+   */
+  photoMap: "@food_photo_map",
+};
+
+export type PhotoMap = Record<string, string>;
+
+export async function loadPhotoMap(): Promise<PhotoMap> {
+  return (await getJSON<PhotoMap>(KEYS.photoMap)) ?? {};
+}
+const savePhotoMap = (m: PhotoMap) => setJSON(KEYS.photoMap, m);
+
+export async function setEntryPhoto(id: string, uri: string) {
+  const m = await loadPhotoMap();
+  m[id] = uri;
+  await savePhotoMap(m);
+}
+
+export async function removeEntryPhoto(id: string) {
+  const m = await loadPhotoMap();
+  if (m[id]) {
+    delete m[id];
+    await savePhotoMap(m);
+  }
+}
 
 // Water goal (ml/day). Constant default; users can override via loadWaterGoal.
 export const WATER_GOAL_ML = 3000;
@@ -109,5 +139,10 @@ export const saveGoals = (g: MacroGoals) => setJSON(KEYS.goals, g);
 
 // ── Reset (for sign-out) ─────────────────────────────────────────────────────
 export async function clearNutritionLocal() {
-  await AsyncStorage.multiRemove([KEYS.food, KEYS.goals, KEYS.water]);
+  await AsyncStorage.multiRemove([
+    KEYS.food,
+    KEYS.goals,
+    KEYS.water,
+    KEYS.photoMap,
+  ]);
 }

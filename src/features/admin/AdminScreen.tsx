@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { View, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
+import { View, Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Screen, Text, Card } from "../../ui";
@@ -7,17 +7,21 @@ import { useTheme } from "../../theme/ThemeProvider";
 import { useAdminUsers, type AdminUserRow } from "./api";
 import { findRegion } from "../onboarding/regions";
 import { UserDetailSheet } from "./UserDetailSheet";
+import { computeInsights, type Insights } from "./insights";
+
+type Tab = "overview" | "users";
 
 export default function AdminScreen() {
   const { theme } = useTheme();
   const c = theme.colors;
   const router = useRouter();
   const { data, isLoading, isRefetching, refetch, error } = useAdminUsers();
+  const [tab, setTab] = useState<Tab>("overview");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
 
   const rows = data?.data ?? [];
-  const totals = data?.totals;
+  const insights = useMemo(() => computeInsights(rows), [rows]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -54,7 +58,7 @@ export default function AdminScreen() {
           <Text variant="caption" color="textMuted">
             Admin
           </Text>
-          <Text variant="title">Users</Text>
+          <Text variant="title">Analytics</Text>
         </View>
         <Pressable onPress={() => refetch()} hitSlop={12}>
           <Ionicons
@@ -65,14 +69,274 @@ export default function AdminScreen() {
         </Pressable>
       </View>
 
-      {/* Totals */}
-      <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
-        <Stat label="USERS" value={totals?.users ?? 0} />
-        <Stat label="ACTIVE 7D" value={totals?.active7d ?? 0} />
-        <Stat label="OPENS" value={totals?.opens ?? 0} />
+      {/* Segmented tabs */}
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: c.surfaceAlt,
+          borderRadius: 12,
+          padding: 3,
+        }}
+      >
+        {(["overview", "users"] as Tab[]).map((k) => {
+          const active = tab === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => setTab(k)}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor: active ? c.surface : "transparent",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                variant="caption"
+                weight={active ? "bold" : "semibold"}
+                style={{
+                  color: active ? c.text : c.textMuted,
+                  textTransform: "capitalize",
+                }}
+              >
+                {k}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      {/* Search */}
+      {error ? (
+        <Card padding="lg">
+          <Text variant="body" style={{ color: c.danger }}>
+            {(error as Error).message}
+          </Text>
+        </Card>
+      ) : null}
+
+      {isLoading ? (
+        <Card padding="lg">
+          <Text variant="caption" color="textMuted">
+            Loading…
+          </Text>
+        </Card>
+      ) : tab === "overview" ? (
+        <OverviewTab insights={insights} />
+      ) : (
+        <UsersTab
+          q={q}
+          setQ={setQ}
+          rows={filtered}
+          onSelect={setSelected}
+        />
+      )}
+
+      <UserDetailSheet
+        userId={selected}
+        onClose={() => setSelected(null)}
+      />
+    </Screen>
+  );
+}
+
+/* ─────────────────────────── Overview tab ─────────────────────────── */
+
+function OverviewTab({ insights }: { insights: Insights }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const h = insights.headline;
+
+  const maxSignup = Math.max(1, ...insights.signupSparkline.map((d) => d.count));
+  const maxEng = Math.max(1, ...insights.engagement.map((b) => b.count));
+  const maxRegion = Math.max(1, ...insights.regions.map((r) => r.count));
+
+  return (
+    <View style={{ gap: theme.spacing.lg }}>
+      {/* Headline grid — 3 across */}
+      <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
+        <Metric label="USERS" value={h.users} delta={`+${h.newThisWeek} / 7d`} />
+        <Metric label="ACTIVE 7D" value={h.active7d} accent={c.success} />
+        <Metric label="OPENS" value={h.opens} />
+      </View>
+
+      <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
+        <Metric label="RETENTION 7D" value={h.retention7dPct} suffix="%" />
+        <Metric label="ENGAGED (3+)" value={h.engagedUsers} />
+        <Metric label="MED OPENS" value={h.medianOpens} />
+      </View>
+
+      {/* Signup sparkline */}
+      <Card padding="lg">
+        <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+          <Text variant="body" weight="bold">Signups</Text>
+          <Text variant="caption" color="textMuted" style={{ fontSize: 10, letterSpacing: 0.4 }}>
+            LAST 30 DAYS · {h.newThisMonth} TOTAL
+          </Text>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-end",
+            gap: 2,
+            height: 72,
+            marginTop: theme.spacing.md,
+          }}
+        >
+          {insights.signupSparkline.map((d) => {
+            const barH = Math.max(2, Math.round((d.count / maxSignup) * 68));
+            const recent = Date.parse(d.day) >= Date.now() - 7 * 24 * 60 * 60 * 1000;
+            return (
+              <View
+                key={d.day}
+                style={{
+                  flex: 1,
+                  height: barH,
+                  borderRadius: 2,
+                  backgroundColor: d.count === 0 ? c.surfaceAlt : recent ? c.primary : c.textMuted,
+                  opacity: d.count === 0 ? 0.4 : 1,
+                }}
+              />
+            );
+          })}
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 6,
+          }}
+        >
+          <Text variant="caption" color="textFaint" style={{ fontSize: 10 }}>30d ago</Text>
+          <Text variant="caption" color="textFaint" style={{ fontSize: 10 }}>today</Text>
+        </View>
+      </Card>
+
+      {/* Engagement histogram */}
+      <Card padding="lg">
+        <Text variant="body" weight="bold">Engagement</Text>
+        <Text variant="caption" color="textMuted" style={{ fontSize: 10 }}>
+          Opens per user · {insights.ghostCount} never opened · {insights.atRiskCount} at risk
+        </Text>
+        <View style={{ gap: 8, marginTop: theme.spacing.md }}>
+          {insights.engagement.map((b) => {
+            const w = `${Math.round((b.count / maxEng) * 100)}%`;
+            return (
+              <View key={b.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text
+                  variant="caption"
+                  style={{ width: 40, fontSize: 11, color: c.textMuted }}
+                >
+                  {b.label}
+                </Text>
+                <View
+                  style={{
+                    flex: 1,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: c.surfaceAlt,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: w as any,
+                      height: "100%",
+                      backgroundColor: b.label === "Zero" ? c.textFaint : c.primary,
+                      borderRadius: 5,
+                    }}
+                  />
+                </View>
+                <Text
+                  variant="caption"
+                  weight="bold"
+                  style={{ width: 32, textAlign: "right", fontSize: 11, color: c.text }}
+                >
+                  {b.count}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </Card>
+
+      {/* Regions */}
+      <Card padding="lg">
+        <Text variant="body" weight="bold">Top regions</Text>
+        <View style={{ gap: 8, marginTop: theme.spacing.md }}>
+          {insights.regions.length === 0 ? (
+            <Text variant="caption" color="textMuted">
+              No region data yet.
+            </Text>
+          ) : (
+            insights.regions.map((r) => {
+              const region = findRegion(r.region);
+              const flag = region?.flag ?? (r.region === "Other" ? "🌐" : "🌍");
+              const label = region?.name ?? r.region;
+              const w = `${Math.round((r.count / maxRegion) * 100)}%`;
+              return (
+                <View key={r.region} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Text style={{ fontSize: 16 }}>{flag}</Text>
+                  <Text
+                    variant="caption"
+                    style={{ width: 90, fontSize: 12, color: c.text }}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: c.surfaceAlt,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: w as any,
+                        height: "100%",
+                        backgroundColor: c.primary,
+                        borderRadius: 4,
+                      }}
+                    />
+                  </View>
+                  <Text
+                    variant="caption"
+                    weight="bold"
+                    style={{ width: 32, textAlign: "right", fontSize: 11, color: c.text }}
+                  >
+                    {r.count}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+      </Card>
+    </View>
+  );
+}
+
+/* ─────────────────────────── Users tab ─────────────────────────── */
+
+function UsersTab({
+  q,
+  setQ,
+  rows,
+  onSelect,
+}: {
+  q: string;
+  setQ: (v: string) => void;
+  rows: AdminUserRow[];
+  onSelect: (id: string) => void;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+
+  return (
+    <View style={{ gap: theme.spacing.lg }}>
       <View
         style={{
           flexDirection: "row",
@@ -103,54 +367,48 @@ export default function AdminScreen() {
         ) : null}
       </View>
 
-      {error ? (
-        <Card padding="lg">
-          <Text variant="body" style={{ color: c.danger }}>
-            {(error as Error).message}
-          </Text>
-        </Card>
-      ) : null}
-
-      {/* List */}
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="label" color="textMuted">
-          {filtered.length} {filtered.length === 1 ? "USER" : "USERS"}
+          {rows.length} {rows.length === 1 ? "USER" : "USERS"}
         </Text>
         <Card padding="sm">
-          {isLoading ? (
-            <View style={{ padding: theme.spacing.lg }}>
-              <Text variant="caption" color="textMuted">
-                Loading…
-              </Text>
-            </View>
-          ) : filtered.length === 0 ? (
+          {rows.length === 0 ? (
             <View style={{ padding: theme.spacing.lg }}>
               <Text variant="caption" color="textMuted">
                 No users match.
               </Text>
             </View>
           ) : (
-            filtered.map((u, i) => (
+            rows.map((u, i) => (
               <UserRow
                 key={u.id}
                 user={u}
                 first={i === 0}
-                onPress={() => setSelected(u.id)}
+                onPress={() => onSelect(u.id)}
               />
             ))
           )}
         </Card>
       </View>
-
-      <UserDetailSheet
-        userId={selected}
-        onClose={() => setSelected(null)}
-      />
-    </Screen>
+    </View>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+/* ─────────────────────────── Bits ─────────────────────────── */
+
+function Metric({
+  label,
+  value,
+  suffix,
+  delta,
+  accent,
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+  delta?: string;
+  accent?: string;
+}) {
   const { theme } = useTheme();
   const c = theme.colors;
   return (
@@ -181,11 +439,21 @@ function Stat({ label, value }: { label: string; value: number }) {
           fontSize: 22,
           fontWeight: "800",
           letterSpacing: -0.8,
-          color: c.text,
+          color: accent ?? c.text,
         }}
       >
         {value.toLocaleString()}
+        {suffix ? (
+          <Text style={{ fontSize: 14, fontWeight: "700", color: c.textMuted }}>
+            {suffix}
+          </Text>
+        ) : null}
       </Text>
+      {delta ? (
+        <Text style={{ fontSize: 10, color: c.textFaint, fontWeight: "600" }}>
+          {delta}
+        </Text>
+      ) : null}
     </View>
   );
 }

@@ -10,7 +10,8 @@ import { WEEKDAYS, type DayPlan } from "../routines/storage";
 import { useWorkoutLogs } from "./api";
 import { StreakCard } from "./components/StreakCard";
 import { YearHeatmap } from "./components/YearHeatmap";
-import { buildMuscleStats, MuscleAccordionRow } from "./components/MuscleAccordion";
+import { MuscleList } from "./components/MuscleList";
+import { WorkoutHistoryList } from "./components/WorkoutHistoryList";
 import { LogSheet } from "./components/LogSheet";
 import AvatarButton from "../../../components/AvatarButton";
 import { useTabNav } from "../../nav/tabNav";
@@ -49,7 +50,6 @@ export function TrainScreen() {
   const firstName = currentUser?.name?.split(" ")[0] ?? "";
 
   const { data: logs = [] } = useWorkoutLogs();
-  const muscleStats = buildMuscleStats(logs);
   const { data: routines = [] } = useRoutines();
   const { plan: todayPlan } = useTodayPlan();
   const todayName = WEEKDAYS.find((d) => d.key === (new Date().getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6))!.long;
@@ -97,21 +97,41 @@ export function TrainScreen() {
 
           {/* Empty state or weekly plan preview */}
           {routines.length === 0 ? (
-            <Card padding="xl">
-              <View style={{ alignItems: "center", gap: theme.spacing.md }}>
-                <Ionicons name="calendar-outline" size={30} color={c.textMuted} />
-                <Text variant="body" color="textMuted" center>
-                  Build your weekly plan.{"\n"}Pick the days you train, name each one (Push day, Pull day…), and add exercises.
-                </Text>
-                <Button
-                  title="Create weekly plan"
-                  variant="primary"
-                  radius="full"
-                  haptic="medium"
-                  onPress={() => router.push("/routines/new")}
-                />
-              </View>
-            </Card>
+            <Pressable onPress={() => router.push("/routines/new")}>
+              <Card padding="md">
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.spacing.md,
+                  }}
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={c.textMuted}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text variant="body" weight="semibold" style={{ fontSize: 14 }}>
+                      Create weekly plan
+                    </Text>
+                    <Text
+                      variant="caption"
+                      color="textMuted"
+                      style={{ fontSize: 11, lineHeight: 14 }}
+                      numberOfLines={1}
+                    >
+                      Pick training days and add exercises
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={c.textFaint}
+                  />
+                </View>
+              </Card>
+            </Pressable>
           ) : (
             <Pressable
               onPress={() => router.push("/routines")}
@@ -134,7 +154,7 @@ export function TrainScreen() {
             </Pressable>
           )}
 
-          {/* Progress: body parts */}
+          {/* Progress: body parts + history — matches Nutrition's shape */}
           {logs.length === 0 ? (
             <View style={{ alignItems: "center", paddingVertical: theme.spacing["3xl"], gap: theme.spacing.md }}>
               <Text variant="heading">No workouts yet</Text>
@@ -143,14 +163,58 @@ export function TrainScreen() {
               </Text>
             </View>
           ) : (
-            <View style={{ gap: theme.spacing.md }}>
-              <Text variant="label" color="textMuted">
-                BODY PARTS
-              </Text>
-              {muscleStats.map((stat) => (
-                <MuscleAccordionRow key={stat.mg} stat={stat} logs={logs} />
-              ))}
-            </View>
+            <>
+              <View style={{ gap: theme.spacing.sm }}>
+                <Text variant="label" color="textMuted">
+                  BODY PARTS
+                </Text>
+                <MuscleList logs={logs} />
+              </View>
+
+              <View style={{ gap: theme.spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Text variant="label" color="textMuted">
+                    HISTORY
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push("/workout-history" as never)}
+                    hitSlop={8}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 3,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 999,
+                      backgroundColor: c.surfaceAlt,
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Text
+                      variant="caption"
+                      weight="bold"
+                      style={{ fontSize: 11, color: c.text }}
+                    >
+                      See all
+                    </Text>
+                    <Text
+                      variant="caption"
+                      style={{ fontSize: 10, color: c.textMuted, fontWeight: "700" }}
+                    >
+                      {logs.length}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={12} color={c.textFaint} />
+                  </Pressable>
+                </View>
+                <WorkoutHistoryList logs={logs} limit={3} />
+              </View>
+            </>
           )}
 
         </ScrollView>

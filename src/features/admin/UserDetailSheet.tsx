@@ -1,8 +1,9 @@
-import { View, ScrollView } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, View, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomSheet, Text } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useAdminUser } from "./api";
+import { useAdminUser, useDeleteAdminUser } from "./api";
 import { findRegion } from "../onboarding/regions";
 import { relative } from "./AdminScreen";
 
@@ -18,8 +19,31 @@ export function UserDetailSheet({
   const { data, isLoading } = useAdminUser(userId);
   const u = data?.data;
   const region = findRegion(u?.region ?? undefined);
+  const del = useDeleteAdminUser();
+  const [confirming, setConfirming] = useState(false);
 
   const maxScreen = Math.max(1, ...(u?.screens ?? []).map((s) => s.count));
+
+  const handleDelete = () => {
+    if (!u) return;
+    // Two-step gate — the first press flips the button into a red confirm
+    // state, the second actually fires the delete. Cheaper than a native
+    // Alert dialog and keeps the destructive action visible in the sheet.
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    del.mutate(u.id, {
+      onSuccess: () => {
+        setConfirming(false);
+        onClose();
+      },
+      onError: (err) => {
+        setConfirming(false);
+        Alert.alert("Delete failed", (err as Error).message);
+      },
+    });
+  };
 
   return (
     <BottomSheet visible={!!userId} onClose={onClose}>
@@ -120,6 +144,64 @@ export function UserDetailSheet({
                 </View>
               </View>
             ) : null}
+
+            {/* Danger zone */}
+            <View
+              style={{
+                borderTopWidth: 1,
+                borderTopColor: c.border,
+                paddingTop: theme.spacing.md,
+                gap: theme.spacing.sm,
+              }}
+            >
+              <Text variant="label" color="textMuted">
+                DANGER ZONE
+              </Text>
+              <Pressable
+                onPress={handleDelete}
+                disabled={del.isPending}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: c.danger,
+                  backgroundColor: confirming ? c.danger : "transparent",
+                  opacity: pressed || del.isPending ? 0.6 : 1,
+                })}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={16}
+                  color={confirming ? "#fff" : c.danger}
+                />
+                <Text
+                  variant="body"
+                  weight="bold"
+                  style={{ color: confirming ? "#fff" : c.danger, fontSize: 14 }}
+                >
+                  {del.isPending
+                    ? "Deleting…"
+                    : confirming
+                    ? "Tap again to confirm — permanent"
+                    : "Delete user"}
+                </Text>
+              </Pressable>
+              {confirming && !del.isPending ? (
+                <Pressable onPress={() => setConfirming(false)} hitSlop={8}>
+                  <Text
+                    variant="caption"
+                    color="textMuted"
+                    style={{ textAlign: "center", fontSize: 11 }}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
 
             {/* Timeline */}
             {u.timeline.length > 0 ? (

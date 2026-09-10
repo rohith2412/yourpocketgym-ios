@@ -7,7 +7,6 @@ import {
   Text,
   Card,
   Avatar,
-  Badge,
   ListRow,
   Separator,
   SegmentedControl,
@@ -20,6 +19,8 @@ import { PremiumCta } from "../subscription/PremiumCta";
 import { restorePurchases, isPremium as customerIsPremium } from "../../services/iapService";
 import { clearSession } from "../auth/session";
 import { useCurrentUser } from "../auth/useCurrentUser";
+import { invalidateAuthCaches } from "../auth/useAuthGuard";
+import { useQueryClient } from "@tanstack/react-query";
 import { resolveProfilePhoto } from "./photoStorage";
 import { WeightChart } from "../progress/components/WeightChart";
 import { WeightLogSheet } from "../progress/WeightLogSheet";
@@ -88,6 +89,7 @@ export function ProfileScreen() {
     }
   };
 
+  const qc = useQueryClient();
   const signOut = () => {
     Alert.alert("Sign out?", "You can sign back in anytime.", [
       { text: "Cancel", style: "cancel" },
@@ -96,6 +98,7 @@ export function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           await clearSession();
+          await invalidateAuthCaches(qc);
           router.replace("/welcome");
         },
       },
@@ -255,7 +258,6 @@ export function ProfileScreen() {
               {user?.email ?? ""}
             </Text>
           </View>
-          <Badge label={plan === "premium" ? "Premium" : "Free"} variant={plan === "premium" ? "default" : "muted"} />
         </View>
       </Card>
 

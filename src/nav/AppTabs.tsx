@@ -8,6 +8,7 @@ import { ProgressScreen } from "../features/progress/ProgressScreen";
 import { NutritionScreen } from "../features/nutrition/NutritionScreen";
 import { ProfileScreen } from "../features/profile/ProfileScreen";
 import { TabNavCtx, type TabNav } from "./tabNav";
+import { useAuthGuard } from "../features/auth/useAuthGuard";
 
 const SCENES: Record<string, React.ComponentType> = {
   progress: ProgressScreen,
@@ -41,6 +42,10 @@ export default function AppTabsLayout() {
   const { theme } = useTheme();
   const { plan } = useEntitlement();
   const [index, setIndex] = useState(0);
+  // Belt-and-braces: if the session vanishes for any reason (sign-out, 401
+  // token clear, corrupt install), this hook bounces the user to /welcome
+  // instead of letting the tabs render placeholder identities.
+  useAuthGuard();
 
   const routes = useMemo(() => makeRoutes(plan, theme.colors.text), [plan, theme.colors.text]);
   const safeIndex = Math.min(index, routes.length - 1);

@@ -20,6 +20,8 @@ import { useDemoMode, useSetDemoMode } from "../demo/useDemoMode";
 import { isReviewAccount } from "../subscription/reviewAccounts";
 import { PremiumCta } from "../subscription/PremiumCta";
 import { clearSession } from "../auth/session";
+import { invalidateAuthCaches } from "../auth/useAuthGuard";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import { resolveProfilePhoto } from "./photoStorage";
 import { restorePurchases, isPremium as customerIsPremium } from "../../services/iapService";
@@ -58,6 +60,7 @@ export default function ProfileDetailScreen() {
     }
   };
 
+  const qc = useQueryClient();
   const signOut = () => {
     Alert.alert("Sign out?", "You can sign back in anytime.", [
       { text: "Cancel", style: "cancel" },
@@ -66,6 +69,7 @@ export default function ProfileDetailScreen() {
         style: "destructive",
         onPress: async () => {
           await clearSession();
+          await invalidateAuthCaches(qc);
           router.replace("/welcome");
         },
       },

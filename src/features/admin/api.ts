@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 
 export type AdminUserRow = {
@@ -49,5 +49,23 @@ export function useAdminUser(id: string | null) {
       api.get<{ success: true; data: AdminUserDetail }>(`/admin/users/${id}`),
     enabled: !!id,
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Hard-deletes a user (backend fans out to every user-scoped collection).
+ * Refetches the user list on success so the row disappears immediately.
+ */
+export function useDeleteAdminUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<{ success: true; data: { id: string; email: string } }>(
+        `/admin/users/${id}`,
+      ),
+    onSuccess: (_data, id) => {
+      qc.removeQueries({ queryKey: ["admin", "user", id] });
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
   });
 }

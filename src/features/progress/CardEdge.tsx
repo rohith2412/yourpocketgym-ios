@@ -46,8 +46,9 @@ export function CardEdge({ radius = 28 }: { radius?: number }) {
       : "";
 
   // Brighter in dark mode, where the surrounding surface gives less contrast.
+  // Kept subtle — the edge is a hint of light on the corner, not a border.
   const stroke = theme.mode === "dark" ? "#FFFFFF" : "#000000";
-  const peak = theme.mode === "dark" ? 0.34 : 0.22;
+  const peak = theme.mode === "dark" ? 0.08 : 0.04;
 
   return (
     <View
