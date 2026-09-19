@@ -1,4 +1,4 @@
-// Recovery data — sleep + mood, plus a computed recovery score that reads
+// Recovery data - sleep + mood, plus a computed recovery score that reads
 // from both. All local; the sync snapshot picks these keys up automatically.
 
 import { getJSON, setJSON } from "../../lib/storage";

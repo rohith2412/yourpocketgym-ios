@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
+    AudioModule,
+    RecordingPresets,
+    setAudioModeAsync,
+    useAudioRecorder,
+    useAudioRecorderState,
 } from "expo-audio";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Thin wrapper around expo-audio's recorder. Handles permission, start/stop,
@@ -50,7 +50,7 @@ export function useVoiceRecorder() {
       setDurationMs(elapsed);
       if (elapsed >= MAX_RECORDING_MS) {
         // Auto-stop. Callers detect the cap via stop()'s `tooLong` flag and
-        // abort the upload — we deliberately don't send truncated audio, since
+        // abort the upload - we deliberately don't send truncated audio, since
         // a half-cut sentence tends to parse to garbage on the backend.
         recorder.stop().catch(() => {});
         setIsRecording(false);

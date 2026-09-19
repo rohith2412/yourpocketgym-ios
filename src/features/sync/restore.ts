@@ -1,4 +1,4 @@
-// Called right after login succeeds — pulls the user's cloud snapshot and
+// Called right after login succeeds - pulls the user's cloud snapshot and
 // applies it locally. Fire-and-forget: any network/parse failure is swallowed
 // so a shaky connection can never block sign-in.
 

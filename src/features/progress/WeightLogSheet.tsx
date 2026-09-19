@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { View, TextInput } from "react-native";
-import { Text as RNText } from "react-native";
-import { BottomSheet, Button, Text } from "../../ui";
+import { Text as RNText, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { BottomSheet, Button, Text } from "../../ui";
 import { useAddWeight, useWeightLog } from "./hooks";
 import { latestWeight } from "./storage";
 
@@ -36,7 +35,7 @@ export function WeightLogSheet({ visible, onClose }: Props) {
             Log weight
           </RNText>
           <Text variant="caption" color="textMuted">
-            One entry per day — this replaces today's value.
+            One entry per day - this replaces today's value.
           </Text>
         </View>
 

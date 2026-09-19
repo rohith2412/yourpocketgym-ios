@@ -9,7 +9,7 @@ const path = require("path");
 const FILE = path.join(__dirname, "../src/data/mealPlanRecipes.ts");
 let src = fs.readFileSync(FILE, "utf8");
 
-// Rules checked in ORDER — first match wins.
+// Rules checked in ORDER - first match wins.
 // Name-based rules go FIRST (most specific), ingredient/generic rules go LAST.
 const RULES = [
   // ── Nationality in name (highest priority) ────────────────────────────────

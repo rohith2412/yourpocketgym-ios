@@ -1,4 +1,4 @@
-// Full-device snapshot for Pro cloud sync — grabs every AsyncStorage key
+// Full-device snapshot for Pro cloud sync - grabs every AsyncStorage key
 // except the ones that are auth/device-specific/dev-only. Whole-blob,
 // last-write-wins. Applying just writes every key back.
 // Also pulls server-side training logs so they're part of the same backup.
@@ -10,7 +10,7 @@ const LAST_SYNCED_KEY = "@last_synced_at";
 
 /** Keys we never sync. Auth token / RC cache / dev-only / per-device quotas.
  *  The "user" profile object (name, email, hasIntro, photo) IS synced so
- *  edits made offline propagate to other devices on the next sync — the
+ *  edits made offline propagate to other devices on the next sync - the
  *  server-side snapshot is scoped to userId, so it can only ever contain
  *  the same account's own user object. */
 const DENYLIST = new Set<string>([
@@ -19,7 +19,7 @@ const DENYLIST = new Set<string>([
   "userToken",
   // Sync bookkeeping
   LAST_SYNCED_KEY,
-  // Per-device quotas — must not carry across devices
+  // Per-device quotas - must not carry across devices
   "@coach_usage",
   "@photo_log_usage",
   // Dev-only override
@@ -43,7 +43,7 @@ export type SyncSnapshot = {
   schema: 2;
   /** Raw AsyncStorage key → value (both strings, values are JSON-encoded strings). */
   blob: Record<string, string>;
-  /** Server-side workout logs snapshot at push time. Read-only backup — restore
+  /** Server-side workout logs snapshot at push time. Read-only backup - restore
    *  doesn't replay these into /tracking (that would create duplicates); they're
    *  here so an account wipe can still be reconstructed. */
   training?: unknown[];
@@ -62,7 +62,7 @@ export async function collectSnapshot(): Promise<SyncSnapshot> {
 }
 
 /** Strip fields that only make sense on the device they were created on
- *  (currently: user.photo — a file:// URI that another device can't resolve). */
+ *  (currently: user.photo - a file:// URI that another device can't resolve). */
 function stripDeviceLocal(key: string, value: string): string {
   if (key !== "user") return value;
   try {
@@ -82,7 +82,7 @@ async function fetchTrainingLogs(): Promise<unknown[]> {
     );
     return Array.isArray(res?.data) ? res.data : [];
   } catch {
-    // Sync should still succeed if training fetch flakes — the source of truth
+    // Sync should still succeed if training fetch flakes - the source of truth
     // is the server anyway, so we just skip the redundant backup this round.
     return [];
   }
@@ -95,7 +95,7 @@ export async function applySnapshot(snap: SyncSnapshot | null | undefined) {
   if ((snap as any).schema === 1) return applyLegacyV1(snap as any);
   if (snap.schema !== 2 || !snap.blob) return;
 
-  // Preserve device-local photo across restore — the incoming snapshot never
+  // Preserve device-local photo across restore - the incoming snapshot never
   // has one (stripped on push), and we don't want to blow away what the user
   // set on this device.
   const existingUserRaw = await AsyncStorage.getItem("user");

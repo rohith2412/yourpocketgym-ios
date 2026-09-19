@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { View, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Screen, Text, Card, ListRow, Separator } from "../../ui";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert, Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Card, ListRow, Screen, Separator, Text } from "../../ui";
 import { WeightChart } from "./components/WeightChart";
-import { WeightLogSheet } from "./WeightLogSheet";
 import { useWeightLog } from "./hooks";
 import { deleteWeight, latestWeight, type WeightEntry } from "./storage";
+import { WeightLogSheet } from "./WeightLogSheet";
 
 /**
- * The Body weight modification page — lives inside the More menu.
+ * The Body weight modification page - lives inside the More menu.
  * Shows current weight, log button, and a history list you can delete from.
  * The chart itself stays on the Progress tab.
  */
@@ -90,7 +90,7 @@ export default function BodyWeightScreen() {
           </Text>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
             <Text style={{ fontSize: 36, fontWeight: "800", color: c.text, letterSpacing: -1 }}>
-              {latest ? latest.lb.toFixed(1) : "—"}
+              {latest ? latest.lb.toFixed(1) : "-"}
             </Text>
             <Text variant="body" color="textMuted">
               lb

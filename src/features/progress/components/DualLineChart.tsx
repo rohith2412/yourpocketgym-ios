@@ -1,24 +1,24 @@
 import { useMemo, useState } from "react";
 import { View, type GestureResponderEvent } from "react-native";
 import Svg, {
-  Circle,
-  Defs,
-  LinearGradient,
-  Line,
-  Path,
-  Rect,
-  Stop,
-  Text as SvgText,
+    Circle,
+    Defs,
+    Line,
+    LinearGradient,
+    Path,
+    Rect,
+    Stop,
+    Text as SvgText,
 } from "react-native-svg";
-import { Text } from "../../../ui";
-import { RangePicker, type ProgressRange } from "./RangePicker";
 import { useTheme } from "../../../theme/ThemeProvider";
-import { useProgressCardColor } from "../cardSurface";
-import { CardEdge } from "../CardEdge";
+import { Text } from "../../../ui";
 import { useFoodEntries } from "../../nutrition/hooks";
-import { totalsForDay, toISODay } from "../../nutrition/storage";
+import { toISODay, totalsForDay } from "../../nutrition/storage";
 import { useWorkoutLogs } from "../../train/api";
 import { totalVolSets } from "../../train/data";
+import { CardEdge } from "../CardEdge";
+import { useProgressCardColor } from "../cardSurface";
+import { RangePicker, type ProgressRange } from "./RangePicker";
 
 type Range = ProgressRange;
 const RANGE_DAYS: Record<Range, number> = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 };
@@ -38,8 +38,8 @@ function smooth(pts: { x: number; y: number }[]) {
   return d;
 }
 
-import type { WorkoutLog as _DWL } from "../../train/api";
 import type { FoodEntry as _DFE } from "../../nutrition/storage";
+import type { WorkoutLog as _DWL } from "../../train/api";
 export function DualLineChart({ previewWorkouts, previewFoods }: { previewWorkouts?: _DWL[]; previewFoods?: _DFE[] } = {}) {
   const { theme } = useTheme();
   const cardBg = useProgressCardColor();
@@ -119,7 +119,7 @@ export function DualLineChart({ previewWorkouts, previewFoods }: { previewWorkou
   // Horizontal grid (4 lines: top, 2 middle, bottom)
   const gridYs = [0, 0.33, 0.66, 1].map((r) => PAD_T + r * chartH);
 
-  // X-axis tick indices — pick ~4 evenly spaced dates
+  // X-axis tick indices - pick ~4 evenly spaced dates
   const tickIdxs = (() => {
     const desired = Math.min(4, days.length);
     if (desired <= 1) return [0];
@@ -233,7 +233,7 @@ export function DualLineChart({ previewWorkouts, previewFoods }: { previewWorkou
             <Path d={kcalLine} fill="none" stroke={CAL_COLOR} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
           ) : null}
 
-          {/* X-axis ticks — hidden when scrubbing */}
+          {/* X-axis ticks - hidden when scrubbing */}
           {activeIdx === null
             ? tickIdxs.map((idx) => {
                 const x = PAD_L + (idx / Math.max(days.length - 1, 1)) * chartW;
@@ -261,7 +261,7 @@ export function DualLineChart({ previewWorkouts, previewFoods }: { previewWorkou
                 const vPt = volPts[activeIdx];
                 const d = days[activeIdx];
                 const label = `${fmtDate(d.date)}`;
-                // Tooltip pill position — clamp near edges
+                // Tooltip pill position - clamp near edges
                 const tipW = 120;
                 const tipH = 34;
                 let tipX = ax - tipW / 2;

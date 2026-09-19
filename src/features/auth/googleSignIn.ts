@@ -1,12 +1,12 @@
 /**
  * Native Google Sign-In wrapper. Returns the Google idToken that the backend
  * verifies. Client ID / URL scheme are public identifiers (also in app.json),
- * not secrets — the real secret lives on the backend.
+ * not secrets - the real secret lives on the backend.
  */
 
 import {
-  GoogleSignin,
-  statusCodes,
+    GoogleSignin,
+    statusCodes,
 } from "@react-native-google-signin/google-signin";
 
 const IOS_CLIENT_ID =

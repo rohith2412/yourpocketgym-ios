@@ -1,9 +1,9 @@
-import { View, Pressable, Image, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import Constants from "expo-constants";
-import { Screen, Text, Card } from "../../ui";
+import { useRouter } from "expo-router";
+import { Image, Linking, Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Card, Screen, Text } from "../../ui";
 import { PAYWALL_ENABLED } from "../subscription/useEntitlement";
 
 type Feature = {
@@ -14,16 +14,16 @@ type Feature = {
 };
 
 const CORE: Feature[] = [
-  { icon: "barbell-outline",  title: "Workout logging",   body: "Sets, reps, weights, notes — plus a weekly routine you build once and reuse." },
+  { icon: "barbell-outline",  title: "Workout logging",   body: "Sets, reps, weights, notes - plus a weekly routine you build once and reuse." },
   { icon: "flame-outline",    title: "Streaks & volume",  body: "Session streak, total tonnage, and a year-long activity heatmap." },
   { icon: "restaurant-outline", title: "Nutrition & water", body: "Manual food entries, macro & calorie goals, water intake tracking." },
   { icon: "scale-outline",    title: "Body weight",       body: "One-tap daily weight with a rolling trend chart." },
 ];
 
 const PRO: Feature[] = [
-  { icon: "sparkles",         title: "Coach AI",           body: "A trainer in your pocket. Ask anything — programming, form, cutting, bulking.", pro: true },
+  { icon: "sparkles",         title: "Coach AI",           body: "A trainer in your pocket. Ask anything - programming, form, cutting, bulking.", pro: true },
   { icon: "camera-outline",   title: "Photo food scanner", body: "Snap a plate; get calories and macros instantly.", pro: true },
-  { icon: "mic-outline",      title: "Voice workout log",  body: "Speak your sets between rounds — we transcribe and structure the log.", pro: true },
+  { icon: "mic-outline",      title: "Voice workout log",  body: "Speak your sets between rounds - we transcribe and structure the log.", pro: true },
   { icon: "restaurant-outline", title: "Voice food & water", body: "Say what you ate and drank; we estimate the macros and log the water.", pro: true },
   { icon: "leaf-outline",     title: "Recovery",           body: "Log sleep and mindset; get a readiness score that guides today's training.", pro: true },
   { icon: "image-outline",    title: "Progress photos",    body: "Weekly physique check-ins, side-by-side comparisons.", pro: true },
@@ -75,7 +75,7 @@ export default function AboutScreen() {
           PocketGym
         </Text>
         <Text variant="body" color="textMuted" center style={{ maxWidth: 300, lineHeight: 20 }}>
-          One app for the training, the food, the sleep, and the coaching —
+          One app for the training, the food, the sleep, and the coaching -
           designed to keep you consistent, not overwhelmed.
         </Text>
         <Text variant="caption" color="textFaint" style={{ marginTop: 4 }}>
@@ -83,7 +83,7 @@ export default function AboutScreen() {
         </Text>
       </Card>
 
-      {/* Features. While the paywall is off, everything is one list — showing
+      {/* Features. While the paywall is off, everything is one list - showing
           "PRO" badges next to features the user can already use just reads as
           upsell theatre. When PAYWALL_ENABLED flips back the split returns. */}
       {PAYWALL_ENABLED ? (
@@ -123,7 +123,7 @@ export default function AboutScreen() {
         </View>
       )}
 
-      {/* Fair use — client-side caps that keep AI costs sane. Users find out
+      {/* Fair use - client-side caps that keep AI costs sane. Users find out
           about these when they hit them; better to say up front. */}
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="label" color="textMuted" style={{ paddingHorizontal: theme.spacing.sm }}>
@@ -136,10 +136,10 @@ export default function AboutScreen() {
           </Text>
           <View style={{ gap: 4, marginTop: 2 }}>
             <Text variant="body" color="textMuted" style={{ lineHeight: 20 }}>
-              • Photo food scan — 5 per day
+              • Photo food scan - 5 per day
             </Text>
             <Text variant="body" color="textMuted" style={{ lineHeight: 20 }}>
-              • Voice logging — capped at 1 minute per take
+              • Voice logging - capped at 1 minute per take
             </Text>
           </View>
         </Card>
@@ -153,7 +153,7 @@ export default function AboutScreen() {
         <Card padding="lg" style={{ gap: theme.spacing.sm }}>
           <Text variant="body" style={{ lineHeight: 20 }}>
             Built by a small team of people who train, eat, and sleep like
-            everyone else — and got tired of stitching together five apps to
+            everyone else - and got tired of stitching together five apps to
             keep track of it. If something's broken or missing, tell us. Every
             email lands in a real inbox.
           </Text>

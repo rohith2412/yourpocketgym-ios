@@ -1,21 +1,20 @@
+import { LIGHT, useTheme } from "@/src/theme/ThemeContext";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Platform,
+    Pressable,
+    Image as RNImage,
+    ScrollView,
+    Share,
+    StyleSheet,
+    Text,
+    View
 } from "react-native";
-import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
-import { Image } from "expo-image";
-import { Image as RNImage } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 let captureRef: any = null;
 try {
   captureRef = require("react-native-view-shot").captureRef;
@@ -23,7 +22,7 @@ try {
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle, Path, Rect, Line, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 
 const LOGO = require("@/assets/images/logo.png");
 const BASE_URL = "https://yourpocketgym.com";
@@ -334,7 +333,7 @@ export default function PhysiqueRating({ token, userId }: { token: string; userI
         messages: [
           {
             role: "user",
-            content: `Analyze this physique photo. Respond with ONLY a raw JSON object — no text before or after, no markdown, no code fences. Format:
+            content: `Analyze this physique photo. Respond with ONLY a raw JSON object - no text before or after, no markdown, no code fences. Format:
 {"overallScore":7.5,"title":"Athletic Build","summary":"Brief 1-2 sentence assessment","categories":[{"name":"Upper Body","score":7.0,"feedback":"Brief feedback"},{"name":"Core","score":8.0,"feedback":"Brief feedback"},{"name":"Lower Body","score":7.5,"feedback":"Brief feedback"},{"name":"Symmetry","score":7.0,"feedback":"Brief feedback"},{"name":"Definition","score":6.5,"feedback":"Brief feedback"},{"name":"Posture","score":8.0,"feedback":"Brief feedback"}],"tips":["Tip 1","Tip 2","Tip 3"]}`,
           },
         ],

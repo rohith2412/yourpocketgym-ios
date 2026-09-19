@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import { signInWithApple, AppleCancelled } from "./appleSignIn";
-import { saveSession, type AuthUser } from "./session";
 import { restoreFromCloud } from "../sync/restore";
+import { AppleCancelled, signInWithApple } from "./appleSignIn";
+import { saveSession, type AuthUser } from "./session";
 
 type AppleAuthResponse = {
   success: boolean;
@@ -31,7 +31,7 @@ export function useAppleLogin(opts?: { onSuccess?: (user: AuthUser) => void }) {
 
       await saveSession({ token: data.token, user: data.user });
       // Pull cloud snapshot so returning users land with their data already in.
-      // Silent failure — never blocks login.
+      // Silent failure - never blocks login.
       await restoreFromCloud();
       return data.user;
     },

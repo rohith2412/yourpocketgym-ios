@@ -18,7 +18,7 @@ export type Insights = {
     retention7dPct: number;
     /** Mean opens across all users. */
     avgOpens: number;
-    /** Median opens — more robust to power users than the mean. */
+    /** Median opens - more robust to power users than the mean. */
     medianOpens: number;
     /** Users with 3+ opens (a proxy for "actually stuck around"). */
     engagedUsers: number;
@@ -28,7 +28,7 @@ export type Insights = {
     newThisMonth: number;
   };
 
-  /** Last-30-days signup histogram — one bar per day, oldest → newest. */
+  /** Last-30-days signup histogram - one bar per day, oldest → newest. */
   signupSparkline: { day: string; count: number }[];
 
   /** How many users fall into each opens bucket. */
@@ -41,11 +41,11 @@ export type Insights = {
   /** Top 5 regions with a "Other" bucket for the tail. */
   regions: { region: string; count: number }[];
 
-  /** Very inactive slice — flags users who haven't been seen in > 14 days
+  /** Very inactive slice - flags users who haven't been seen in > 14 days
    *  but aren't first-day new. Useful for a "wake them up" push. */
   atRiskCount: number;
 
-  /** Never-active — signed up but zero opens. */
+  /** Never-active - signed up but zero opens. */
   ghostCount: number;
 };
 
@@ -104,7 +104,7 @@ export function computeInsights(rows: AdminUserRow[]): Insights {
 
   const users = rows.length;
 
-  // Median — sort a copy so we don't disturb the source order.
+  // Median - sort a copy so we don't disturb the source order.
   const sorted = [...opens].sort((a, b) => a - b);
   const medianOpens =
     sorted.length === 0

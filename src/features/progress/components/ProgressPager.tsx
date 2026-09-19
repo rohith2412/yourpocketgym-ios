@@ -1,32 +1,29 @@
-import { useState, useMemo } from "react";
-import { View, type LayoutChangeEvent } from "react-native";
-import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
-import { Text } from "../../../ui";
-import { useTheme } from "../../../theme/ThemeProvider";
-import { useProgressCardColor } from "../cardSurface";
-import { DualLineChart } from "./DualLineChart";
-import { WeightChart } from "./WeightChart";
-import { BodyHeatmap } from "./BodyHeatmap";
-import { LogOverlay } from "./LogOverlay";
-import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useWorkoutLogs } from "../../train/api";
-import { useFoodEntries } from "../../nutrition/hooks";
-import { useWeightLog } from "../hooks";
 import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import { Pressable, View, type LayoutChangeEvent } from "react-native";
+import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { useTabNav } from "../../../nav/tabNav";
-import { useEffect } from "react";
-import { generateWorkoutLogs, generateFoodEntries, generateWeightLog } from "../../demo/demoData";
+import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
+import { generateFoodEntries, generateWeightLog, generateWorkoutLogs } from "../../demo/demoData";
 import {
-  MacroRow,
-  useNutritionSeries,
+    MacroRow,
+    useNutritionSeries,
 } from "../../nutrition/components/MacroBarsChart";
-import { CalorieRing } from "../../nutrition/components/CalorieRing";
+import { useFoodEntries } from "../../nutrition/hooks";
+import { useWorkoutLogs } from "../../train/api";
+import { useProgressCardColor } from "../cardSurface";
+import { useWeightLog } from "../hooks";
+import { BodyHeatmap } from "./BodyHeatmap";
+import { DualLineChart } from "./DualLineChart";
+import { LogOverlay } from "./LogOverlay";
+import { WeightChart } from "./WeightChart";
 
 /**
  * Nutrition L-block: one continuous L-shaped card with a rectangular notch in
  * the top-left where Weight sits. The L outline is drawn as a single SVG Path
- * so borders/corners are truly seamless — no hairline tricks, no border-mask
+ * so borders/corners are truly seamless - no hairline tricks, no border-mask
  * hacks. Content sits absolutely-positioned on top of the SVG background.
  *
  * Layout (viewBox is measured from the parent width):
@@ -41,9 +38,9 @@ import { CalorieRing } from "../../nutrition/components/CalorieRing";
   *   └───────────────────────┘
  */
 
-// Geometry — Weight sits inside the L's notch. GAP_H = breathing room to the
+// Geometry - Weight sits inside the L's notch. GAP_H = breathing room to the
 // right of Weight (before the TODAY column). GAP_V = breathing room BELOW
-// Weight (before the macros bar) — smaller so the macros top hugs Weight.
+// Weight (before the macros bar) - smaller so the macros top hugs Weight.
 const WEIGHT_H = 200; // height of the Weight card
 const BOTTOM_H = 200; // height of the macros bar
 const RADIUS = 20; // corner radius
@@ -63,12 +60,12 @@ function LShapePath({
 }) {
   if (width <= 0) return null;
   const W = width;
-  // Round to whole pixels — a fractional split lands the SVG notch on a subpixel
+  // Round to whole pixels - a fractional split lands the SVG notch on a subpixel
   // and the overlaid Views on the next one, giving a hairline seam on real 2×
   // devices (invisible on simulator).
   const weightW = Math.round((W - GAP_H) / 2);
-  const cutW = weightW + GAP_H; // notch right edge — GAP_H away from Weight
-  const cutH = CUT_H; // notch bottom edge — GAP_V below Weight
+  const cutW = weightW + GAP_H; // notch right edge - GAP_H away from Weight
+  const cutH = CUT_H; // notch bottom edge - GAP_V below Weight
   const R = RADIUS;
 
   // Clockwise path around the L fill, with rounded outer corners (sweep=1)
@@ -141,7 +138,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
   const [containerW, setContainerW] = useState(0);
   const router = useRouter();
 
-  // Same simple model as the outer pager — read the cache directly.
+  // Same simple model as the outer pager - read the cache directly.
   const { data: foods = [] } = useFoodEntries();
   const { data: weights = [] } = useWeightLog();
   const foodsEmpty = foods.length === 0;
@@ -173,7 +170,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
         <LShapePath width={containerW} color={cardBg} border={c.border} />
       </View>
 
-      {/* 7-day calorie bar chart — sits inside the L's top-right column */}
+      {/* 7-day calorie bar chart - sits inside the L's top-right column */}
       {containerW > 0 ? (
         <View
           style={{
@@ -196,7 +193,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
           >
             CALORIES · 7d
           </Text>
-          {/* Vertical bars — fill bottom to top, light green */}
+          {/* Vertical bars - fill bottom to top, light green */}
           <View
             style={{
               flex: 1,
@@ -235,7 +232,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
         </View>
       ) : null}
 
-      {/* Macros — fill the L's bottom bar */}
+      {/* Macros - fill the L's bottom bar */}
       {containerW > 0 ? (
         <View
           style={{
@@ -257,7 +254,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
         </View>
       ) : null}
 
-      {/* Blurred food-only prompt — covers the calorie column (top-right) and
+      {/* Blurred food-only prompt - covers the calorie column (top-right) and
           the macros bar (bottom-full-width), leaves the weight notch alone.
           Clears itself when the first meal is logged. */}
       {containerW > 0 && foodsEmpty ? (
@@ -322,7 +319,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
         </>
       ) : null}
 
-      {/* Weight card — floats in the L's top-left notch with GAP breathing room */}
+      {/* Weight card - floats in the L's top-left notch with GAP breathing room */}
       {containerW > 0 ? (
         <View
           style={{
@@ -338,7 +335,7 @@ function NutritionLBlock({ previewFoods, previewWeights }: { previewFoods?: any;
         </View>
       ) : null}
 
-      {/* Weight overlay — only when there is no weight log yet. Goes over the
+      {/* Weight overlay - only when there is no weight log yet. Goes over the
           top-left notch area only. Rounded on all four corners because the
           weight card in the notch has all corners rounded (it's not part of
           the L outline, it's a floating card in the concave). */}
@@ -393,7 +390,7 @@ export function ProgressPager() {
 
   // Simple derived model: whatever the cache holds right now is truth.
   // Each side (workouts / foods / weights) gets its own preview data
-  // when its cache is empty. No snapshots, no isFetched races — the
+  // when its cache is empty. No snapshots, no isFetched races - the
   // moment a real log lands, that side's preview goes undefined,
   // the chart re-renders on real data, the pill hides. The other
   // sides keep their preview until they earn their own real data.
@@ -405,7 +402,7 @@ export function ProgressPager() {
   const foodsEmpty = foods.length === 0;
   const weightsEmpty = weights.length === 0;
 
-  // Preview data stays local to this component — nothing enters the
+  // Preview data stays local to this component - nothing enters the
   // React Query cache, so Nutrition / Train / Body-weight pages remain
   // untouched.
   const previewWorkouts = useMemo(
@@ -421,7 +418,7 @@ export function ProgressPager() {
     [weightsEmpty],
   );
 
-  // Activity shows workout volume AND calories — only "empty" when both
+  // Activity shows workout volume AND calories - only "empty" when both
   // are empty. Heatmap only cares about workouts.
   const activityEmpty = workoutsEmpty && foodsEmpty;
   const heatmapEmpty = workoutsEmpty;
@@ -439,7 +436,7 @@ export function ProgressPager() {
       >
         <View style={{ opacity: initialEmpty ? 0.7 : 1 }}>
           {/* Activity: once workouts are real, calories go to their real
-              (empty) value — a flatline — instead of a bogus preview trend
+              (empty) value - a flatline - instead of a bogus preview trend
               that would suggest the user has been logging meals. Preview
               foods only feed in while workouts are also still empty, i.e.
               the fresh-install first-visit state. */}

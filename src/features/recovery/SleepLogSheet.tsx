@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BottomSheet, Text, Button } from "../../ui";
+import { useState } from "react";
+import { Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
-import { upsertSleep, type SleepEntry } from "./storage";
+import { BottomSheet, Button, Text } from "../../ui";
 import { toISODay } from "../nutrition/storage";
+import { upsertSleep, type SleepEntry } from "./storage";
 
-const ACCENT = "#7E8FA6"; // slate blue — matches Sleep tile
+const ACCENT = "#7E8FA6"; // slate blue - matches Sleep tile
 
 const QUALITIES: { score: 1 | 2 | 3 | 4 | 5; label: string }[] = [
   { score: 1, label: "Poor" },
@@ -80,7 +80,7 @@ export function SleepLogSheet({ visible, onClose, existing, onSaved }: Props) {
           </View>
         </View>
 
-        {/* Quality — segmented cards */}
+        {/* Quality - segmented cards */}
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="caption" color="textMuted" weight="bold" style={{ letterSpacing: 0.5, fontSize: 11 }}>
             QUALITY

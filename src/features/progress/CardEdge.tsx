@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, StyleSheet, type LayoutChangeEvent } from "react-native";
+import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { useTheme } from "../../theme/ThemeProvider";
 
@@ -7,7 +7,7 @@ import { useTheme } from "../../theme/ThemeProvider";
  * The bottom-and-right edge of a Progress card, drawn as a stroked path rather
  * than a CSS border.
  *
- * A uniform 1px border is inert — it reads as an outlined box. This fades the
+ * A uniform 1px border is inert - it reads as an outlined box. This fades the
  * stroke out toward both ends and leaves it brightest at the corner, so the
  * edge reads as light catching a surface.
  *
@@ -46,7 +46,7 @@ export function CardEdge({ radius = 28 }: { radius?: number }) {
       : "";
 
   // Brighter in dark mode, where the surrounding surface gives less contrast.
-  // Kept subtle — the edge is a hint of light on the corner, not a border.
+  // Kept subtle - the edge is a hint of light on the corner, not a border.
   const stroke = theme.mode === "dark" ? "#FFFFFF" : "#000000";
   const peak = theme.mode === "dark" ? 0.08 : 0.04;
 

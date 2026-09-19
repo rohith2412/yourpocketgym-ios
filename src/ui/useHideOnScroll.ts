@@ -3,7 +3,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 
 /**
  * Hide a floating control while the user scrolls down, bring it back when they
- * scroll up — the pattern most apps use so a FAB doesn't sit on top of the
+ * scroll up - the pattern most apps use so a FAB doesn't sit on top of the
  * content you're trying to read.
  *
  * Wire `onScroll` to the ScrollView and pass `hidden` to the control.

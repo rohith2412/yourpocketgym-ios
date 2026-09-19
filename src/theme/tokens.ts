@@ -1,5 +1,5 @@
 /**
- * Design tokens — the single source of truth for all visual values.
+ * Design tokens - the single source of truth for all visual values.
  * Screens and components NEVER hardcode a color, space, or radius.
  * They read from the theme (see ThemeProvider + useTheme).
  */
@@ -63,7 +63,7 @@ export type ColorTokens = {
   success: string;
   danger: string;
   overlay: string; // modal scrim
-  // Inverse pair — for buttons that flip with the theme
+  // Inverse pair - for buttons that flip with the theme
   inverseBg: string;
   inverseText: string;
 };
@@ -71,7 +71,7 @@ export type ColorTokens = {
 // Monochrome black & white theme. The accent is simply black (light) / white
 // (dark). success/danger stay colored because they carry meaning.
 
-// Light — softer off-white bg, dark text, muted gray surfaces
+// Light - softer off-white bg, dark text, muted gray surfaces
 export const lightColors: ColorTokens = {
   bg: "#ececec",
   surface: "#f5f5f5",
@@ -89,7 +89,7 @@ export const lightColors: ColorTokens = {
   inverseText: "#ffffff",
 };
 
-// Dark — near-black bg, lighter surfaces for card contrast
+// Dark - near-black bg, lighter surfaces for card contrast
 export const darkColors: ColorTokens = {
   bg: "#0a0a0a",
   surface: "#0f0f0f",

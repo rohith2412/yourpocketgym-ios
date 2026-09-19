@@ -1,21 +1,21 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Pressable, Animated, Easing, StyleSheet } from "react-native";
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Path,
-  Stop,
-} from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Text } from "../../../ui";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import Svg, {
+    Circle,
+    Defs,
+    Path,
+    Stop,
+    LinearGradient as SvgLinearGradient,
+} from "react-native-svg";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
 import { useWater, useWaterGoal } from "../hooks";
 import { toISODay, WATER_GOAL_ML } from "../storage";
 import { WaterLogSheet } from "./WaterLogSheet";
 
-// Unified water palette — the same sky-blue everywhere in Nutrition.
+// Unified water palette - the same sky-blue everywhere in Nutrition.
 const BLUE_LIGHT = "#7DD3FC";
 const BLUE_DARK  = "#0284C7";
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -24,15 +24,18 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
  * Compact horizontal water tank. Tap + to open the water log sheet
  * (target editor + quick add + undo).
  */
-export function WaterCard() {
+export function WaterCard({ day }: { day?: string } = {}) {
   const { theme } = useTheme();
   const c = theme.colors;
   const { data: water } = useWater();
   const { data: goalMl = WATER_GOAL_ML } = useWaterGoal();
   const [showLog, setShowLog] = useState(false);
 
-  const today = toISODay();
-  const ml = water?.[today] ?? 0;
+  // Card reads the day the parent is showing. Without this, browsing back
+  // in the calendar still displayed today's intake — so it looked like the
+  // same number "every day".
+  const activeDay = day ?? toISODay();
+  const ml = water?.[activeDay] ?? 0;
   const pct = Math.min(1, ml / goalMl);
 
   const [w, setW] = useState(0);
@@ -145,7 +148,7 @@ export function WaterCard() {
           </View>
         </View>
 
-        {/* + button — opens the water log sheet */}
+        {/* + button - opens the water log sheet */}
         <View style={{ position: "absolute", right: 10, top: 0, bottom: 0, justifyContent: "center" }}>
           <Pressable
             onPress={openLog}

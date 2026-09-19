@@ -1,8 +1,8 @@
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text } from "../../ui";
+import { Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Screen, Text } from "../../ui";
 import { useWorkoutLogs } from "./api";
 import { WorkoutHistoryList } from "./components/WorkoutHistoryList";
 import { totalVolSets } from "./data";
@@ -12,7 +12,7 @@ import { totalVolSets } from "./data";
  *
  * `useWorkoutLogs` is the single source of truth: it reads from the backend
  * (`/tracking`) with react-query, which persists the last successful
- * response as its own cache — so the list still renders offline. No extra
+ * response as its own cache - so the list still renders offline. No extra
  * local-storage plumbing needed; the same hook that powers the streak card
  * powers this screen.
  */

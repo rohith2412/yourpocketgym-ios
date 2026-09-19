@@ -1,19 +1,19 @@
 import { useMemo, useState } from "react";
 import { View, type GestureResponderEvent } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop, Text as SvgText } from "react-native-svg";
-import { Text } from "../../../ui";
-import { RangePicker, type ProgressRange } from "./RangePicker";
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../../../theme/ThemeProvider";
-import { useProgressCardColor } from "../cardSurface";
-import { CardEdge } from "../CardEdge";
-import { useWeightLog } from "../hooks";
+import { Text } from "../../../ui";
 import { toISODay } from "../../nutrition/storage";
+import { CardEdge } from "../CardEdge";
+import { useProgressCardColor } from "../cardSurface";
+import { useWeightLog } from "../hooks";
 import type { WeightEntry } from "../storage";
+import { RangePicker, type ProgressRange } from "./RangePicker";
 
 type Range = ProgressRange;
 const RANGE_DAYS: Record<Range, number> = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 };
 
-const WEIGHT_COLOR = "#A855F7"; // purple accent — distinct from Activity's green/blue
+const WEIGHT_COLOR = "#A855F7"; // purple accent - distinct from Activity's green/blue
 
 function smooth(pts: { x: number; y: number }[]) {
   if (pts.length < 2) return "";
@@ -252,7 +252,7 @@ export function WeightChart({ previewData }: { previewData?: _WE[] } = {}) {
                         {fmtDate(d.date).toUpperCase()}
                       </SvgText>
                       <SvgText x={tipX + tipW - 6} y={24} fontSize={11} fontWeight="800" fill={WEIGHT_COLOR} textAnchor="end">
-                        {d.lb !== null ? `${d.lb.toFixed(1)} lb` : "—"}
+                        {d.lb !== null ? `${d.lb.toFixed(1)} lb` : "-"}
                       </SvgText>
                     </>
                   );
@@ -276,7 +276,7 @@ export function WeightChart({ previewData }: { previewData?: _WE[] } = {}) {
               Now
             </Text>
             <Text variant="caption" weight="bold" style={{ fontSize: 11 }}>
-              {current !== null ? `${current.toFixed(1)} lb` : "—"}
+              {current !== null ? `${current.toFixed(1)} lb` : "-"}
             </Text>
           </View>
           <Text

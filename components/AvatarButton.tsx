@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
-import { Image, Pressable, View } from "react-native";
+import { Image, Pressable } from "react-native";
 import { useCurrentUser } from "../src/features/auth/useCurrentUser";
 import { resolveProfilePhoto } from "../src/features/profile/photoStorage";
-import { Text } from "../src/ui";
 import { useTheme } from "../src/theme/ThemeProvider";
+import { DefaultAvatar } from "../src/ui/DefaultAvatar";
 
 /**
  * The header avatar. Every screen has one in the top-right; tap goes to the
  * settings page.
  *
- * Previous version was a full-screen animated SVG cartoon — same face for
+ * Previous version was a full-screen animated SVG cartoon - same face for
  * everyone, ignored `size` and `onPress`, and pushed to `/profile` (a route
  * that no longer exists). Nothing about it read as "this is me".
  *
@@ -30,13 +30,6 @@ export default function AvatarButton({
   const { data: user } = useCurrentUser();
 
   const photoUri = resolveProfilePhoto(user?.photo);
-  const initials = (() => {
-    const name = user?.name?.trim();
-    if (!name) return "?";
-    const parts = name.split(/\s+/);
-    return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
-  })();
-
   const handlePress = onPress ?? (() => router.push("/profile-detail" as never));
 
   return (
@@ -61,12 +54,10 @@ export default function AvatarButton({
       {photoUri ? (
         <Image source={{ uri: photoUri }} style={{ width: size, height: size }} />
       ) : (
-        <Text
-          weight="bold"
-          style={{ fontSize: size * 0.4, color: c.text }}
-        >
-          {initials}
-        </Text>
+        <DefaultAvatar
+          seed={user?.name || user?.email || "PocketGym"}
+          size={size}
+        />
       )}
     </Pressable>
   );

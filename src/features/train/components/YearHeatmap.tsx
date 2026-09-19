@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { Card, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Card, Text } from "../../../ui";
 import type { WorkoutLog } from "../api";
 
 const CELL = 11;
@@ -72,7 +72,7 @@ function yearSessionCount(logs: WorkoutLog[]) {
   return logs.filter((l) => new Date(l.date) >= cutoff).length;
 }
 
-/** Monochrome intensity — from a subtle dim to full text color. */
+/** Monochrome intensity - from a subtle dim to full text color. */
 function useCellColor() {
   const { theme } = useTheme();
   const c = theme.colors;
@@ -100,7 +100,7 @@ export function YearHeatmap({ logs }: { logs: WorkoutLog[] }) {
   const sessionsLabel = `${sessions} session${sessions !== 1 ? "s" : ""}`;
   const streakLabel = `${longestStreak} day${longestStreak !== 1 ? "s" : ""} streak`;
 
-  // Month labels — one per month at the first week of that month.
+  // Month labels - one per month at the first week of that month.
   const monthLabels: { wi: number; x: number; label: string }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wi) => {
@@ -140,7 +140,7 @@ export function YearHeatmap({ logs }: { logs: WorkoutLog[] }) {
       </View>
 
       <View style={{ flexDirection: "row" }}>
-        {/* Day-of-week labels — fixed column, doesn't scroll with the grid */}
+        {/* Day-of-week labels - fixed column, doesn't scroll with the grid */}
         <View style={{ width: DAY_LABEL_WIDTH, marginTop: 18 }}>
           {DAY_NAMES.map((name, di) => (
             <View

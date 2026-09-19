@@ -1,4 +1,4 @@
-PocketGym is the whole picture — the training, the food, the sleep — in one app that fits in your pocket.
+PocketGym is the whole picture - the training, the food, the sleep - in one app that fits in your pocket.
 
 Most fitness apps make you choose: a lifting tracker here, a calorie counter there, a sleep app somewhere else. PocketGym puts them together, because they're the same problem.
 
@@ -23,8 +23,8 @@ TRACK YOUR BODY
 • Body-part tonnage and lift PRs, tracked automatically
 
 
-COACH AI — YOUR TRAINER IN YOUR POCKET
-Ask anything: programming, form, cutting, bulking. Get direct, evidence-based answers back — no fluff, no filler.
+COACH AI - YOUR TRAINER IN YOUR POCKET
+Ask anything: programming, form, cutting, bulking. Get direct, evidence-based answers back - no fluff, no filler.
 
 
 VOICE LOGGING

@@ -1,22 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Animated,
-  Easing,
-  Pressable,
-  ScrollView,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
+    Animated,
+    Easing,
+    Pressable,
+    ScrollView,
+    View,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
 } from "react-native";
-import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
 import { CalorieRing } from "./CalorieRing";
 import { WeeklyChart } from "./WeeklyChart";
 
 const CARD_HEIGHT = 184;
 
 /**
- * One macro as a vertical column — value on top, bar filling bottom-up, label
+ * One macro as a vertical column - value on top, bar filling bottom-up, label
  * beneath. Colours match the macro series used across the nutrition and
  * progress charts so the whole feature reads as one palette.
  */
@@ -55,7 +55,7 @@ function MacroBar({
         </Text>
       </Text>
 
-      {/* Track fills the column width — bar grows from the bottom */}
+      {/* Track fills the column width - bar grows from the bottom */}
       <View
         style={{
           flex: 1,
@@ -97,7 +97,7 @@ type Props = {
 export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal }: Props) {
   const { theme } = useTheme();
   const c = theme.colors;
-  // Wait for onLayout to give the actual container width — using Dimensions.window
+  // Wait for onLayout to give the actual container width - using Dimensions.window
   // here means the wrong value on real devices where the container is inset from
   // the screen edge, causing the pager to snap to the wrong offset.
   const [pageWidth, setPageWidth] = useState(0);
@@ -138,7 +138,7 @@ export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal 
         decelerationRate="fast"
         style={{ height: CARD_HEIGHT }}
       >
-        {/* Page 0 — calorie ring + vertical macro bars */}
+        {/* Page 0 - calorie ring + vertical macro bars */}
         <View style={{ width: pageWidth }}>
           <View
             style={{
@@ -168,7 +168,7 @@ export function RotatingHero({ eaten, goalKcal, protein, carbs, fat, onEditGoal 
           </View>
         </View>
 
-        {/* Page 1 — weekly chart */}
+        {/* Page 1 - weekly chart */}
         <View style={{ width: pageWidth }}>
           <View style={{ height: CARD_HEIGHT }}>
             <WeeklyChart goal={goalKcal} height={CARD_HEIGHT} />

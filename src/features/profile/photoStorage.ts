@@ -16,6 +16,7 @@
  */
 
 import * as FileSystem from "expo-file-system/legacy";
+import { uploadImageToR2 } from "../../lib/r2Upload";
 
 const DIR = FileSystem.documentDirectory + "profile/";
 
@@ -30,18 +31,29 @@ const isRemote = (v: string) => /^https?:\/\//i.test(v);
 const isAbsolute = (v: string) => v.startsWith("file://");
 
 /**
- * Copy a picked image somewhere durable.
- * Returns the value to persist on the user — a bare filename.
+ * Save a picked avatar. Uploads to R2 so it survives reinstalls and
+ * syncs across devices; falls back to a durable local copy when the
+ * upload fails so the picture doesn't disappear.
+ *
+ * Returns the value we persist on the user record — an https:// R2 URL
+ * in the happy path, a bare filename otherwise. The `resolveProfilePhoto`
+ * helper below handles both.
  */
 export async function saveProfilePhoto(sourceUri: string): Promise<string> {
-  await ensureDir();
-  const ext = sourceUri.split(".").pop()?.split("?")[0]?.slice(0, 5) || "jpg";
-  const name = `avatar-${Date.now()}.${ext}`;
-  await FileSystem.copyAsync({ from: sourceUri, to: DIR + name });
-
-  // Only ever keep the current one.
-  await pruneExcept(name);
-  return name;
+  try {
+    const publicUrl = await uploadImageToR2(sourceUri, "profile");
+    // Clear any old local avatars — we now serve from R2.
+    await pruneExcept("");
+    return publicUrl;
+  } catch {
+    // Offline / R2 down — fall through to the durable local copy.
+    await ensureDir();
+    const ext = sourceUri.split(".").pop()?.split("?")[0]?.slice(0, 5) || "jpg";
+    const name = `avatar-${Date.now()}.${ext}`;
+    await FileSystem.copyAsync({ from: sourceUri, to: DIR + name });
+    await pruneExcept(name);
+    return name;
+  }
 }
 
 /** Turn a stored value into something <Image> can render. */
@@ -50,7 +62,7 @@ export function resolveProfilePhoto(
 ): string | undefined {
   if (!stored) return undefined;
   if (isRemote(stored)) return stored;
-  // Legacy rows hold a full file:// path. Pass it through — it still works
+  // Legacy rows hold a full file:// path. Pass it through - it still works
   // until the container moves, and there's nothing better we can do for it.
   if (isAbsolute(stored)) return stored;
   return DIR + stored;
@@ -72,6 +84,6 @@ async function pruneExcept(keep: string) {
         .map((f) => FileSystem.deleteAsync(DIR + f, { idempotent: true })),
     );
   } catch {
-    // Housekeeping only — never let this fail the save.
+    // Housekeeping only - never let this fail the save.
   }
 }

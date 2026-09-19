@@ -6,7 +6,7 @@
  * App Store Connect → App Review Information, without having to complete a
  * sandbox purchase first.
  *
- * Keep this list tiny and review it before each submission — anyone who signs
+ * Keep this list tiny and review it before each submission - anyone who signs
  * up with one of these addresses gets Pro for free.
  */
 const REVIEW_ACCOUNTS = new Set<string>([

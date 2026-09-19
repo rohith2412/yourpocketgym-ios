@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { View, Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BottomSheet, Text, Button } from "../../ui";
+import { useState } from "react";
+import { Pressable, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
-import { upsertMood, type MoodEntry } from "./storage";
+import { BottomSheet, Button, Text } from "../../ui";
 import { toISODay } from "../nutrition/storage";
+import { upsertMood, type MoodEntry } from "./storage";
 
-const ACCENT = "#A69A7E"; // warm sand — matches Mindset tile
+const ACCENT = "#A69A7E"; // warm sand - matches Mindset tile
 
 const CHOICES: { score: 1 | 2 | 3 | 4 | 5; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
   { score: 1, icon: "sad",            label: "Rough" },
@@ -46,7 +46,7 @@ export function MoodLogSheet({ visible, onClose, existing, onSaved }: Props) {
   return (
     <BottomSheet visible={visible} onClose={onClose}>
       <View style={{ padding: theme.spacing.xl, paddingTop: theme.spacing.lg, gap: theme.spacing.xl }}>
-        {/* Hero — icon reacts to selection */}
+        {/* Hero - icon reacts to selection */}
         <View style={{ alignItems: "center", gap: 10 }}>
           <View
             style={{
@@ -62,7 +62,7 @@ export function MoodLogSheet({ visible, onClose, existing, onSaved }: Props) {
             How are you feeling?
           </Text>
           <Text variant="body" color="textMuted" center>
-            A quick check-in — no wrong answer.
+            A quick check-in - no wrong answer.
           </Text>
         </View>
 

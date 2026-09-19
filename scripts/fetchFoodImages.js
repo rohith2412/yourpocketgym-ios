@@ -3,11 +3,11 @@
  * src/data/foodImageCache.json  (recipeId → imageUrl).
  *
  * Resolution order:
- *   1. Pexels search — full dish name (e.g. "black bean tacos")
- *   2. Pexels search — first 2 words  (e.g. "black bean")
- *   3. Pexels search — main ingredient (e.g. "chicken")
- *   4. TheMealDB   — name search      (guaranteed CDN, no 404)
- *   5. TheMealDB   — ingredient filter
+ *   1. Pexels search - full dish name (e.g. "black bean tacos")
+ *   2. Pexels search - first 2 words  (e.g. "black bean")
+ *   3. Pexels search - main ingredient (e.g. "chicken")
+ *   4. TheMealDB   - name search      (guaranteed CDN, no 404)
+ *   5. TheMealDB   - ingredient filter
  *
  * Run:  node scripts/fetchFoodImages.js
  */
@@ -111,7 +111,7 @@ async function main() {
     const queries = getQueries(r.name, r.ingredients);
     let   url     = null;
 
-    // 1 + 2 + 3 — Pexels (try each query until we get a photo)
+    // 1 + 2 + 3 - Pexels (try each query until we get a photo)
     for (const q of queries) {
       url = await searchPexels(q);
       if (url) break;
@@ -126,7 +126,7 @@ async function main() {
       continue;
     }
 
-    // 4 — TheMealDB name search
+    // 4 - TheMealDB name search
     url = await mealdbByName(queries);
     if (url) {
       mealdb++;
@@ -136,7 +136,7 @@ async function main() {
       continue;
     }
 
-    // 5 — TheMealDB ingredient filter
+    // 5 - TheMealDB ingredient filter
     const ingWord = queries[queries.length - 1];
     url = await mealdbByIngredient(ingWord);
     if (url) {

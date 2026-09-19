@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { View, TextInput, Alert, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
-import { BottomSheet, Button, Text } from "../../ui";
+import { useState } from "react";
+import { Alert, Pressable, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { BottomSheet, Button, Text } from "../../ui";
+import { restoreFromCloud } from "../sync/restore";
 import { loginWithEmail, registerWithEmail } from "./emailAuth";
 import { saveSession, type Session } from "./session";
-import { restoreFromCloud } from "../sync/restore";
 
 function normalize(session: Session): Session {
   return session;
@@ -22,13 +22,13 @@ type Props = {
 
 /**
  * Log in and Sign up are the same shape underneath, and the old design leaned
- * on that — one form, a tiny segmented control at the top, a name field that
+ * on that - one form, a tiny segmented control at the top, a name field that
  * appeared when you flipped modes. That made the two flows read as the same
  * thing with a different label.
  *
  * They're not the same thing to a user. Logging in means "I know my details,
  * let me in." Signing up means "I'm starting fresh, tell me what you need."
- * So the two modes now have distinct layouts, copy, and CTAs — with one
+ * So the two modes now have distinct layouts, copy, and CTAs - with one
  * shared row at the bottom to switch between them.
  */
 export function EmailAuthSheet({ visible, onClose, onSuccess }: Props) {
@@ -73,7 +73,7 @@ export function EmailAuthSheet({ visible, onClose, onSuccess }: Props) {
       {isLogin ? (
         // ── LOG IN ────────────────────────────────────────────────────────
         // Slim, familiar. Two fields, one clear "Log in" CTA. No name row,
-        // no password-strength copy — the user is returning, not starting.
+        // no password-strength copy - the user is returning, not starting.
         <View style={{ padding: theme.spacing.xl, gap: theme.spacing.lg }}>
           <View style={{ gap: 6 }}>
             <View

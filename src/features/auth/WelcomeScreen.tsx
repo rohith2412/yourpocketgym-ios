@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Image, Animated, Easing, Alert, Linking, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Screen, Text, Button } from "../../ui";
-import { useTheme } from "../../theme/ThemeProvider";
-import GoogleGLogo from "../../../components/GoogleGLogo";
-import { useGoogleLogin } from "./useGoogleLogin";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { useAppleLogin } from "./useAppleLogin";
-import { isAppleSignInAvailable } from "./appleSignIn";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Animated, Easing, Linking, Platform, View } from "react-native";
+import GoogleGLogo from "../../../components/GoogleGLogo";
 import { ApiError } from "../../api/client";
+import { useTheme } from "../../theme/ThemeProvider";
+import { Button, Screen, Text } from "../../ui";
+import { isAppleSignInAvailable } from "./appleSignIn";
+import { useAppleLogin } from "./useAppleLogin";
+import { useGoogleLogin } from "./useGoogleLogin";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -83,7 +83,7 @@ export function WelcomeScreen() {
   // Visible on iOS by default, and the async check can only ever turn it ON.
   // Guideline 4.8 makes this button mandatory alongside Google, so the one
   // outcome we can't afford is it quietly vanishing because a availability
-  // probe hiccuped — that ships a rejectable build that looks fine locally.
+  // probe hiccuped - that ships a rejectable build that looks fine locally.
   // Every iOS version this app supports has Sign in with Apple anyway.
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
   useEffect(() => {
@@ -132,14 +132,17 @@ export function WelcomeScreen() {
   return (
     <Screen>
       <Animated.View style={{ flex: 1, opacity: fade }}>
-        {/* ── Center: typewriter hero ── */}
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        {/* ── Center: typewriter hero ──
+            The cursor is nested inside the same <Text> so the whole line
+            renders as one string that centers itself. Two sibling texts in
+            a row-centered container caused the block to re-center on every
+            keystroke - that horizontal jitter was the "unalign" being seen. */}
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: theme.spacing.lg }}>
           <View
             style={{
               minHeight: 130,
               justifyContent: "center",
-              alignItems: "center",
-              flexDirection: "row",
+              width: "100%",
             }}
           >
             <Text
@@ -151,50 +154,48 @@ export function WelcomeScreen() {
                 fontWeight: theme.fontWeight.heavy,
                 color: theme.colors.text,
                 letterSpacing: -1.5,
+                textAlign: "center",
               }}
             >
               {typed}
+              <Animated.Text
+                style={{
+                  fontWeight: theme.fontWeight.regular,
+                  color: theme.colors.primary,
+                  opacity: cursor,
+                }}
+              >
+                |
+              </Animated.Text>
             </Text>
-            <Animated.Text
-              style={{
-                fontSize: 52,
-                lineHeight: 58,
-                fontWeight: theme.fontWeight.regular,
-                color: theme.colors.primary,
-                opacity: cursor,
-                marginLeft: 2,
-              }}
-            >
-              |
-            </Animated.Text>
           </View>
-          {/* <Text
-            variant="body"
-            color="textMuted"
-            center
-            style={{ fontSize: theme.fontSize.lg, marginTop: theme.spacing.md }}
-          >
-            Your pocket-sized personal gym.
-          </Text> */}
         </View>
 
         {/* ── Bottom: auth buttons ── */}
         <View style={{ paddingBottom: theme.spacing.xl, gap: theme.spacing.sm }}>
-          {/* Apple first. Guideline 4.8 requires an equivalent option to Google,
-              and Apple's own button style is mandated by their HIG — hence the
-              native component rather than our `Button`. */}
+          {/* Apple first. Guideline 4.8 requires an equivalent option to
+              Google. Custom Button (instead of AppleAuthenticationButton) so
+              the Apple logo can be sized to match the Google G and envelope
+              icons — Apple's HIG allows a custom button as long as it uses
+              their logo and says "Sign in with Apple" clearly. The actual
+              auth flow is unchanged; only the visual wrapper differs. */}
           {appleAvailable ? (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={
-                theme.mode === "dark"
-                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-              }
-              // Matches Button size="lg" radius="full" so the stack reads as one set.
-              cornerRadius={29}
-              style={{ height: 58, width: "100%", opacity: applePending ? 0.6 : 1 }}
+            <Button
+              title={applePending ? "Signing in…" : "Sign in with Apple"}
+              variant="primary"
+              radius="full"
+              size="xl"
+              loading={applePending}
+              haptic="medium"
               onPress={handleApple}
+              left={
+                <Ionicons
+                  name="logo-apple"
+                  size={28}
+                  color={theme.colors.inverseText}
+                />
+              }
+              titleStyle={{ fontSize: 22, fontWeight: "600" }}
             />
           ) : null}
 
@@ -202,30 +203,36 @@ export function WelcomeScreen() {
             title={isPending ? "Signing in…" : "Sign in with Google"}
             variant={theme.mode === "light" ? "secondary" : "primary"}
             radius="full"
-            size="lg"
+            size="xl"
             loading={isPending}
             haptic="medium"
             onPress={handleGoogle}
-            left={<GoogleGLogo size={20} />}
-            titleStyle={{ fontSize: 21, fontWeight: "600" }}
+            left={<GoogleGLogo size={26} />}
+            // Match Apple's native SIGN_IN label — at 58pt pill height it
+            // renders at ~22pt semibold, which is what makes Apple read
+            // heavier than the other two when they were kept at 19pt.
+            titleStyle={{ fontSize: 22, fontWeight: "600" }}
           />
 
           <Button
             title="Sign in with email"
             variant={theme.mode === "light" ? "secondary" : "primary"}
             radius="full"
-            size="lg"
+            size="xl"
             onPress={() => router.push("/email-auth" as never)}
             left={
               <Ionicons
                 name="mail-outline"
-                size={20}
+                size={24}
                 color={
                   theme.mode === "light" ? theme.colors.text : theme.colors.inverseText
                 }
               />
             }
-            titleStyle={{ fontSize: 21, fontWeight: "600" }}
+            // Match Apple's native SIGN_IN label — at 58pt pill height it
+            // renders at ~22pt semibold, which is what makes Apple read
+            // heavier than the other two when they were kept at 19pt.
+            titleStyle={{ fontSize: 22, fontWeight: "600" }}
           />
 
           <Text

@@ -1,8 +1,8 @@
-import { View, ScrollView, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Button, Separator } from "../../ui";
+import { Pressable, ScrollView, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Button, Card, Screen, Separator, Text } from "../../ui";
 import { useRoutines } from "./hooks";
 import { WEEKDAYS, type Routine, type Weekday } from "./storage";
 
@@ -54,7 +54,7 @@ export function RoutinesScreen() {
             <View style={{ alignItems: "center", gap: theme.spacing.md }}>
               <Ionicons name="calendar-outline" size={30} color={c.textMuted} />
               <Text variant="body" color="textMuted" center>
-                No plan yet. Build your weekly routine — pick days, name each one, add exercises.
+                No plan yet. Build your weekly routine - pick days, name each one, add exercises.
               </Text>
               <Button
                 title="Create weekly plan"

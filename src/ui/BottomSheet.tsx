@@ -1,15 +1,15 @@
 import { useEffect, useRef } from "react";
 import {
-  Modal,
-  Pressable,
-  Animated,
-  Easing,
-  View,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
+    Animated,
+    Dimensions,
+    Easing,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
@@ -78,7 +78,7 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
         <Pressable style={{ flex: 1 }} onPress={close} />
       </Animated.View>
 
-      {/* Sheet — wrapped in KAV so text inputs lift above the keyboard */}
+      {/* Sheet - wrapped in KAV so text inputs lift above the keyboard */}
       <KeyboardAvoidingView
         pointerEvents="box-none"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -87,7 +87,7 @@ export function BottomSheet({ visible, onClose, children }: BottomSheetProps) {
         <Animated.View
           style={{
             // Cap the sheet so a tall form pushed up by the keyboard can never
-            // run its header off the top of the screen — the ScrollView below
+            // run its header off the top of the screen - the ScrollView below
             // takes over once content exceeds the cap.
             maxHeight: H * 0.9,
             backgroundColor: theme.colors.surface,

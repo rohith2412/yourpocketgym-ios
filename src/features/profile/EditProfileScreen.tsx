@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-import { View, TextInput, Alert, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Screen, Text, Avatar } from "../../ui";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Avatar, Screen, Text } from "../../ui";
 import { loadUser, type AuthUser } from "../auth/session";
 import { useUpdateProfile } from "../auth/useCurrentUser";
-import { saveProfilePhoto, resolveProfilePhoto } from "./photoStorage";
+import { useIntro, useSaveIntroPartial } from "../onboarding/introApi";
+import { resolveProfilePhoto, saveProfilePhoto } from "./photoStorage";
 
 export default function EditProfileScreen() {
   const { theme } = useTheme();
@@ -19,6 +20,16 @@ export default function EditProfileScreen() {
   const [photo, setPhoto] = useState<string | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
+  // Intro fields — same source-of-truth as the Nutrition onboarding sheet.
+  // Empty string means "not entered yet" so a user can leave a field blank
+  // without stomping the saved value.
+  const { data: intro } = useIntro();
+  const saveIntro = useSaveIntroPartial();
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [age, setAge] = useState("");
+  const [goal, setGoal] = useState("");
+
   useEffect(() => {
     loadUser().then((u) => {
       setUser(u);
@@ -27,9 +38,21 @@ export default function EditProfileScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    if (intro?.weight != null) setWeight(String(intro.weight));
+    if (intro?.height != null) setHeight(String(intro.height));
+    if (intro?.age != null) setAge(String(intro.age));
+    if (intro?.fitnessGoal) setGoal(intro.fitnessGoal);
+  }, [intro]);
+
   const nameChanged = user != null && name.trim() !== user.name && name.trim().length > 0;
   const photoChanged = user != null && photo !== (user.photo ?? null);
-  const dirty = nameChanged || photoChanged;
+  const introChanged =
+    (weight && Number(weight) !== (intro?.weight ?? -1)) ||
+    (height && Number(height) !== (intro?.height ?? -1)) ||
+    (age && Number(age) !== (intro?.age ?? -1)) ||
+    (goal && goal !== (intro?.fitnessGoal ?? ""));
+  const dirty = nameChanged || photoChanged || !!introChanged;
 
   const pickPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,7 +84,17 @@ export default function EditProfileScreen() {
     if (!user || !dirty || saving) return;
     setSaving(true);
     try {
-      await updateProfileMut.mutateAsync({ name: name.trim(), photo: photo ?? null });
+      if (nameChanged || photoChanged) {
+        await updateProfileMut.mutateAsync({ name: name.trim(), photo: photo ?? null });
+      }
+      if (introChanged) {
+        const patch: Record<string, unknown> = {};
+        if (weight) patch.weight = Number(weight);
+        if (height) patch.height = Number(height);
+        if (age) patch.age = Number(age);
+        if (goal) patch.fitnessGoal = goal;
+        await saveIntro.mutateAsync(patch);
+      }
       router.back();
     } catch (err: any) {
       Alert.alert("Save failed", err?.message ?? "Please try again.");
@@ -137,7 +170,7 @@ export default function EditProfileScreen() {
           ) : null}
         </View>
         <Text variant="caption" color="textFaint" center style={{ fontSize: 11 }}>
-          Stored on this device only — not synced.
+          Stored on this device only - not synced.
         </Text>
       </View>
 
@@ -200,6 +233,50 @@ export default function EditProfileScreen() {
         </Text>
       </View>
 
+      {/* Body stats (intro fields) */}
+      <NumberField label="WEIGHT (KG)" value={weight} onChange={setWeight} placeholder="72" />
+      <NumberField label="HEIGHT (CM)" value={height} onChange={setHeight} placeholder="178" />
+      <NumberField label="AGE" value={age} onChange={setAge} placeholder="24" />
+
+      <View style={{ gap: theme.spacing.xs }}>
+        <Text
+          variant="caption"
+          color="textMuted"
+          weight="bold"
+          style={{ letterSpacing: 0.5, fontSize: 11 }}
+        >
+          GOAL
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {(["lose fat", "gain muscle", "maintain"] as const).map((g) => {
+            const active = goal === g;
+            return (
+              <Pressable
+                key={g}
+                onPress={() => setGoal(g)}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  height: 44,
+                  borderRadius: 999,
+                  backgroundColor: active ? c.inverseBg : c.surfaceAlt,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text
+                  variant="caption"
+                  weight="bold"
+                  style={{ color: active ? c.inverseText : c.text, fontSize: 12 }}
+                >
+                  {g === "lose fat" ? "Lose fat" : g === "gain muscle" ? "Gain muscle" : "Maintain"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Save */}
       <Pressable
         onPress={save}
@@ -222,5 +299,52 @@ export default function EditProfileScreen() {
         </Text>
       </Pressable>
     </Screen>
+  );
+}
+
+/**
+ * Numeric field with a caption-style label above. Reused for weight,
+ * height, and age.
+ */
+function NumberField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  return (
+    <View style={{ gap: theme.spacing.xs }}>
+      <Text
+        variant="caption"
+        color="textMuted"
+        weight="bold"
+        style={{ letterSpacing: 0.5, fontSize: 11 }}
+      >
+        {label}
+      </Text>
+      <TextInput
+        value={value}
+        onChangeText={(t) => onChange(t.replace(/[^0-9.]/g, ""))}
+        placeholder={placeholder}
+        placeholderTextColor={c.textFaint}
+        keyboardType="numeric"
+        maxLength={6}
+        style={{
+          backgroundColor: c.surfaceAlt,
+          borderRadius: theme.radius.lg,
+          paddingHorizontal: theme.spacing.md,
+          height: 52,
+          color: c.text,
+          fontSize: 16,
+        }}
+      />
+    </View>
   );
 }

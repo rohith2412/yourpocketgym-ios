@@ -4,6 +4,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 import AvatarButton from "../../../components/AvatarButton";
 import { useTabNav } from "../../nav/tabNav";
 import { ProgressPager } from "./components/ProgressPager";
+import { AdBanner } from "../ads/AdBanner";
 
 export function ProgressScreen() {
   const { theme } = useTheme();
@@ -32,6 +33,10 @@ export function ProgressScreen() {
       </View>
 
       <ProgressPager />
+
+      {/* Banner ad — hidden for Pro users via useShowAds inside the
+          component. Sits above the tab bar in the scroll flow. */}
+      <AdBanner />
     </Screen>
   );
 }

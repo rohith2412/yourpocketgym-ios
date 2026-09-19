@@ -336,7 +336,7 @@ function pickExercises(
   const minPerEx = goal.includes("strength") ? 10 : goal.includes("fat") || goal.includes("ndurance") ? 6 : 8;
   const warmup   = 8;  // warm-up + cool-down buffer
   const rawCount = Math.floor((sessionLength - warmup) / minPerEx);
-  // Hard caps — keep it realistic, max 6 even at 90 min
+  // Hard caps - keep it realistic, max 6 even at 90 min
   const hardCap  = sessionLength <= 30 ? 3
                  : sessionLength <= 45 ? 4
                  : 6;
@@ -408,28 +408,28 @@ function planTitle(goal: string, days: number, experience: string): string {
   };
   const opts  = titles[goal] || titles["General fitness"];
   const seed  = (goal + days + experience).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `${opts[seed % opts.length]} — ${days}×/week`;
+  return `${opts[seed % opts.length]} - ${days}×/week`;
 }
 
 const WEEKLY_GOALS: Record<string, string[]> = {
-  "Build muscle":     ["Hit protein target every day (1.6–2g per kg bodyweight)", "Log progressive overload each session", "Sleep 7-9 hours for optimal muscle protein synthesis", "Stay hydrated — 3L water minimum"],
-  "Lose fat":         ["Maintain a 300-500 calorie daily deficit", "Hit 8,000+ steps on rest days", "Prioritise protein to preserve muscle mass", "Track your meals — awareness drives results"],
-  "Improve strength": ["Rest 2–3 minutes between heavy compound sets", "Log every working set weight and reps", "Eat at maintenance or slight surplus", "Prioritise sleep — strength gains happen at night"],
-  "General fitness":  ["Stay consistent — 3 workouts beats 7 planned and 0 done", "Add 10 min of walking daily", "Focus on form over weight", "Hydrate and recover between sessions"],
-  "Endurance":        ["Keep rest periods short (20–40 sec)", "Add Zone 2 cardio on rest days", "Eat complex carbs for sustained energy", "Track heart rate — stay in the 70-85% max zone"],
+  "Build muscle":     ["Hit protein target every day (1.6–2g per kg bodyweight)", "Log progressive overload each session", "Sleep 7-9 hours for optimal muscle protein synthesis", "Stay hydrated - 3L water minimum"],
+  "Lose fat":         ["Maintain a 300-500 calorie daily deficit", "Hit 8,000+ steps on rest days", "Prioritise protein to preserve muscle mass", "Track your meals - awareness drives results"],
+  "Improve strength": ["Rest 2–3 minutes between heavy compound sets", "Log every working set weight and reps", "Eat at maintenance or slight surplus", "Prioritise sleep - strength gains happen at night"],
+  "General fitness":  ["Stay consistent - 3 workouts beats 7 planned and 0 done", "Add 10 min of walking daily", "Focus on form over weight", "Hydrate and recover between sessions"],
+  "Endurance":        ["Keep rest periods short (20–40 sec)", "Add Zone 2 cardio on rest days", "Eat complex carbs for sustained energy", "Track heart rate - stay in the 70-85% max zone"],
 };
 const NUTRITION_TIPS: Record<string, string[]> = {
-  "Build muscle":     ["Eat 1.6–2.2g protein per kg bodyweight daily", "Time carbs around workouts for energy and recovery", "Don't skip meals — muscle growth needs a caloric surplus"],
-  "Lose fat":         ["Eat protein first at every meal to stay full", "Avoid liquid calories — water, black coffee, plain tea", "Don't cut too aggressively — 500 cal deficit max"],
-  "Improve strength": ["Eat maintenance calories or slight surplus (+200–300)", "Prioritise carbs before training — they fuel lifts", "Post-workout: 30–40g protein within 60 minutes"],
+  "Build muscle":     ["Eat 1.6–2.2g protein per kg bodyweight daily", "Time carbs around workouts for energy and recovery", "Don't skip meals - muscle growth needs a caloric surplus"],
+  "Lose fat":         ["Eat protein first at every meal to stay full", "Avoid liquid calories - water, black coffee, plain tea", "Don't cut too aggressively - 500 cal deficit max"],
+  "Improve strength": ["Eat maintenance calories or slight surplus (+200–300)", "Prioritise carbs before training - they fuel lifts", "Post-workout: 30–40g protein within 60 minutes"],
   "General fitness":  ["Eat whole foods 80% of the time", "Don't skip breakfast before morning sessions", "Include vegetables at every meal for micronutrients"],
   "Endurance":        ["Carb load slightly before long sessions", "Replenish electrolytes after heavy sweat sessions", "Eat a balanced meal 2–3 hours before training"],
 };
 const PROGRESSION_TIPS: Record<string, string[]> = {
-  "Build muscle":     ["Add 2.5kg to compound lifts every 1-2 weeks when you hit the top rep range", "Switch rep ranges every 4 weeks to avoid adaptation", "Deload every 6–8 weeks — take weight down 40% for a week"],
-  "Lose fat":         ["Don't sacrifice form for speed — injury kills momentum", "Increase weights every 2 weeks to maintain muscle", "Add 5 min to cardio blocks each week"],
-  "Improve strength": ["Run a linear progression — add weight every session until you can't", "When stuck, drop to 80% and rebuild over 3 weeks", "Record maxes monthly — seeing progress is motivating"],
-  "General fitness":  ["Increase reps or weight every 2 weeks", "Introduce new exercises every 6 weeks to stay engaged", "Track your sessions — consistency is the only metric that matters"],
+  "Build muscle":     ["Add 2.5kg to compound lifts every 1-2 weeks when you hit the top rep range", "Switch rep ranges every 4 weeks to avoid adaptation", "Deload every 6–8 weeks - take weight down 40% for a week"],
+  "Lose fat":         ["Don't sacrifice form for speed - injury kills momentum", "Increase weights every 2 weeks to maintain muscle", "Add 5 min to cardio blocks each week"],
+  "Improve strength": ["Run a linear progression - add weight every session until you can't", "When stuck, drop to 80% and rebuild over 3 weeks", "Record maxes monthly - seeing progress is motivating"],
+  "General fitness":  ["Increase reps or weight every 2 weeks", "Introduce new exercises every 6 weeks to stay engaged", "Track your sessions - consistency is the only metric that matters"],
   "Endurance":        ["Reduce rest by 5 seconds each week", "Add a round to circuits every 2 weeks", "Once cardio feels easy, increase intensity before duration"],
 };
 
@@ -455,7 +455,7 @@ export function generateWorkoutPlan(profile: {
   const injuries    = profile.injuries     || "";
   const sessionLen  = Math.max(20, parseInt(profile.sessionLength) || 45);
 
-  // Parse selected days — keep week order, fall back to Mon-onwards
+  // Parse selected days - keep week order, fall back to Mon-onwards
   const selectedDays: string[] = profile.workoutDays
     ? ALL_DAYS.filter(d => profile.workoutDays!.split(",").map(s => s.trim()).includes(d)).slice(0, days)
     : ALL_DAYS.slice(0, days);

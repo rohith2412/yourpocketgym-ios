@@ -2,27 +2,27 @@ import { useEffect, useMemo } from "react";
 import { View } from "react-native";
 
 import {
-  Blur,
-  Canvas,
-  Circle,
-  Group,
-  RadialGradient,
-  Skia,
-  vec,
+    Blur,
+    Canvas,
+    Circle,
+    Group,
+    RadialGradient,
+    Skia,
+    vec,
 } from "@shopify/react-native-skia";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
+import Animated, {
+    Easing,
+    useAnimatedStyle,
+    useDerivedValue,
+    useSharedValue,
+    withRepeat,
+    withTiming,
+} from "react-native-reanimated";
 
 /**
- * Two moods for the same object. Food logging gets the warm one — an ember in
- * a pan rather than a cold blue assistant bubble — while workout logging keeps
+ * Two moods for the same object. Food logging gets the warm one - an ember in
+ * a pan rather than a cold blue assistant bubble - while workout logging keeps
  * the cool one so the two sheets stay distinguishable at a glance.
  */
 const TONES = {
@@ -39,7 +39,7 @@ const TONES = {
     blobs: ["#F97316", "#FBBF24", "#FFF7ED"] as const,
     bloom: ["rgba(249,115,22,0.6)", "rgba(251,191,36,0.22)", "rgba(0,0,0,0)"] as const,
     wave: "#FFFFFF",
-    // Taller orbits, so the light travels up and down more than side to side —
+    // Taller orbits, so the light travels up and down more than side to side -
     // heat rising off a burner rather than something spinning.
     stretch: 1.5,
   },
@@ -48,7 +48,7 @@ const TONES = {
 export type OrbTone = keyof typeof TONES;
 
 
-// Fixed phases/peaks so the bars never move in lockstep — a row that pulses as
+// Fixed phases/peaks so the bars never move in lockstep - a row that pulses as
 // one block looks like a loading indicator, not a voice.
 const BAR_PHASES = [0, 1.1, 2.3, 3.6, 4.7];
 const BAR_PEAKS = [0.55, 0.85, 1, 0.8, 0.5];
@@ -90,11 +90,11 @@ function WaveBar({
 /**
  * The voice orb.
  *
- * Deliberately *not* a shaded sphere — a solid ball with a specular highlight
+ * Deliberately *not* a shaded sphere - a solid ball with a specular highlight
  * reads as a 3D prop, not as something listening. Instead this is a pool of
  * light: three oversized colour blobs drifting on their own cycles, clipped to
  * a circle and blurred well past their own radius, so the surface never repeats
- * and no single edge dominates. There's no rim — the glow just falls off into
+ * and no single edge dominates. There's no rim - the glow just falls off into
  * the background.
  */
 export function VoiceOrb({
@@ -204,7 +204,7 @@ export function VoiceOrb({
           backgroundColor: "transparent",
         }}
       >
-        {/* Bloom — the light the orb throws, reacting to your voice. */}
+        {/* Bloom - the light the orb throws, reacting to your voice. */}
         <Circle cx={cx} cy={cy} r={bloomR} opacity={bloomOpacity}>
           <RadialGradient
             c={vec(cx, cy)}

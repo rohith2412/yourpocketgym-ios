@@ -1,5 +1,5 @@
 /**
- * Manual food log (free tier) — stored locally in AsyncStorage.
+ * Manual food log (free tier) - stored locally in AsyncStorage.
  * Premium adds AI scanner + meal plans on top; that layer talks to the backend.
  */
 
@@ -8,7 +8,7 @@ import { getJSON, setJSON } from "../../lib/storage";
 
 export type FoodEntry = {
   id: string;
-  /** ISO date (YYYY-MM-DD) — the day this food belongs to. */
+  /** ISO date (YYYY-MM-DD) - the day this food belongs to. */
   date: string;
   /** ISO timestamp when it was logged (used for ordering within a day). */
   loggedAt: string;

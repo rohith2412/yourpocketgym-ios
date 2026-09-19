@@ -1,21 +1,21 @@
-import { useEffect, useState, useMemo } from "react";
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card } from "../../ui";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Card, Screen, Text } from "../../ui";
 import { useWorkoutLogs } from "../train/api";
-import {
-  loadSleep,
-  loadMood,
-  todaySleep,
-  todayMood,
-  type SleepEntry,
-  type MoodEntry,
-} from "./storage";
-import { computeRecovery, computeLast7Days } from "./score";
-import { SleepLogSheet } from "./SleepLogSheet";
 import { MoodLogSheet } from "./MoodLogSheet";
+import { computeLast7Days, computeRecovery } from "./score";
+import { SleepLogSheet } from "./SleepLogSheet";
+import {
+    loadMood,
+    loadSleep,
+    todayMood,
+    todaySleep,
+    type MoodEntry,
+    type SleepEntry,
+} from "./storage";
 
 export default function RecoveryScreen() {
   const { theme } = useTheme();
@@ -78,7 +78,7 @@ export default function RecoveryScreen() {
         </View>
       </View>
 
-      {/* Score hero — big number + 7-day bar chart */}
+      {/* Score hero - big number + 7-day bar chart */}
       <Card padding="xl" style={{ gap: theme.spacing.lg }}>
         <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
           <View style={{ gap: 2 }}>
@@ -107,13 +107,13 @@ export default function RecoveryScreen() {
         </Text>
       </Card>
 
-      {/* Sleep + Mood tiles — bigger, richer */}
+      {/* Sleep + Mood tiles - bigger, richer */}
       <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
         <LogTile
           icon="moon"
           accent={NEUTRAL.sleep}
           label="Sleep"
-          primary={sToday ? `${sToday.hours.toFixed(1)}` : "—"}
+          primary={sToday ? `${sToday.hours.toFixed(1)}` : "-"}
           unit={sToday ? "h" : ""}
           hint={sToday ? `Quality ${sToday.quality}/5` : "Not logged"}
           cta={sToday ? "Edit" : "Log sleep"}
@@ -125,7 +125,7 @@ export default function RecoveryScreen() {
           icon="pulse"
           accent={NEUTRAL.mind}
           label="Mindset"
-          primary={mToday ? `${mToday.score}` : "—"}
+          primary={mToday ? `${mToday.score}` : "-"}
           unit={mToday ? "/5" : ""}
           moodIcon={mToday ? moodIconFor(mToday.score) : undefined}
           hint={mToday ? moodLabel(mToday.score) : "Not logged"}
@@ -147,7 +147,7 @@ export default function RecoveryScreen() {
           <BarRow label="Mindset" value={recovery.mood} suffix="/5" target={5} c={c} theme={theme} />
           <BreakRow
             label="Days since last workout"
-            value={recovery.daysSinceLastWorkout != null ? `${recovery.daysSinceLastWorkout}` : "—"}
+            value={recovery.daysSinceLastWorkout != null ? `${recovery.daysSinceLastWorkout}` : "-"}
             c={c}
           />
         </Card>
@@ -171,12 +171,12 @@ export default function RecoveryScreen() {
 
 // ── 7-day bar chart ──────────────────────────────────────────────────────────
 
-// Neutral / earthy palette — subtle, not traffic-light. Used across the page.
+// Neutral / earthy palette - subtle, not traffic-light. Used across the page.
 const NEUTRAL = {
-  high: "#8FA69A",   // muted sage — recovered
-  good: "#B8AE8E",   // warm khaki — good
-  low:  "#B58C7A",   // muted terracotta — take it easy
-  rest: "#8E7573",   // muted rose brown — rest
+  high: "#8FA69A",   // muted sage - recovered
+  good: "#B8AE8E",   // warm khaki - good
+  low:  "#B58C7A",   // muted terracotta - take it easy
+  rest: "#8E7573",   // muted rose brown - rest
   // Section accents (used for icon chip backgrounds)
   sleep: "#7E8FA6",  // slate blue
   mind:  "#A69A7E",  // warm sand
@@ -338,7 +338,7 @@ function BarRow({
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text variant="body" color="textMuted">{label}</Text>
         <Text variant="body" weight="bold">
-          {value != null ? `${value}${suffix}` : "—"}
+          {value != null ? `${value}${suffix}` : "-"}
         </Text>
       </View>
       <View style={{ height: 4, borderRadius: 2, backgroundColor: c.surfaceAlt, overflow: "hidden" }}>

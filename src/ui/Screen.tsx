@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  View,
-  ScrollView,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  type ViewStyle,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StatusBar,
+    View,
+    type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme/ThemeProvider";
@@ -22,7 +22,7 @@ type ScreenProps = {
 
 /**
  * Every screen's root. Handles safe-area, themed background, and status-bar
- * style automatically — so no screen ever hardcodes the page color again.
+ * style automatically - so no screen ever hardcodes the page color again.
  */
 export function Screen({
   children,

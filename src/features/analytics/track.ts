@@ -1,5 +1,5 @@
 /**
- * Product analytics — app opens and screen views.
+ * Product analytics - app opens and screen views.
  *
  * Events are queued in memory and flushed in small batches, so navigating
  * around the app doesn't fire a request per screen. Everything here is

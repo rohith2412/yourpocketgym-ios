@@ -1,15 +1,15 @@
-import {
-  Pressable,
-  ActivityIndicator,
-  View,
-  type PressableProps,
-  type GestureResponderEvent,
-  type TextStyle,
-} from "react-native";
 import * as Haptics from "expo-haptics";
-import { Text } from "./Text";
+import {
+    ActivityIndicator,
+    Pressable,
+    View,
+    type GestureResponderEvent,
+    type PressableProps,
+    type TextStyle,
+} from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 import type { Radius } from "../theme/tokens";
+import { Text } from "./Text";
 
 type Variant = "primary" | "secondary" | "ghost";
 type Haptic = "light" | "medium" | "heavy" | "none";
@@ -33,12 +33,12 @@ type ButtonProps = Omit<PressableProps, "style"> & {
   /** Corner radius token. Default: "md". Use "full" for a pill. */
   radius?: Radius;
   /** Height/emphasis. Default: "md". */
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   /** Soft glowing halo in the button's own color (sparkle effect). */
   glow?: boolean;
   /** Tap vibration. Default: "light". Set "none" to disable. */
   haptic?: Haptic;
-  /** Override the label's Text style — for one-off font size or weight tweaks
+  /** Override the label's Text style - for one-off font size or weight tweaks
    *  where a whole new variant would be overkill (e.g. matching Apple's
    *  native SignIn button label size on auth screens). */
   titleStyle?: TextStyle;
@@ -61,7 +61,8 @@ export function Button({
 }: ButtonProps) {
   const { theme } = useTheme();
   const c = theme.colors;
-  const height = size === "lg" ? 58 : size === "sm" ? 38 : 50;
+  const height =
+    size === "xl" ? 64 : size === "lg" ? 58 : size === "sm" ? 38 : 50;
   const padH = size === "sm" ? theme.spacing.md : theme.spacing.lg;
 
   const handlePress = (e: GestureResponderEvent) => {
@@ -128,7 +129,9 @@ export function Button({
             style={[
               {
                 fontSize:
-                  size === "lg"
+                  size === "xl"
+                    ? theme.fontSize.lg
+                    : size === "lg"
                     ? theme.fontSize.lg
                     : size === "sm"
                     ? theme.fontSize.sm

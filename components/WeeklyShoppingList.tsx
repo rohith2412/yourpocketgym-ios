@@ -1,18 +1,18 @@
 /**
- * WeeklyShoppingList — modal popup with all ingredients for the week,
+ * WeeklyShoppingList - modal popup with all ingredients for the week,
  * grouped by category, with tap-to-check-off support.
  */
+import { LIGHT, useTheme } from "@/src/theme/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Modal,
-  Pressable,
-  SectionList,
-  StyleSheet,
-  Text,
-  View,
+    Modal,
+    Pressable,
+    SectionList,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
-import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MealPlan } from "../src/utils/mealPlanGenerator";
 
@@ -23,11 +23,11 @@ const SEP    = "rgba(0,0,0,0.07)";
 
 // ── Ingredient parsing ────────────────────────────────────────────────────────
 
-// Step 1 — strip leading numbers & fractions
+// Step 1 - strip leading numbers & fractions
 const QTY_RE  = /^[\d¼½¾⅓⅔\s\/\-.]+/;
-// Step 2 — strip units
+// Step 2 - strip units
 const UNIT_RE = /^(cups?|tbsps?|tsps?|g|kg|ml|l|oz|lbs?|slices?|pieces?|strips?|sheets?|medium|large|small|cans?|bunch|bunches|handful|pinch|dash|cloves?|sprigs?|fillets?|heads?|stalks?|portions?|servings?|boxes?|packets?|jars?)\s+/i;
-// Step 3 — strip descriptors/adjectives
+// Step 3 - strip descriptors/adjectives
 const DESC_RE = /\b(whole|skim|low.fat|full.fat|reduced.fat|fresh|frozen|dried|ground|chopped|diced|sliced|minced|cooked|raw|plain|unsalted|salted|extra|virgin|optional|boneless|skinless|shredded|grated|crushed|roasted|toasted|boiled|steamed|ripe|sweet|baby|large|small|medium)\b/gi;
 
 function normalise(raw: string): string {
@@ -37,7 +37,7 @@ function normalise(raw: string): string {
     .replace(/\bor\s+\w+(\s+\w+)*/gi, "") // strip "or water", "or homemade pasta" etc.
     .replace(QTY_RE, "")
     .replace(UNIT_RE, "")
-    .replace(UNIT_RE, "")              // run twice — "1.5 cups whole milk"
+    .replace(UNIT_RE, "")              // run twice - "1.5 cups whole milk"
     .replace(DESC_RE, "")
     .replace(/\(.*?\)/g, "")          // remove parentheticals
     .replace(/,.*$/, "")              // cut after comma

@@ -3,7 +3,7 @@ import Svg, { Path } from "react-native-svg";
 type Props = { size?: number };
 
 /**
- * Official Google "G" logo — the exact 4-color mark from Google's
+ * Official Google "G" logo - the exact 4-color mark from Google's
  * Sign-In branding guidelines, permitted for use on
  * "Sign in / Continue with Google" buttons.
  * https://developers.google.com/identity/branding-guidelines

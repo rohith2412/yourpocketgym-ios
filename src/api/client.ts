@@ -1,6 +1,6 @@
 /**
  * Single typed API client for the yourpocketgym backend.
- * Every network call goes through here — one place for the base URL, auth
+ * Every network call goes through here - one place for the base URL, auth
  * headers, and error handling. Feature code calls api.get/post, never fetch().
  */
 
@@ -34,7 +34,7 @@ async function request<T>(
   const { auth = true, signal } = opts;
 
   // FormData goes up as multipart. The runtime has to set Content-Type itself
-  // so it can append the boundary — setting it by hand produces a body the
+  // so it can append the boundary - setting it by hand produces a body the
   // server can't parse.
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
 
@@ -66,7 +66,7 @@ async function request<T>(
     );
   }
 
-  // Parse JSON defensively — the backend can return HTML on errors.
+  // Parse JSON defensively - the backend can return HTML on errors.
   const text = await res.text();
   let data: any = null;
   if (text) {
@@ -103,7 +103,7 @@ export const api = {
     request<T>("PATCH", path, body, opts),
   del: <T>(path: string, opts?: RequestOptions) =>
     request<T>("DELETE", path, undefined, opts),
-  /** POST multipart/form-data — file uploads (audio clips, images). */
+  /** POST multipart/form-data - file uploads (audio clips, images). */
   upload: <T>(path: string, form: FormData, opts?: RequestOptions) =>
     request<T>("POST", path, form, opts),
 };

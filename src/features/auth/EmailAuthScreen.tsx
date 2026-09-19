@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  TextInput,
-  Alert,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Text } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Button, Text } from "../../ui";
+import { restoreFromCloud } from "../sync/restore";
 import { loginWithEmail, registerWithEmail } from "./emailAuth";
 import { saveSession, type Session } from "./session";
-import { restoreFromCloud } from "../sync/restore";
 
 type Mode = "login" | "signup";
 
@@ -24,13 +24,13 @@ type Mode = "login" | "signup";
  * Full-page email auth.
  *
  * Replaces the old bottom sheet. Pushing to a real screen reads as faster than
- * a sheet sliding up — no dimmed background, no cramped padding, the keyboard
+ * a sheet sliding up - no dimmed background, no cramped padding, the keyboard
  * gets the whole screen to work with. This is the shape most modern apps have
  * settled on (Cash App, Duolingo, Notion, Robinhood, Amie): a plain page per
  * step, big pill CTA, quiet mode-switch link at the bottom.
  *
  * Both modes share this file because the underlying flow is one mutation with
- * a mode flag — separating into two components duplicates form state for no
+ * a mode flag - separating into two components duplicates form state for no
  * gain. What *does* differ per mode: fields shown, header copy, CTA label,
  * validation. That branches inline, minimally.
  */
@@ -74,7 +74,7 @@ export function EmailAuthScreen() {
 
   const switchMode = () => {
     setMode((m) => (m === "login" ? "signup" : "login"));
-    // Reset password on switch — signup requires 6+, login might be shorter
+    // Reset password on switch - signup requires 6+, login might be shorter
     // on legacy accounts; showing "too short" hints from the wrong mode is
     // more confusing than the retype.
     setPassword("");
@@ -89,7 +89,7 @@ export function EmailAuthScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* Header — just a back chevron. No title bar — the H1 below IS the title. */}
+        {/* Header - just a back chevron. No title bar - the H1 below IS the title. */}
         <View
           style={{
             paddingHorizontal: theme.spacing.md,
@@ -213,7 +213,7 @@ export function EmailAuthScreen() {
             disabled={!canSubmit || submit.isPending}
           />
 
-          {/* Mode switch — plain link, no border, low chrome. */}
+          {/* Mode switch - plain link, no border, low chrome. */}
           <Pressable onPress={switchMode} hitSlop={10} style={{ marginTop: theme.spacing.lg }}>
             <Text variant="body" color="textMuted" center>
               {isLogin ? "New here?" : "Already have an account?"}{" "}

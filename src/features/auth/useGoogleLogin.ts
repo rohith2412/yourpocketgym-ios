@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/client";
-import { signInWithGoogle, GoogleCancelled } from "./googleSignIn";
-import { saveSession, type AuthUser } from "./session";
 import { restoreFromCloud } from "../sync/restore";
+import { GoogleCancelled, signInWithGoogle } from "./googleSignIn";
+import { saveSession, type AuthUser } from "./session";
 
 type GoogleAuthResponse = {
   success: boolean;
@@ -34,12 +34,12 @@ export function useGoogleLogin(opts?: {
       };
       await saveSession({ token: data.token, user });
       // Pull cloud snapshot so returning users land with their data already in.
-      // Silent failure — never blocks login.
+      // Silent failure - never blocks login.
       await restoreFromCloud();
       return user;
     },
     onSuccess: (user) => opts?.onSuccess?.(user),
-    // Swallow user cancellation — it's not an error to surface.
+    // Swallow user cancellation - it's not an error to surface.
     onError: (err) => {
       if (err instanceof GoogleCancelled) return;
     },

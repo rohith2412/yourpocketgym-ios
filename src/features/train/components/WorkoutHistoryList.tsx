@@ -1,13 +1,13 @@
-import { Alert, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Card, Text } from "../../../ui";
+import { Alert, Pressable, View } from "react-native";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Card, Text } from "../../../ui";
 import { useDeleteWorkout, type WorkoutLog } from "../api";
 import { totalVolSets } from "../data";
 
 /**
  * Flat list of recent workouts. Same shape as the Nutrition "Today's food"
- * row — icon block on the left, name+meta in the middle, numeric anchor on
+ * row - icon block on the left, name+meta in the middle, numeric anchor on
  * the right, a close button to delete. Lives in its own section, so
  * per-muscle drilldowns don't hide behind an accordion.
  */
@@ -45,7 +45,7 @@ export function WorkoutHistoryList({
   const rows = logs.slice(0, limit);
 
   const removeLog = (log: WorkoutLog) => {
-    // Native iOS action sheet — same UX as the Sign out flow. A single tap
+    // Native iOS action sheet - same UX as the Sign out flow. A single tap
     // opens Apple's confirm dialog; destructive actions never fire without
     // an explicit yes from the OS UI.
     const dateLabel = new Date(log.date).toLocaleDateString("en-US", {

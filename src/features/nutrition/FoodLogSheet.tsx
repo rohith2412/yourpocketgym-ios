@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { View, TextInput, Alert } from "react-native";
-import { BottomSheet, Text, Button } from "../../ui";
+import { Alert, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
-import { newFoodId, toISODay, type FoodEntry } from "./storage";
+import { BottomSheet, Button, Text } from "../../ui";
 import { useAddFood } from "./hooks";
+import { newFoodId, toISODay, type FoodEntry } from "./storage";
 
 const asNum = (v: string) => Number(v.replace(/[^0-9.]/g, "")) || 0;
 
@@ -116,7 +116,7 @@ export function FoodLogSheet({
       <View style={{ gap: theme.spacing.xs, marginBottom: theme.spacing.lg }}>
         <Text variant="title">Log food</Text>
         <Text variant="body" color="textMuted">
-          Fill in what you ate — takes 5 seconds.
+          Fill in what you ate - takes 5 seconds.
         </Text>
       </View>
 

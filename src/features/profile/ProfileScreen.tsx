@@ -1,32 +1,31 @@
-import { useState } from "react";
-import { View, Alert, Pressable, Share, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import {
-  Screen,
-  Text,
-  Card,
-  Avatar,
-  ListRow,
-  Separator,
-  SegmentedControl,
-} from "../../ui";
-import { useTheme } from "../../theme/ThemeProvider";
-import { useEntitlement } from "../subscription/useEntitlement";
-import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
-import { isReviewAccount } from "../subscription/reviewAccounts";
-import { PremiumCta } from "../subscription/PremiumCta";
-import { restorePurchases, isPremium as customerIsPremium } from "../../services/iapService";
-import { clearSession } from "../auth/session";
-import { useCurrentUser } from "../auth/useCurrentUser";
-import { invalidateAuthCaches } from "../auth/useAuthGuard";
 import { useQueryClient } from "@tanstack/react-query";
-import { resolveProfilePhoto } from "./photoStorage";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert, Linking, Pressable, Share, View } from "react-native";
+import { isPremium as customerIsPremium, restorePurchases } from "../../services/iapService";
+import { useTheme } from "../../theme/ThemeProvider";
+import {
+    Avatar,
+    Card,
+    ListRow,
+    Screen,
+    SegmentedControl,
+    Separator,
+    Text,
+} from "../../ui";
+import { clearSession } from "../auth/session";
+import { invalidateAuthCaches } from "../auth/useAuthGuard";
+import { useCurrentUser } from "../auth/useCurrentUser";
 import { WeightChart } from "../progress/components/WeightChart";
-import { WeightLogSheet } from "../progress/WeightLogSheet";
 import { useWeightLog } from "../progress/hooks";
 import { latestWeight } from "../progress/storage";
+import { WeightLogSheet } from "../progress/WeightLogSheet";
+import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
+import { isReviewAccount } from "../subscription/reviewAccounts";
+import { useEntitlement } from "../subscription/useEntitlement";
 import { useLastSyncedAt } from "../sync/useSync";
+import { resolveProfilePhoto } from "./photoStorage";
 
 /**
  * The "Profile" tab.
@@ -37,7 +36,7 @@ export function ProfileScreen() {
   const rateApp = async () => {
     // The native prompt keeps people in the app, which converts far better
     // than bouncing them to the store. Apple caps how often it will actually
-    // appear, though, and gives us no way to know whether it did — so if it
+    // appear, though, and gives us no way to know whether it did - so if it
     // isn't available we fall back to the store's review composer.
     try {
       // Imported lazily: this is a native module, so on a JS-only reload (or
@@ -66,7 +65,7 @@ export function ProfileScreen() {
   const { data: lastSyncedAt } = useLastSyncedAt();
   const [restoring, setRestoring] = useState(false);
 
-  // Dev tools are for the owner account only — never the App Review demo
+  // Dev tools are for the owner account only - never the App Review demo
   // account, which should see the app exactly as a paying user does.
   const showDevTools =
     user?.email?.toLowerCase() === "rohithra75@gmail.com" &&
@@ -162,7 +161,7 @@ export function ProfileScreen() {
             icon="cloud-outline"
             onPress={() => router.push("/sync-data")}
           />
-          {/* Meal plans — hidden for now
+          {/* Meal plans - hidden for now
           <Separator inset={theme.spacing.lg} />
           <ListRow
             title="Meal plans"
@@ -185,7 +184,7 @@ export function ProfileScreen() {
               icon="paper-plane-outline"
               onPress={() =>
                 Share.share({
-                  message: "Check out PocketGym — the AI-powered fitness tracker I've been using.",
+                  message: "Check out PocketGym - the AI-powered fitness tracker I've been using.",
                 }).catch(() => {})
               }
             />
@@ -261,10 +260,9 @@ export function ProfileScreen() {
         </View>
       </Card>
 
-      {/* Get Premium CTA — hidden while everyone gets Pro. */}
-      {plan === "free" ? <PremiumCta onPress={() => router.push("/premium")} /> : null}
+      {/* Premium CTA removed - app is fully free, no in-app purchases. */}
 
-      {/* Body weight — chart + log button inline */}
+      {/* Body weight - chart + log button inline */}
       <FreeWeightSection />
 
       {/* Appearance */}
@@ -300,13 +298,6 @@ export function ProfileScreen() {
             onPress={() => router.push("/edit-profile")}
           />
           <Separator inset={theme.spacing.lg} />
-          <ListRow
-            title={restoring ? "Restoring…" : "Restore purchases"}
-            icon="refresh-outline"
-            chevron={false}
-            onPress={doRestore}
-          />
-          <Separator inset={theme.spacing.lg} />
           <ListRow title="Terms of Service" icon="document-text-outline" onPress={() => router.push("/legal/terms")} />
           <Separator inset={theme.spacing.lg} />
           <ListRow title="Privacy Policy" icon="lock-closed-outline" onPress={() => router.push("/legal/privacy")} />
@@ -320,7 +311,7 @@ export function ProfileScreen() {
         <ListRow title="Delete account" icon="trash-outline" danger onPress={() => router.push("/legal/delete-account")} />
       </Card>
 
-      {/* Dev — only for the owner account */}
+      {/* Dev - only for the owner account */}
       {showDevTools ? (
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="label" color="textMuted">

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  getCustomerInfo,
-  isPremium as customerIsPremium,
   addPremiumStatusListener,
+  isPremium as customerIsPremium,
+  getCustomerInfo,
 } from "../../services/iapService";
+import { useCurrentUser } from "../auth/useCurrentUser";
 import { useDevPremium } from "./devOverride";
 import { isReviewAccount } from "./reviewAccounts";
-import { useCurrentUser } from "../auth/useCurrentUser";
 
 export type Plan = "free" | "premium";
 
@@ -22,10 +22,10 @@ const ADMIN_EMAIL = "rohithra75@gmail.com";
 /**
  * Build-time paywall switch.
  *
- * false — paywall is *off*: everyone gets Pro. Handy for launch weeks and
+ * false - paywall is *off*: everyone gets Pro. Handy for launch weeks and
  *         while we sort out billing wiring. The admin can still flip to Free
  *         via the dev tools to test the free-tier experience.
- * true  — paywall is *on*: the real RevenueCat entitlement decides.
+ * true  - paywall is *on*: the real RevenueCat entitlement decides.
  *
  * The whole real-entitlement expression stays wired below regardless, so
  * flipping this back is a one-line change with nothing else to touch.
@@ -49,7 +49,7 @@ export function useEntitlement(): Entitlement {
   //   PAYWALL_ENABLED = false → "view as Free"      (admin opts *out* of Pro
   //                              even though everyone else has it, to QA the
   //                              free experience)
-  // Same storage key, opposite polarity — the segmented control in
+  // Same storage key, opposite polarity - the segmented control in
   // ProfileDetail (Free / Premium) still reads correctly either way.
   const { data: devToggle = false } = useDevPremium();
 
@@ -81,7 +81,7 @@ export function useEntitlement(): Entitlement {
     [],
   );
 
-  // The real entitlement expression — always computed so RevenueCat's
+  // The real entitlement expression - always computed so RevenueCat's
   // side-effects (fetches, cache updates, listeners) still run whichever
   // regime we're in.
   const realIsPremium =

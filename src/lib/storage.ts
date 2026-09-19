@@ -2,7 +2,7 @@
  * Central registry of every persistence key the app uses.
  *
  * IMPORTANT: these match v1 exactly. Existing users who update from v1 already
- * have data under these keys — changing them would silently log people out or
+ * have data under these keys - changing them would silently log people out or
  * lose their state. Add new keys here; never rename an existing one without a
  * migration.
  */
@@ -14,7 +14,7 @@ export const STORAGE_KEYS = {
   // Auth (v1 stored the JWT in BOTH SecureStore and AsyncStorage)
   secureToken: "userToken", // SecureStore
   token: "token", // AsyncStorage
-  user: "user", // AsyncStorage — JSON user object
+  user: "user", // AsyncStorage - JSON user object
 
   // Onboarding
   pendingIntro: "@pending_intro",
@@ -72,6 +72,9 @@ export const USER_SCOPED_KEYS = [
   "@coach_usage",
   // Onboarding / sync bookkeeping
   "@user_region",
+  "@user_intro",
+  "@food_photo_map",
+  "@workout_logs_cache",
   "@last_synced_at",
   "@demo_mode",
   // Dev-only toggles. Grouped here so signing out on the admin device does

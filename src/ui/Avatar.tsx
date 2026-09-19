@@ -1,13 +1,12 @@
 import { View, Image } from "react-native";
-import { Text } from "./Text";
 import { useTheme } from "../theme/ThemeProvider";
+import { DefaultAvatar } from "./DefaultAvatar";
 
-function initials(name?: string) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
-}
-
+/**
+ * Fallback when a user has no profile photo — a deterministic DiceBear
+ * cartoon seeded on the user's name (or email if no name). Same input →
+ * same avatar, so people recognise "themselves" across sessions.
+ */
 export function Avatar({
   uri,
   name,
@@ -34,20 +33,12 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: theme.colors.surfaceAlt,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        alignItems: "center",
-        justifyContent: "center",
+        overflow: "hidden",
       }}
     >
-      <Text
-        color="textMuted"
-        weight="semibold"
-        style={{ fontSize: size * 0.4, textTransform: "uppercase" }}
-      >
-        {initials(name)}
-      </Text>
+      <DefaultAvatar seed={name ?? "PocketGym"} size={size} />
     </View>
   );
 }

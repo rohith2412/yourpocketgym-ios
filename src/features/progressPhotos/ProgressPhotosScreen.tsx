@@ -1,22 +1,22 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-  View,
-  Pressable,
-  Image,
-  Alert,
-  ActionSheetIOS,
-  Platform,
-  Modal,
-  ScrollView,
-  useWindowDimensions,
+    ActionSheetIOS,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    useWindowDimensions,
+    View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
-import { Screen, Text } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import { usePhotos, useAddPhoto, useDeletePhoto } from "./hooks";
+import { Screen, Text } from "../../ui";
+import { useAddPhoto, useDeletePhoto, usePhotos } from "./hooks";
 import { type ProgressPhoto } from "./storage";
 
 export default function ProgressPhotosScreen() {
@@ -142,7 +142,7 @@ export default function ProgressPhotosScreen() {
             </Text>
           </View>
 
-          {/* Photo grid — like the Photos app */}
+          {/* Photo grid - like the Photos app */}
           {sorted.length === 0 ? (
             <View
               style={{
@@ -214,7 +214,7 @@ export default function ProgressPhotosScreen() {
         </ScrollView>
       </Screen>
 
-      {/* Floating + FAB — bottom right, upload trigger */}
+      {/* Floating + FAB - bottom right, upload trigger */}
       <View style={{ position: "absolute", bottom: theme.spacing.xl, right: theme.spacing.xl }}>
         <Pressable
           onPress={showUploadSheet}

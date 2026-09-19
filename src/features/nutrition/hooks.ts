@@ -1,24 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
+import { useDemoMode } from "../demo/useDemoMode";
 import {
-  addFoodEntry as addLocalEntry,
-  addWaterMl,
-  deleteFoodEntry as deleteLocalEntry,
-  loadFoodEntries as loadLocalEntries,
-  loadGoals as loadLocalGoals,
-  loadPhotoMap,
-  loadWater,
-  loadWaterGoal,
-  removeEntryPhoto,
-  saveFoodEntries,
-  saveGoals as saveLocalGoals,
-  saveWaterGoal,
-  setEntryPhoto,
-  toISODay,
-  totalsForDay,
-  DEFAULT_GOALS,
-  type FoodEntry,
-  type MacroGoals,
+    addFoodEntry as addLocalEntry,
+    addWaterMl,
+    DEFAULT_GOALS,
+    deleteFoodEntry as deleteLocalEntry,
+    loadFoodEntries as loadLocalEntries,
+    loadGoals as loadLocalGoals,
+    loadPhotoMap,
+    loadWater,
+    loadWaterGoal,
+    removeEntryPhoto,
+    saveFoodEntries,
+    saveGoals as saveLocalGoals,
+    saveWaterGoal,
+    setEntryPhoto,
+    toISODay,
+    totalsForDay,
+    type FoodEntry,
+    type MacroGoals,
 } from "./storage";
 
 const KEYS = {
@@ -27,17 +28,78 @@ const KEYS = {
   water: ["water"] as const,
 };
 
-/* ────────── Water (local — no backend endpoint yet) ────────── */
+/* ────────── Water — Mongo-backed with local mirror ────────── */
 
+/**
+ * Loads the last 60 days of water intake as a { day: ml } map. Backend is
+ * source of truth; on failure we fall through to the local mirror so the
+ * screen still renders offline.
+ */
 export function useWater() {
-  return useQuery({ queryKey: KEYS.water, queryFn: loadWater });
+  const { data: demoOn = false } = useDemoMode();
+  return useQuery({
+    queryKey: [...KEYS.water, demoOn ? "demo" : "live"],
+    queryFn: async () => {
+      // Demo mode seeds ledger only into AsyncStorage — bypass the backend
+      // so the screenshot flow shows the seeded intake.
+      if (demoOn) return loadWater();
+      try {
+        const res = await api.get<{
+          success: true;
+          data: Record<string, number>;
+        }>("/water");
+        return res.data;
+      } catch {
+        return loadWater();
+      }
+    },
+    staleTime: 30_000,
+  });
 }
 
+/**
+ * Adds `ml` to the current day's intake. Fully optimistic — the react-query
+ * cache is patched synchronously so the UI updates the moment the button
+ * is tapped, then the backend request runs in the background. The
+ * previous mount used to wait for the server round-trip and then
+ * invalidate, causing the counter to lag by 300–800ms and sometimes bounce
+ * backwards during the refetch. This flow removes both artefacts.
+ */
 export function useAddWater() {
   const qc = useQueryClient();
+  const { data: demoOn = false } = useDemoMode();
+  const cacheKey = [...KEYS.water, demoOn ? "demo" : "live"] as const;
+
   return useMutation({
-    mutationFn: ({ day, ml }: { day: string; ml: number }) => addWaterMl(day, ml),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.water }),
+    // Patch the cache first, then the local mirror, then the server.
+    // The mutation body only handles the network call — the UI is already
+    // updated by `onMutate` below.
+    mutationFn: async ({ day, ml }: { day: string; ml: number }) => {
+      if (demoOn) return; // demo mode never talks to the backend
+      await api.post("/water", { day, ml, mode: "add" });
+    },
+    onMutate: async ({ day, ml }) => {
+      // Cancel any in-flight refetch that could overwrite the patched
+      // cache after this mutation runs.
+      await qc.cancelQueries({ queryKey: cacheKey });
+      const previous = qc.getQueryData<Record<string, number>>(cacheKey);
+      const nextMap: Record<string, number> = { ...(previous ?? {}) };
+      nextMap[day] = Math.max(0, (nextMap[day] ?? 0) + ml);
+      qc.setQueryData(cacheKey, nextMap);
+      // Mirror to AsyncStorage so a cold launch shows the same total.
+      await addWaterMl(day, ml).catch(() => {});
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Roll the cache back if the POST failed — but leave the local
+      // AsyncStorage mirror in place so the tap still "works" offline;
+      // the next successful GET will reconcile the two.
+      if (ctx?.previous) qc.setQueryData(cacheKey, ctx.previous);
+    },
+    // No invalidation on settled — the optimistic patch is authoritative
+    // until the natural 30s staleTime elapses. Invalidating here would
+    // trigger a mid-flight refetch that briefly renders the stale server
+    // value on the UI, which is what caused the counter to blink.
   });
 }
 
@@ -67,6 +129,7 @@ type ServerMealLog = {
   localDate?: string | null;
   mealType?: string;
   aiNotes?: string;
+  imageUrl?: string | null;
   foods: Array<{
     name: string;
     macros?: {
@@ -87,12 +150,25 @@ type ServerMealLog = {
 /**
  * Flatten a server meal-log doc into the FoodEntry shape the UI already uses.
  * If a meal has multiple foods (e.g. from AI vision), collapse to one line
- * using the doc totals — client UI is per-entry, not per-item.
+ * using the doc totals - client UI is per-entry, not per-item.
  */
-function mealToEntry(m: ServerMealLog, photoUri: string | undefined): FoodEntry {
+/**
+ * Only https://, http:// and file:// URIs are safe to hand to <Image>.
+ * ph:// (iOS PhotoLibrary) or assets-library:// URIs crash the JS
+ * runtime with "MediaLibraryImageLoader" native module missing.
+ */
+function safePhoto(uri: string | null | undefined): string | undefined {
+  if (!uri) return undefined;
+  return /^(https?|file):\/\//i.test(uri) ? uri : undefined;
+}
+
+function mealToEntry(m: ServerMealLog, localPhoto: string | undefined): FoodEntry {
   const day = m.localDate ?? toISODay(new Date(m.date));
   const totals = m.totals ?? {};
   const primary = m.foods?.[0];
+  // Prefer the server-persisted imageUrl (R2 URL, survives reinstall).
+  // Fall back to the local photo map (file:// path saved when offline).
+  const photoUri = safePhoto(m.imageUrl) ?? safePhoto(localPhoto);
   return {
     id: String(m._id),
     date: day,
@@ -112,9 +188,13 @@ function mealToEntry(m: ServerMealLog, photoUri: string | undefined): FoodEntry 
  * device-local map keyed by the server _id.
  */
 export function useFoodEntries() {
+  const { data: demoOn = false } = useDemoMode();
   return useQuery({
-    queryKey: KEYS.food,
+    queryKey: [...KEYS.food, demoOn ? "demo" : "live"],
     queryFn: async () => {
+      // Demo mode seeds fake meals into AsyncStorage for App Store
+      // screenshots — bypass the backend so the seeded data shows through.
+      if (demoOn) return loadLocalEntries();
       try {
         const [res, photos] = await Promise.all([
           api.get<{ success: true; data: ServerMealLog[] }>(
@@ -135,9 +215,11 @@ export function useFoodEntries() {
 }
 
 export function useGoals() {
+  const { data: demoOn = false } = useDemoMode();
   return useQuery({
-    queryKey: KEYS.goals,
+    queryKey: [...KEYS.goals, demoOn ? "demo" : "live"],
     queryFn: async () => {
+      if (demoOn) return (await loadLocalGoals()) ?? DEFAULT_GOALS;
       try {
         const res = await api.get<{ success: true; data: { goals: MacroGoals } }>(
           "/nutrition-goals",
@@ -153,7 +235,7 @@ export function useGoals() {
 }
 
 /**
- * POSTs a manual meal to Mongo. The photo (if any) is NEVER uploaded —
+ * POSTs a manual meal to Mongo. The photo (if any) is NEVER uploaded -
  * only its local `file://` path is remembered in AsyncStorage keyed by the
  * server-issued _id. On failure we still write locally so the entry isn't
  * lost.
@@ -162,6 +244,11 @@ export function useAddFood() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (entry: FoodEntry) => {
+      // If the photo is an https:// URL (uploaded to R2) send it to the
+      // backend as `imageUrl` so it lives on the meal doc in Mongo and
+      // survives an app reinstall. A `file://` fallback (offline path)
+      // stays in the local photo map only — it's device-scoped anyway.
+      const isRemote = !!entry.photoUri && /^https?:\/\//i.test(entry.photoUri);
       const payload = {
         localDate: entry.date,
         date: entry.loggedAt,
@@ -173,6 +260,7 @@ export function useAddFood() {
           carbs: entry.carbs,
           fat: entry.fat,
         },
+        ...(isRemote ? { imageUrl: entry.photoUri } : {}),
       };
       try {
         const res = await api.post<{ success: true; data: { _id: string } }>(
@@ -180,12 +268,14 @@ export function useAddFood() {
           payload,
         );
         const serverId = String(res.data._id);
-        if (entry.photoUri) {
+        if (entry.photoUri && !isRemote) {
+          // Only mirror file:// paths locally — R2 URLs come back from
+          // `mealToEntry` on the next GET.
           await setEntryPhoto(serverId, entry.photoUri);
         }
         return { ...entry, id: serverId };
       } catch (err) {
-        // Offline / server error — keep it local so nothing is lost.
+        // Offline / server error - keep it local so nothing is lost.
         // The next successful GET will overwrite with the server view.
         await addLocalEntry(entry);
         if (entry.photoUri) await setEntryPhoto(entry.id, entry.photoUri);
@@ -203,7 +293,7 @@ export function useDeleteFood() {
       try {
         await api.del(`/meal-log?id=${encodeURIComponent(id)}`);
       } catch {
-        // fall through — still remove locally so the UI reflects the intent
+        // fall through - still remove locally so the UI reflects the intent
       }
       await deleteLocalEntry(id);
       await removeEntryPhoto(id);
@@ -222,7 +312,7 @@ export function useSaveGoals() {
       try {
         await api.patch("/nutrition-goals", g);
       } catch {
-        /* offline — local mirror already applied */
+        /* offline - local mirror already applied */
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.goals }),

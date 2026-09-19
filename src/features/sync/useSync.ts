@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { pullSnapshot, pushSnapshot } from "./api";
 import {
-  applySnapshot,
-  collectSnapshot,
-  getLastSyncedAt,
-  setLastSyncedAt,
+    applySnapshot,
+    collectSnapshot,
+    getLastSyncedAt,
+    setLastSyncedAt,
 } from "./snapshot";
 
 const LAST_SYNCED_QK = ["sync", "lastSyncedAt"];
@@ -44,11 +44,11 @@ export function useSyncNow() {
       await qc.invalidateQueries({ queryKey: ["water"] });
       await qc.invalidateQueries({ queryKey: ["weightLog"] });
       await qc.invalidateQueries({ queryKey: ["macroGoals"] });
-      // Training/workout logs already live server-side via /tracking — refetch
+      // Training/workout logs already live server-side via /tracking - refetch
       // so "Sync now" fully refreshes the Train tab too.
       await qc.invalidateQueries({ queryKey: ["trainingLogs"] });
       await qc.invalidateQueries({ queryKey: ["tracking"] });
-      // Restored profile — refresh anyone reading useCurrentUser.
+      // Restored profile - refresh anyone reading useCurrentUser.
       await qc.invalidateQueries({ queryKey: ["auth", "currentUser"] });
     },
   });

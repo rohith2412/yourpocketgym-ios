@@ -1,17 +1,17 @@
 /**
- * Session persistence — the one place that reads/writes the logged-in user.
+ * Session persistence - the one place that reads/writes the logged-in user.
  * Uses the v1 storage keys so users updating from v1 stay logged in.
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  STORAGE_KEYS,
-  saveSecureToken,
-  removeSecureToken,
-  getJSON,
-  setJSON,
-  clearStaleSubscriptionCache,
-  clearUserScopedData,
+    STORAGE_KEYS,
+    clearStaleSubscriptionCache,
+    clearUserScopedData,
+    getJSON,
+    removeSecureToken,
+    saveSecureToken,
+    setJSON,
 } from "../../lib/storage";
 
 export type AuthUser = {
@@ -53,7 +53,7 @@ export async function loadUser(): Promise<AuthUser | null> {
 export async function clearSession() {
   // Wipe scoped data at sign-out, not only on account-switch inside
   // saveSession. Otherwise: user A signs out (token + user cleared), user B
-  // signs up on the same device — the "different id" check in saveSession
+  // signs up on the same device - the "different id" check in saveSession
   // finds no previous user record, decides nothing needs clearing, and B
   // lands into A's food, weight, routines, and everything else.
   await clearUserScopedData();

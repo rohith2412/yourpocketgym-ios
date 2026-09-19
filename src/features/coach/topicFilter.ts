@@ -63,7 +63,7 @@ export function isFitnessRelated(text: string): boolean {
   const t = text.toLowerCase().trim();
   if (t.length === 0) return false;
 
-  // Very short greetings — always allowed
+  // Very short greetings - always allowed
   if (t.length <= 5) return true;
 
   // Hard block signals win regardless

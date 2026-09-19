@@ -1,30 +1,29 @@
-import { useState } from "react";
-import { View, Alert, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import {
-  Screen,
-  Text,
-  Card,
-  Avatar,
-  Badge,
-  ListRow,
-  Separator,
-  SegmentedControl,
-} from "../../ui";
+import { useState } from "react";
+import { Alert, Pressable, View } from "react-native";
+import { isPremium as customerIsPremium, restorePurchases } from "../../services/iapService";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useEntitlement } from "../subscription/useEntitlement";
-import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
-import { PAYWALL_ENABLED } from "../subscription/useEntitlement";
-import { useDemoMode, useSetDemoMode } from "../demo/useDemoMode";
-import { isReviewAccount } from "../subscription/reviewAccounts";
-import { PremiumCta } from "../subscription/PremiumCta";
+import {
+    Avatar,
+    Badge,
+    Card,
+    ListRow,
+    Screen,
+    SegmentedControl,
+    Separator,
+    Text,
+} from "../../ui";
 import { clearSession } from "../auth/session";
 import { invalidateAuthCaches } from "../auth/useAuthGuard";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "../auth/useCurrentUser";
+import { useDemoMode, useSetDemoMode } from "../demo/useDemoMode";
+import { useMockPhoto, useSetMockPhoto } from "../nutrition/photoLog/mockMode";
+import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
+import { isReviewAccount } from "../subscription/reviewAccounts";
+import { PAYWALL_ENABLED, useEntitlement } from "../subscription/useEntitlement";
 import { resolveProfilePhoto } from "./photoStorage";
-import { restorePurchases, isPremium as customerIsPremium } from "../../services/iapService";
 
 export default function ProfileDetailScreen() {
   const { theme, mode, setMode } = useTheme();
@@ -34,10 +33,12 @@ export default function ProfileDetailScreen() {
   const setDevPremium = useSetDevPremium();
   const { data: demoOn = false } = useDemoMode();
   const setDemo = useSetDemoMode();
+  const { data: mockPhoto = false } = useMockPhoto();
+  const setMockPhoto = useSetMockPhoto();
   const { data: user } = useCurrentUser();
   const [restoring, setRestoring] = useState(false);
 
-  // Dev tools are for the owner account only — never the App Review demo
+  // Dev tools are for the owner account only - never the App Review demo
   // account, which should see the app exactly as a paying user does.
   const showDevTools =
     user?.email?.toLowerCase() === "rohithra75@gmail.com" &&
@@ -102,11 +103,10 @@ export default function ProfileDetailScreen() {
               {user?.email ?? ""}
             </Text>
           </View>
-          <Badge label={plan === "premium" ? "Premium" : "Free"} variant={plan === "premium" ? "default" : "muted"} />
         </View>
       </Card>
 
-      {plan === "free" ? <PremiumCta onPress={() => router.push("/premium")} /> : null}
+      {/* Premium CTA removed - app is fully free. */}
 
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="label" color="textMuted">APPEARANCE</Text>
@@ -131,13 +131,6 @@ export default function ProfileDetailScreen() {
         <Card padding="sm">
           <ListRow title="Edit profile" icon="person-outline" onPress={() => router.push("/edit-profile")} />
           <Separator inset={theme.spacing.lg} />
-          <ListRow
-            title={restoring ? "Restoring…" : "Restore purchases"}
-            icon="refresh-outline"
-            chevron={false}
-            onPress={doRestore}
-          />
-          <Separator inset={theme.spacing.lg} />
           <ListRow title="Terms of Service" icon="document-text-outline" onPress={() => router.push("/legal/terms")} />
           <Separator inset={theme.spacing.lg} />
           <ListRow title="Privacy Policy" icon="lock-closed-outline" onPress={() => router.push("/legal/privacy")} />
@@ -150,7 +143,7 @@ export default function ProfileDetailScreen() {
         <ListRow title="Delete account" icon="trash-outline" danger onPress={() => router.push("/legal/delete-account")} />
       </Card>
 
-      {/* Dev tools — only visible to the owner account */}
+      {/* Dev tools - only visible to the owner account */}
       {showDevTools ? (
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="label" color="textMuted">DEV</Text>
@@ -237,6 +230,24 @@ export default function ProfileDetailScreen() {
                 Working…
               </Text>
             ) : null}
+
+            <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 4 }} />
+
+            {/* Mock photo scan — returns fake macros instead of hitting OpenAI */}
+            <View>
+              <Text variant="body" weight="semibold">Mock meal scan</Text>
+              <Text variant="caption" color="textMuted">
+                Photo scan returns fake macros instead of calling the AI. Zero API cost.
+              </Text>
+            </View>
+            <SegmentedControl<"off" | "on">
+              value={mockPhoto ? "on" : "off"}
+              onChange={(v) => setMockPhoto.mutate(v === "on")}
+              segments={[
+                { value: "off", label: "Real AI" },
+                { value: "on", label: "Mock" },
+              ]}
+            />
           </Card>
         </View>
       ) : null}

@@ -1,7 +1,7 @@
 /**
  * fullImageFix.js
  * Claude-verified Pexels IDs for all 223 exercises.
- * No API calls — just hardcoded correct URLs based on alt text review.
+ * No API calls - just hardcoded correct URLs based on alt text review.
  * Run: node scripts/fullImageFix.js
  */
 
@@ -131,7 +131,7 @@ const FIXES = {
   "bench dip":                 url("8567596"),   // bench dip woman on chair
   "jm press":                  url("34043561"),  // jm press tricep
 
-  // ── LEGS — QUADS/SQUAT ────────────────────────────────────────────────────
+  // ── LEGS - QUADS/SQUAT ────────────────────────────────────────────────────
   "squat":                     url("1552106"),   // barbell squat gym
   "barbell squat":             url("13106591"),  // muscular man squats weights
   "back squat":                url("1552106"),   // back squat barbell
@@ -155,7 +155,7 @@ const FIXES = {
   "step up":                   url("6740088"),   // step up box gym
   "box step up":               url("6740088"),   // box step up gym
 
-  // ── LEGS — HAMSTRINGS/GLUTES/CALVES ──────────────────────────────────────
+  // ── LEGS - HAMSTRINGS/GLUTES/CALVES ──────────────────────────────────────
   "romanian deadlift":         url("10308253"),  // romanian deadlift gym
   "sumo deadlift":             url("4853280"),   // sumo deadlift barbell
   "sumo deadlift high pull":   url("4853280"),   // sumo deadlift high pull
@@ -278,4 +278,4 @@ fs.writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2));
 console.log(`✅ Fixed  : ${fixed} exercises`);
 console.log(`⚠️  Skipped: ${skipped} (not in cache)`);
 console.log(`💾 Saved  → ${CACHE_PATH}`);
-console.log(`\nRebuild the app — all images now match their exercise names.`);
+console.log(`\nRebuild the app - all images now match their exercise names.`);

@@ -3,8 +3,8 @@
 
 import type { FoodEntry, MacroGoals, WaterState } from "../nutrition/storage";
 import type { WeightEntry } from "../progress/storage";
+import type { MoodEntry, SleepEntry } from "../recovery/storage";
 import type { Routine } from "../routines/storage";
-import type { SleepEntry, MoodEntry } from "../recovery/storage";
 import type { WorkoutLog } from "../train/api";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -299,7 +299,7 @@ export function generateWorkoutLogs(days = 45): WorkoutLog[] {
         sets: ex.sets.map(([reps, weight], idx) => ({
           setNumber: idx + 1,
           reps,
-          // Round to nearest 2.5 lb — real users lift in plate increments,
+          // Round to nearest 2.5 lb - real users lift in plate increments,
           // not floating-point decimals.
           weight: Math.round((weight + (rand() - 0.5) * 4) / 2.5) * 2.5,
         })),

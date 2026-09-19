@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketGym",
     "slug": "yourpocketgym",
-    "version": "2.2.1",
+    "version": "2.2.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
@@ -40,10 +40,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "backgroundColor": "#000000",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
           "dark": {
             "backgroundColor": "#000000"
           }
@@ -56,7 +54,21 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "PocketGym uses the camera to snap photos of your meals so the AI can estimate calories and macros."
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "iosAppId": "ca-app-pub-7656656037446061~3649138334",
+          "androidAppId": "ca-app-pub-3940256099942544~1458002511",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

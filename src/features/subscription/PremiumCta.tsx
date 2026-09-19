@@ -1,6 +1,6 @@
-import { View, Pressable } from "react-native";
-import { Text } from "../../ui";
+import { Pressable, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Text } from "../../ui";
 import { ProMark } from "./ProMark";
 
 /**
@@ -52,7 +52,7 @@ export function PremiumCta({ onPress }: { onPress: () => void }) {
         <Text variant="body" weight="bold">
           PocketGym Pro
         </Text>
-        {/* Naming the features does the persuading — "Get Premium" tells you
+        {/* Naming the features does the persuading - "Get Premium" tells you
             nothing about what you'd actually be buying. */}
         <Text variant="caption" color="textMuted" numberOfLines={1} style={{ fontSize: 12 }}>
           AI coach, photo scanning, voice logging

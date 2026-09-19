@@ -1,28 +1,30 @@
-import { useEffect, useState } from "react";
-import {
-  View,
-  Pressable,
-  Image,
-  Alert,
-  Modal,
-  ActionSheetIOS,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-  TextInput,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { useMutation } from "@tanstack/react-query";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
-import { useMutation } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
+import {
+    ActionSheetIOS,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
-import { analyzeFoodPhoto, type PhotoAnalysis } from "./api";
+import { Button, Text } from "../../../ui";
 import { useAddFood } from "../hooks";
 import { toISODay, type FoodEntry } from "../storage";
+import { analyzeFoodPhoto, type PhotoAnalysis } from "./api";
+import { CameraCapture } from "./CameraCapture";
 import { usePhotoQuota } from "./usePhotoQuota";
+import { uploadImageToR2 } from "../../../lib/r2Upload";
 
 type Props = { visible: boolean; onClose: () => void };
 
@@ -105,20 +107,33 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
   };
 
   const onSave = async () => {
-    // Persist the photo into the app's document dir so the FoodEntry can keep
-    // a stable file:// reference even after the picker's temp file is cleaned.
+    // Upload the photo to R2 so it survives across devices and reinstalls,
+    // and fall back to a local file:// copy if the upload fails so the
+    // meal isn't lost. `persistedUri` is what we persist on the entry —
+    // it's an https:// R2 URL in the happy path and a device-local path
+    // otherwise.
     let persistedUri: string | undefined;
     if (photoUri) {
       try {
-        const dir = FileSystem.documentDirectory + "food-photos/";
-        const info = await FileSystem.getInfoAsync(dir);
-        if (!info.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-        const ext = photoUri.split(".").pop()?.split("?")[0] ?? "jpg";
-        const dest = `${dir}${Date.now()}.${ext}`;
-        await FileSystem.copyAsync({ from: photoUri, to: dest });
-        persistedUri = dest;
-      } catch {
-        persistedUri = undefined;
+        console.log("[R2] uploading meal photo:", photoUri);
+        persistedUri = await uploadImageToR2(photoUri, "food");
+        console.log("[R2] upload success →", persistedUri);
+      } catch (err) {
+        console.log("[R2] upload FAILED, falling back to local:", err);
+        // R2 was down or offline — fall back to a local copy so the meal
+        // still gets a picture attached until the next sync.
+        try {
+          const dir = FileSystem.documentDirectory + "food-photos/";
+          const info = await FileSystem.getInfoAsync(dir);
+          if (!info.exists)
+            await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+          const ext = photoUri.split(".").pop()?.split("?")[0] ?? "jpg";
+          const dest = `${dir}${Date.now()}.${ext}`;
+          await FileSystem.copyAsync({ from: photoUri, to: dest });
+          persistedUri = dest;
+        } catch {
+          persistedUri = undefined;
+        }
       }
     }
     const entry: FoodEntry = {
@@ -137,6 +152,23 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
 
   const analyzing = analyzeM.isPending;
   const hasResult = analysis !== null;
+
+  // Before a photo is captured, render a full-screen camera view directly
+  // — no "Snap it" intermediate page. Once the user takes/picks a photo,
+  // we fall through to the analysis + edit form below.
+  if (visible && !photoUri) {
+    return (
+      <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+        <CameraCapture
+          onCapture={(uri) => {
+            setPhotoUri(uri);
+            setAnalysis(null);
+          }}
+          onClose={onClose}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -184,31 +216,9 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Photo area */}
-          {!photoUri ? (
-            <Pressable
-              onPress={openPicker}
-              style={{
-                aspectRatio: 4 / 3,
-                borderRadius: theme.radius["2xl"],
-                borderWidth: 1,
-                borderColor: c.border,
-                borderStyle: "dashed",
-                backgroundColor: c.surface,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              <Ionicons name="camera-outline" size={40} color={c.textMuted} />
-              <Text variant="body" weight="semibold" color="textMuted">
-                Tap to snap a meal
-              </Text>
-              <Text variant="caption" color="textFaint">
-                AI will estimate calories & macros
-              </Text>
-            </Pressable>
-          ) : (
+          {/* Photo preview — always present once we're on this screen,
+              since the camera modal above guarantees we captured one. */}
+          {photoUri ? (
             <Image
               source={{ uri: photoUri }}
               style={{
@@ -219,9 +229,10 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
               }}
               resizeMode="cover"
             />
-          )}
+          ) : null}
 
-          {/* Retake + Calculate — shown once a photo is picked but not yet analyzed */}
+          {/* Retake + Calculate — text-only pill pair, no icons.
+              Retake is a soft secondary; Calculate is the dark primary. */}
           {photoUri && !hasResult && !analyzing ? (
             <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
               <Pressable
@@ -235,18 +246,19 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
                   borderColor: c.border,
                   alignItems: "center",
                   justifyContent: "center",
-                  flexDirection: "row",
-                  gap: 8,
                   opacity: pressed ? 0.85 : 1,
                 })}
               >
-                <Ionicons name="camera-reverse" size={18} color={c.text} />
                 <Text variant="body" weight="semibold">
                   Retake
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => {
+                  // Guard: if a scan is already in flight or already done,
+                  // silently swallow the tap. Prevents a double-tap during
+                  // the brief window before `analyzing` state propagates.
+                  if (analyzing || hasResult) return;
                   if (!quota.hasQuota) {
                     Alert.alert(
                       "Daily limit reached",
@@ -257,7 +269,7 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
                   analyzeM.mutate(photoUri);
                 }}
-                disabled={!quota.hasQuota}
+                disabled={!quota.hasQuota || analyzing || hasResult}
                 style={({ pressed }) => ({
                   flex: 1,
                   height: 52,
@@ -265,14 +277,18 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
                   backgroundColor: c.inverseBg,
                   alignItems: "center",
                   justifyContent: "center",
-                  flexDirection: "row",
-                  gap: 8,
-                  opacity: !quota.hasQuota ? 0.4 : pressed ? 0.85 : 1,
+                  // While analyzing or already done, dim the button to
+                  // visually communicate the tap won't fire.
+                  opacity:
+                    !quota.hasQuota || analyzing || hasResult
+                      ? 0.4
+                      : pressed
+                      ? 0.85
+                      : 1,
                 })}
               >
-                <Ionicons name="sparkles" size={18} color={c.inverseText} />
                 <Text variant="body" weight="bold" style={{ color: c.inverseText }}>
-                  Calculate
+                  {analyzing ? "Scanning…" : "Calculate"}
                 </Text>
               </Pressable>
             </View>
@@ -332,11 +348,17 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
                 <Field flex label="Fat" unit="g" numeric value={edit.fat} onChange={(v) => setEdit({ ...edit, fat: v })} />
               </View>
 
+              {/* Disable + dim while save is in flight so a rapid double
+                  tap can't create two meals. The 1-second post-mount block
+                  also guards the case where the sheet mounts and the user
+                  double-taps before onSave.isPending flips. */}
               <Button
                 title={add.isPending ? "Saving…" : "Save meal"}
                 onPress={onSave}
                 size="lg"
                 haptic="medium"
+                disabled={add.isPending}
+                loading={add.isPending}
               />
             </View>
           ) : null}

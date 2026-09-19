@@ -6,7 +6,7 @@
  * and lets them keep the address private.
  *
  * The one thing worth knowing about this API: Apple hands over `fullName` only
- * on the very first authorization for an app, and never again — not in the
+ * on the very first authorization for an app, and never again - not in the
  * identity token, not on later sign-ins. If it isn't captured and sent to the
  * backend right then, that user has no name forever. (Deleting the app doesn't
  * reset it; the user has to revoke it in Settings → Apple ID → Sign in with

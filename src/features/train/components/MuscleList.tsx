@@ -1,13 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { Ionicons } from "@expo/vector-icons";
-import { Card, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Card, Text } from "../../../ui";
 import type { WorkoutLog } from "../api";
 import { buildMuscleStats } from "./MuscleAccordion";
 
 /**
- * Flat list of muscle groups — one Card wrapping all rows, hairline
+ * Flat list of muscle groups - one Card wrapping all rows, hairline
  * separators between them. Mirrors the Nutrition "Today's food" list so
  * both tabs read as one system: dot on the left, identity in the middle,
  * numeric anchor on the right.
@@ -62,7 +62,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   const down = delta !== null && delta < 0;
   const tint = up ? c.success : down ? c.danger : c.textMuted;
   const label =
-    delta === null ? "1st" : delta === 0 ? "—" : fmtLb(Math.abs(delta));
+    delta === null ? "1st" : delta === 0 ? "-" : fmtLb(Math.abs(delta));
   return (
     <View
       style={{

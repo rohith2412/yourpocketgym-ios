@@ -11,13 +11,13 @@
 import React from "react";
 import { Dimensions } from "react-native";
 import Svg, {
-  Defs,
-  Ellipse,
-  G,
-  LinearGradient,
-  RadialGradient,
-  Rect,
-  Stop,
+    Defs,
+    Ellipse,
+    G,
+    LinearGradient,
+    RadialGradient,
+    Rect,
+    Stop,
 } from "react-native-svg";
 
 const { width: W } = Dimensions.get("window");
@@ -68,7 +68,7 @@ export default function PageBackground({ variant }: { variant: BgVariant }) {
           <Stop offset="100%" stopColor="#fafaf8" stopOpacity="1" />
         </LinearGradient>
 
-        {/* ── Violet — high saturation ── */}
+        {/* ── Violet - high saturation ── */}
         <RadialGradient id="vio_a" cx="50%" cy="50%" r="50%">
           <Stop offset="0%"   stopColor="#7c3aed" stopOpacity="0.72" />
           <Stop offset="100%" stopColor="#7c3aed" stopOpacity="0"    />

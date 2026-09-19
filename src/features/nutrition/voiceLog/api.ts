@@ -2,7 +2,7 @@
  * Uploads a recorded clip to the backend, which transcribes it with Whisper
  * and parses the transcript into food entries and a water total.
  *
- * One endpoint handles both because people say them together — "chicken salad
+ * One endpoint handles both because people say them together - "chicken salad
  * and a couple of glasses of water" is a single utterance, not two.
  *
  * Backend contract:

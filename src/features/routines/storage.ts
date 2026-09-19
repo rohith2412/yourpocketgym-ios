@@ -1,5 +1,5 @@
 /**
- * Weekly routine — one plan that names each workout day (e.g. Mon = "Push day")
+ * Weekly routine - one plan that names each workout day (e.g. Mon = "Push day")
  * with a list of exercises. Unselected days are rest days.
  * Stored locally (free tier).
  */
@@ -38,7 +38,7 @@ const KEYS = { routines: "@routines" };
 // ── Persistence ──────────────────────────────────────────────────────────────
 export async function loadRoutines(): Promise<Routine[]> {
   const list = (await getJSON<any[]>(KEYS.routines)) ?? [];
-  // Ignore old-shape entries (no `days`) — safe cleanup for local-only dev data.
+  // Ignore old-shape entries (no `days`) - safe cleanup for local-only dev data.
   return list.filter((r) => r && typeof r.days === "object" && !Array.isArray(r.days));
 }
 

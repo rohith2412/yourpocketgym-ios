@@ -1,8 +1,8 @@
-import { useRef } from "react";
-import { View, Pressable, ScrollView } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Text } from "../../../ui";
+import { useRef } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
 import { useFoodEntries, useGoals } from "../hooks";
 import { DEFAULT_GOALS, toISODay, totalsForDay } from "../storage";
 
@@ -21,7 +21,7 @@ const DAYS = 30;
 
 /**
  * A scrollable month of days, ending at tomorrow so today isn't jammed against
- * the edge. It opens scrolled to the end — today is what you almost always
+ * the edge. It opens scrolled to the end - today is what you almost always
  * want, and the past is one flick away rather than a screen away.
  *
  * Days are rounded squares and the state lives in the fill rather than the

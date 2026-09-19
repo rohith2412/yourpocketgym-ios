@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState } from "react";
-import { View, Pressable, ScrollView } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { Card, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Card, Text } from "../../../ui";
 import type { WorkoutLog } from "../api";
 
 /**
- * Train uses the same orange heat ramp as the BodyHeatmap — keeps the tab
+ * Train uses the same orange heat ramp as the BodyHeatmap - keeps the tab
  * feeling like one thing, and adds the colour the card was missing (the
  * nutrition tab reads as "alive" because the ring, macro chips and water
  * tracker all carry semantic hues; without an accent the train card felt
@@ -26,7 +26,7 @@ const HEAT = {
 
 /**
  * Muscle-group palette. Same idea as the nutrition macro colours (protein
- * red / carbs amber / fat purple) — a distinct hue per bucket so the eye
+ * red / carbs amber / fat purple) - a distinct hue per bucket so the eye
  * can tell them apart at a glance. Order below drives the display order in
  * the split-chip row.
  */
@@ -179,7 +179,7 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
   const sessions = week.filter((d) => d.vol > 0).length;
   const totalVolume = week.reduce((s, d) => s + d.vol, 0);
 
-  // Muscle-group split for this week. Powers the colourful strip below —
+  // Muscle-group split for this week. Powers the colourful strip below -
   // the equivalent of Nutrition's protein/carbs/fat row.
   const muscleMix = useMemo(() => {
     const weekStart = startOfWeek(new Date());
@@ -239,7 +239,7 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
     return out;
   }, [weeks]);
 
-  // Year heatmap uses a neutral dark ramp — the weekly ring already owns the
+  // Year heatmap uses a neutral dark ramp - the weekly ring already owns the
   // green accent, so the grid stays quiet and lets the ring speak.
   const isDark = theme.mode === "dark";
   const baseRgb = isDark ? "255,255,255" : "0,0,0";
@@ -333,7 +333,7 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
           ) : null}
         </View>
 
-        {/* Week strip — ring per day, matches nutrition calendar */}
+        {/* Week strip - ring per day, matches nutrition calendar */}
         <View
           style={{
             flexDirection: "row",
@@ -342,9 +342,14 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
           }}
         >
           {week.map((d) => {
-            // Neutral: solid ink ring on any active day, hairline track
-            // otherwise. Today gets a filled dark circle instead of a ring.
-            const ringColor = c.text;
+            // Neutral ring: soft in light mode so the calendar doesn't read
+            // as heavy black rings, brighter in dark mode where the surface
+            // gives less contrast. Today gets a filled dark circle instead
+            // of a ring.
+            const ringColor =
+              theme.mode === "light"
+                ? "rgba(0,0,0,0.35)"
+                : "rgba(255,255,255,0.5)";
             const trackColor = c.border;
             return (
               <View
@@ -382,10 +387,14 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
                       width: CIRCLE - STROKE * 2,
                       height: CIRCLE - STROKE * 2,
                       borderRadius: (CIRCLE - STROKE * 2) / 2,
-                      backgroundColor: d.isToday ? c.inverseBg : "transparent",
+                      backgroundColor: d.isToday
+                        ? theme.mode === "light"
+                          ? "rgba(0,0,0,0.75)"
+                          : "rgba(255,255,255,0.8)"
+                        : "transparent",
                     }}
                   />
-                  {/* Skip the ring on today — the filled circle is enough */}
+                  {/* Skip the ring on today - the filled circle is enough */}
                   {d.isToday ? null : (
                     <DayRing pct={d.pct} color={ringColor} track={trackColor} />
                   )}
@@ -417,7 +426,7 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
           })}
         </View>
 
-        {/* Muscle mix — the colour splash this card was missing */}
+        {/* Muscle mix - the colour splash this card was missing */}
         {muscleMix.entries.length > 0 ? (
           <View style={{ marginTop: theme.spacing.lg, gap: 8 }}>
             <View
@@ -579,7 +588,7 @@ export function StreakCard({ logs }: { logs: WorkoutLog[] }) {
               </View>
             </View>
 
-            {/* Legend inline with header — no more crammed footer */}
+            {/* Legend inline with header - no more crammed footer */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
               <Text variant="caption" color="textFaint" style={{ fontSize: 9 }}>
                 Less

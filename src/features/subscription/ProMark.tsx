@@ -8,7 +8,7 @@ type Props = {
 };
 
 /**
- * The Pro mark — a faceted gem.
+ * The Pro mark - a faceted gem.
  *
  * Drawn as strokes rather than a filled shape so it sits at the same visual
  * weight as the Ionicons outline set used across Profile, and inherits the
@@ -24,7 +24,7 @@ export function ProMark({ size = 22, color, strokeWidth = 1.7 }: Props) {
         strokeWidth={strokeWidth}
         strokeLinejoin="round"
       />
-      {/* Girdle — the horizontal break between crown and pavilion */}
+      {/* Girdle - the horizontal break between crown and pavilion */}
       <Path
         d="M3 9.5h18"
         stroke={color}

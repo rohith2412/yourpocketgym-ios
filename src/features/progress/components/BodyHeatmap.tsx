@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { View } from "react-native";
-import Body, { type Slug, type ExtendedBodyPart } from "react-native-body-highlighter";
-import { Text } from "../../../ui";
+import Body, { type ExtendedBodyPart, type Slug } from "react-native-body-highlighter";
 import { useTheme } from "../../../theme/ThemeProvider";
-import { useProgressCardColor } from "../cardSurface";
-import { CardEdge } from "../CardEdge";
+import { Text } from "../../../ui";
+import { toISODay } from "../../nutrition/storage";
 import { useWorkoutLogs } from "../../train/api";
 import { totalVolSets } from "../../train/data";
-import { toISODay } from "../../nutrition/storage";
+import { CardEdge } from "../CardEdge";
+import { useProgressCardColor } from "../cardSurface";
 
 type Group = "Chest" | "Back" | "Shoulders" | "Arms" | "Legs" | "Core";
 
@@ -20,7 +20,7 @@ const GROUP_SLUGS: Record<Group, Slug[]> = {
   Core: ["abs", "obliques"],
 };
 
-// Orange heat ramp — 5 levels of intensity (mapped to library colors array)
+// Orange heat ramp - 5 levels of intensity (mapped to library colors array)
 const HEAT_COLORS = [
   "#F9731633", // faint
   "#F9731666",
@@ -57,7 +57,7 @@ export function BodyHeatmap({ previewData }: { previewData?: _WL[] } = {}) {
 
     const max = Math.max(1, ...Object.values(vol));
 
-    // Convert to library data — 1..5 intensity levels per slug
+    // Convert to library data - 1..5 intensity levels per slug
     const data: ExtendedBodyPart[] = [];
     (Object.keys(vol) as Group[]).forEach((g) => {
       const norm = vol[g] / max; // 0..1

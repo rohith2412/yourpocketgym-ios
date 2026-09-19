@@ -1,6 +1,6 @@
 import { Text as RNText, type TextProps } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
-import type { FontSize, FontWeight, ColorTokens } from "../theme/tokens";
+import type { ColorTokens, FontSize, FontWeight } from "../theme/tokens";
 
 type Variant = "display" | "title" | "heading" | "body" | "label" | "caption";
 
@@ -21,7 +21,7 @@ type AppTextProps = TextProps & {
   center?: boolean;
 };
 
-/** The only Text component in the app. Always theme-aware — never black-on-black. */
+/** The only Text component in the app. Always theme-aware - never black-on-black. */
 export function Text({
   variant = "body",
   color = "text",

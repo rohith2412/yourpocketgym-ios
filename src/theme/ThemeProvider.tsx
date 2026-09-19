@@ -1,27 +1,27 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
 } from "react";
 import { StyleSheet, useColorScheme } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  lightColors,
-  darkColors,
-  spacing,
-  radius,
-  fontSize,
-  fontWeight,
-  shadow,
-  type ColorTokens,
-} from "./tokens";
 import { STORAGE_KEYS } from "../lib/storage";
+import {
+    darkColors,
+    fontSize,
+    fontWeight,
+    lightColors,
+    radius,
+    shadow,
+    spacing,
+    type ColorTokens,
+} from "./tokens";
 
 /** What the user picked. "system" tracks the OS setting live. */
 export type ThemeMode = "light" | "dark" | "system";
-/** What the app actually renders — always resolved to a concrete scheme. */
+/** What the app actually renders - always resolved to a concrete scheme. */
 export type ResolvedMode = "light" | "dark";
 
 export type Theme = {
@@ -50,7 +50,7 @@ function buildTheme(mode: ResolvedMode): Theme {
 
 type ThemeContextValue = {
   theme: Theme;
-  /** The user's stored preference — light / dark / system. */
+  /** The user's stored preference - light / dark / system. */
   mode: ThemeMode;
   /** The concrete scheme currently applied (system resolved). */
   resolvedMode: ResolvedMode;
@@ -69,7 +69,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const systemScheme = useColorScheme(); // "light" | "dark" | null — live updates
+  const systemScheme = useColorScheme(); // "light" | "dark" | null - live updates
   const [mode, setModeState] = useState<ThemeMode>("system");
   const [ready, setReady] = useState(false);
 
@@ -98,7 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       mode,
       resolvedMode,
       setMode,
-      // Toggle only cycles between the two concrete modes — keeps the affordance
+      // Toggle only cycles between the two concrete modes - keeps the affordance
       // meaningful. If you were on "system", it snaps to the opposite of what
       // was resolved.
       toggle: () => setMode(resolvedMode === "dark" ? "light" : "dark"),
@@ -117,7 +117,7 @@ export function useTheme() {
 }
 
 /**
- * Create theme-aware styles the RIGHT way — memoized per theme, no module-level
+ * Create theme-aware styles the RIGHT way - memoized per theme, no module-level
  * mutation. Usage:
  *
  *   const s = useThemedStyles((t) => ({

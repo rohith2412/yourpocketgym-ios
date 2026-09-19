@@ -1,25 +1,25 @@
-import { useEffect, useState } from "react";
-import { View, Pressable, Alert, Linking, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Linking, Pressable, View } from "react-native";
 import type { PurchasesPackage } from "react-native-purchases";
-import { Text } from "../../ui";
-import { useTheme } from "../../theme/ThemeProvider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  getOfferings,
-  purchasePackage,
-  restorePurchases,
-  isPremium as customerIsPremium,
+    isPremium as customerIsPremium,
+    getOfferings,
+    purchasePackage,
+    restorePurchases,
 } from "../../services/iapService";
+import { useTheme } from "../../theme/ThemeProvider";
+import { Text } from "../../ui";
 
 /**
  * Geist-style palette: near-black ground, hairline borders, one solid action.
  *
  * Derived from the theme rather than hardcoded, so light mode inverts properly
  * instead of rendering white text on white. The hairlines stay as alpha over
- * the current foreground, which is what keeps them hairlines in both modes —
+ * the current foreground, which is what keeps them hairlines in both modes -
  * a fixed grey goes muddy in one of them.
  */
 function usePalette() {
@@ -40,11 +40,11 @@ function usePalette() {
     ACTION: c.inverseBg,
   };
 }
-/** Small, consistent radius — the flat corners are half the aesthetic. */
+/** Small, consistent radius - the flat corners are half the aesthetic. */
 const R = 8;
 
 /** Temporarily hides the yearly option so only Monthly is offered.
- *  Flip back to true to restore it — the RevenueCat product and all the
+ *  Flip back to true to restore it - the RevenueCat product and all the
  *  pricing logic below stay wired up either way. */
 const SHOW_YEARLY = false;
 
@@ -54,7 +54,7 @@ const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
 // A tile each, in a two-up grid. A checklist reads as fine print you skim; a
 // grid of named capabilities reads as an inventory of what you're buying.
 //
-// This is every surface actually gated behind `isPremium` — meal plans, barcode
+// This is every surface actually gated behind `isPremium` - meal plans, barcode
 // scanning and water tracking were all shipped but missing from the pitch.
 const FEATURES: { title: string; sub: string }[] = [
   { title: "Coach AI",        sub: "Chat with your trainer" },
@@ -219,7 +219,7 @@ export default function PaywallScreen() {
           </Text>
         </View>
 
-        {/* Features — two-up grid */}
+        {/* Features - two-up grid */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm }}>
           {FEATURES.map((f) => (
             <View
@@ -246,7 +246,7 @@ export default function PaywallScreen() {
         <View style={{ flex: 1 }} />
 
         {/* With one plan there's nothing to choose, so we state the price
-            instead of rendering a selector — a control with a single option is
+            instead of rendering a selector - a control with a single option is
             just a label that pretends to be interactive. Flip SHOW_YEARLY and
             the real selector comes back. */}
         {SHOW_YEARLY ? (

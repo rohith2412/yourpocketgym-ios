@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { View, Pressable, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card, Button, FabMenu, useHideOnScroll } from "../../ui";
+import { useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
+import AvatarButton from "../../../components/AvatarButton";
+import { useTabNav } from "../../nav/tabNav";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Card, FabMenu, Screen, Text, useHideOnScroll } from "../../ui";
+import { AdBanner } from "../ads/AdBanner";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import { useRoutines, useTodayPlan } from "../routines/hooks";
 import { WEEKDAYS, type DayPlan } from "../routines/storage";
-import { useWorkoutLogs } from "./api";
-import { StreakCard } from "./components/StreakCard";
-import { YearHeatmap } from "./components/YearHeatmap";
-import { MuscleList } from "./components/MuscleList";
-import { WorkoutHistoryList } from "./components/WorkoutHistoryList";
-import { LogSheet } from "./components/LogSheet";
-import AvatarButton from "../../../components/AvatarButton";
-import { useTabNav } from "../../nav/tabNav";
 import { useEntitlement } from "../subscription/useEntitlement";
 import { VoiceLogSheet } from "../voiceLog/VoiceLogSheet";
+import { useWorkoutLogs } from "./api";
+import { LogSheet } from "./components/LogSheet";
+import { MuscleList } from "./components/MuscleList";
+import { StreakCard } from "./components/StreakCard";
+import { WorkoutHistoryList } from "./components/WorkoutHistoryList";
 //weekly plan + br
 function getGreeting() {
   const h = new Date().getHours();
@@ -95,6 +95,9 @@ export function TrainScreen() {
           {/* <YearHeatmap logs={logs} /> */}
 
 
+          {/* Ad slot — sits just above the weekly-plan card */}
+          <AdBanner />
+
           {/* Empty state or weekly plan preview */}
           {routines.length === 0 ? (
             <Pressable onPress={() => router.push("/routines/new")}>
@@ -154,7 +157,7 @@ export function TrainScreen() {
             </Pressable>
           )}
 
-          {/* Progress: body parts + history — matches Nutrition's shape */}
+          {/* Progress: body parts + history - matches Nutrition's shape */}
           {logs.length === 0 ? (
             <View style={{ alignItems: "center", paddingVertical: theme.spacing["3xl"], gap: theme.spacing.md }}>
               <Text variant="heading">No workouts yet</Text>

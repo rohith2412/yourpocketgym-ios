@@ -7,8 +7,8 @@ import {
     Text,
     View,
 } from "react-native";
-import { useTheme } from "../../src/theme/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 const SECTIONS = [
   {
@@ -17,7 +17,7 @@ const SECTIONS = [
 
 Account Information
 • Name and email address when you register
-• Password (stored as a secure hash — we never store plain-text passwords)
+• Password (stored as a secure hash - we never store plain-text passwords)
 • If you use Google Sign-In: your name and email from Google
 
 Fitness Profile (collected during onboarding, editable in settings)
@@ -53,7 +53,7 @@ Subscription
     body: `We use your data to:
 
 • Provide and personalise the app experience
-• Compute stats — workout volume, macros, recovery score, weight trends
+• Compute stats - workout volume, macros, recovery score, weight trends
 • Power AI features (coach, food scan, voice logging, meal plans, workout planning)
 • Restore your data on new devices via cloud sync (Pro)
 • Confirm your subscription entitlement
@@ -65,13 +65,13 @@ We do not use your data for advertising or profiling.`,
     title: "AI Features & Data Processing",
     body: `Pro AI features send limited data to our AI providers to generate responses:
 
-AI Coach (Chat) — the messages you type are transmitted to generate coaching replies. Recent chat context may be included with each request.
+AI Coach (Chat) - the messages you type are transmitted to generate coaching replies. Recent chat context may be included with each request.
 
-Food Photo Scanner — the photo you take is transmitted to estimate calories and macros. Photos are not retained after analysis.
+Food Photo Scanner - the photo you take is transmitted to estimate calories and macros. Photos are not retained after analysis.
 
-Voice Logging — short audio clips are transmitted for transcription and structured into a workout, meal, or water entry. Clips are not retained after transcription.
+Voice Logging - short audio clips are transmitted for transcription and structured into a workout, meal, or water entry. Clips are not retained after transcription.
 
-Meal & Workout Plans — your goals and preferences are transmitted to generate plans.
+Meal & Workout Plans - your goals and preferences are transmitted to generate plans.
 
 All AI outputs may contain errors; they are for informational purposes only.`,
   },
@@ -81,18 +81,18 @@ All AI outputs may contain errors; they are for informational purposes only.`,
   },
   {
     title: "Camera, Photos & Microphone",
-    body: `• Camera & photo library — used only for the food scanner and progress photos. We access nothing else.
-• Microphone — used only when you tap the voice-log button. We are not recording in the background.
+    body: `• Camera & photo library - used only for the food scanner and progress photos. We access nothing else.
+• Microphone - used only when you tap the voice-log button. We are not recording in the background.
 • Progress photos stay on your device by default and are only uploaded if you enable Sync Data.`,
   },
   {
     title: "Data Sharing",
     body: `We do not sell your personal information. We share data only with:
 
-• AI service providers — to power AI Coach, food scanner, voice transcription, and plan generation
-• Apple & RevenueCat — for subscription verification
-• Google — for authentication if you use Google Sign-In
-• Hosting providers — to run the servers this app depends on
+• AI service providers - to power AI Coach, food scanner, voice transcription, and plan generation
+• Apple & RevenueCat - for subscription verification
+• Google - for authentication if you use Google Sign-In
+• Hosting providers - to run the servers this app depends on
 
 Providers are bound by data-processing agreements and may not use your data for their own purposes.`,
   },

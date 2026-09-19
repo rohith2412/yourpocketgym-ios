@@ -19,7 +19,7 @@ export const saveWeightLog = (log: WeightEntry[]) => setJSON(KEY, log);
 export async function addWeight(lb: number, date?: string): Promise<WeightEntry> {
   const log = await loadWeightLog();
   const d = date ?? toISODay();
-  // one entry per day — replace if exists
+  // one entry per day - replace if exists
   const filtered = log.filter((e) => e.date !== d);
   const entry: WeightEntry = {
     id: `${Date.now()}`,

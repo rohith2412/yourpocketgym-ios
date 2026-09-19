@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
-import { View, Image, Alert, Linking, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Screen, Text, Button } from "../../ui";
-import { useTheme } from "../../theme/ThemeProvider";
-import GoogleGLogo from "../../../components/GoogleGLogo";
-import { useGoogleLogin } from "./useGoogleLogin";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { useAppleLogin } from "./useAppleLogin";
-import { isAppleSignInAvailable } from "./appleSignIn";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Linking, Platform, Pressable, View } from "react-native";
+import GoogleGLogo from "../../../components/GoogleGLogo";
 import { ApiError } from "../../api/client";
+import { useTheme } from "../../theme/ThemeProvider";
+import { Button, Screen, Text } from "../../ui";
+import { isAppleSignInAvailable } from "./appleSignIn";
+import { useAppleLogin } from "./useAppleLogin";
+import { useGoogleLogin } from "./useGoogleLogin";
 
 const TERMS_URL = "https://yourpocketgym.com/legal/terms";
 const PRIVACY_URL = "https://yourpocketgym.com/legal/privacy";
@@ -29,7 +29,7 @@ export function LoginScreen() {
   // Visible on iOS by default, and the async check can only ever turn it ON.
   // Guideline 4.8 makes this button mandatory alongside Google, so the one
   // outcome we can't afford is it quietly vanishing because a availability
-  // probe hiccuped — that ships a rejectable build that looks fine locally.
+  // probe hiccuped - that ships a rejectable build that looks fine locally.
   // Every iOS version this app supports has Sign in with Apple anyway.
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
   useEffect(() => {

@@ -1,17 +1,17 @@
-import { useEffect, useState } from "react";
-import { View, Pressable, Alert, Modal, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useMutation } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
+import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Button, Text } from "../../../ui";
 import { useVoiceRecorder } from "../../voiceLog/useVoiceRecorder";
 import { VoiceOrb } from "../../voiceLog/VoiceOrb";
-import { parseVoiceNutrition } from "./api";
-import type { ParsedFood } from "./types";
 import { useAddFood, useAddWater } from "../hooks";
 import { newFoodId, toISODay } from "../storage";
+import { parseVoiceNutrition } from "./api";
+import type { ParsedFood } from "./types";
 
 const WATER_BLUE = "#38BDF8";
 
@@ -79,7 +79,7 @@ export function VoiceNutritionSheet({ visible, onClose }: Props) {
         return;
       }
       if (result.durationMs < MIN_DURATION_MS) {
-        setHint("Too short — hold on longer and say what you ate.");
+        setHint("Too short - hold on longer and say what you ate.");
         return;
       }
       if (result.peakLevel < MIN_PEAK_LEVEL) {
@@ -202,7 +202,7 @@ export function VoiceNutritionSheet({ visible, onClose }: Props) {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Orb — centred until there's something below it */}
+          {/* Orb - centred until there's something below it */}
           <Pressable
             onPress={onMicPress}
             disabled={busy}

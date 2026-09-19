@@ -1,15 +1,15 @@
 import { useEffect, useRef } from "react";
-import { View, Animated, Easing } from "react-native";
+import { Animated, Easing, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
-import { Text } from "../../../ui";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** Calories accent — same green the macro charts use for the calories series. */
+/** Calories accent - same green the macro charts use for the calories series. */
 const GREEN_LIGHT = "#86EFAC";
 const GREEN = "#4ADE80";
-const OVER = "#F59E0B"; // amber — over goal isn't an error, just a heads-up
+const OVER = "#F59E0B"; // amber - over goal isn't an error, just a heads-up
 
 type Props = {
   eaten: number;

@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type ComponentProps } from "react";
-import {
-  View,
-  Pressable,
-  Animated,
-  Easing,
-  Modal,
-  useWindowDimensions,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useBottomTabBarHeight } from "react-native-bottom-tabs";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { Text } from "./Text";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
+import {
+    Animated,
+    Easing,
+    Modal,
+    Pressable,
+    useWindowDimensions,
+    View,
+} from "react-native";
+import { useBottomTabBarHeight } from "react-native-bottom-tabs";
 import { useTheme } from "../theme/ThemeProvider";
+import { Text } from "./Text";
 
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -30,7 +30,7 @@ const BTN = 60;
  * The floating action button and its menu.
  *
  * The menu is a single grouped card rather than a row of separate floating
- * pills — one surface reads as a menu, where scattered pills read as loose
+ * pills - one surface reads as a menu, where scattered pills read as loose
  * buttons. It scales up from the button it belongs to, the way a native
  * context menu does.
  *
@@ -46,14 +46,14 @@ export function FabMenu({
   hidden = false,
 }: {
   items: FabMenuItem[];
-  /** Fade the resting button out — used while scrolling down. */
+  /** Fade the resting button out - used while scrolling down. */
   hidden?: boolean;
 }) {
   const { theme } = useTheme();
   const c = theme.colors;
   const { width: winW, height: winH } = useWindowDimensions();
   // Scenes run full-height under the translucent tab bar now, so a fixed offset
-  // from the screen bottom puts the button *behind* the glass — where it both
+  // from the screen bottom puts the button *behind* the glass - where it both
   // gets clipped and blows the blur out to white.
   const tabBarH = useBottomTabBarHeight();
   const [open, setOpen] = useState(false);
@@ -120,7 +120,7 @@ export function FabMenu({
   };
 
   // Every menu action opens a sheet, and a sheet is a Modal too. iOS silently
-  // drops a modal presentation made while another modal is still dismissing —
+  // drops a modal presentation made while another modal is still dismissing -
   // the menu would close and the sheet would never appear. So the action waits
   // until this modal is off screen. (Free users never saw this: a one-item menu
   // skips the modal and calls the action directly.)
@@ -192,7 +192,7 @@ export function FabMenu({
   return (
     <>
       {/* Resting button, in-screen. Hidden while the modal owns it so the two
-          never overlap — they sit at identical coordinates, so the handover
+          never overlap - they sit at identical coordinates, so the handover
           isn't visible. */}
       {!mounted ? (
         <Animated.View
@@ -201,7 +201,7 @@ export function FabMenu({
             opacity: restVis,
             // Untappable once faded out, so it can't swallow a tap on content
             // showing through where it used to be. This belongs in `style`,
-            // not the legacy prop of the same name — the prop is ignored on
+            // not the legacy prop of the same name - the prop is ignored on
             // Animated components under the New Architecture.
             pointerEvents: hidden ? "none" : "auto",
             transform: [
@@ -230,7 +230,7 @@ export function FabMenu({
         onRequestClose={() => setOpen(false)}
       >
         <View style={{ flex: 1 }}>
-          {/* Backdrop — tap anywhere to dismiss */}
+          {/* Backdrop - tap anywhere to dismiss */}
           <Animated.View
             style={{
               position: "absolute",

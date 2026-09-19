@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
-import { View, Pressable, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Screen, Text, Card } from "../../ui";
+import { useMemo, useState } from "react";
+import { Pressable, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useAdminUsers, type AdminUserRow } from "./api";
+import { Card, Screen, Text } from "../../ui";
 import { findRegion } from "../onboarding/regions";
 import { UserDetailSheet } from "./UserDetailSheet";
+import { useAdminUsers, type AdminUserRow } from "./api";
 import { computeInsights, type Insights } from "./insights";
 
 type Tab = "overview" | "users";
@@ -153,7 +153,7 @@ function OverviewTab({ insights }: { insights: Insights }) {
 
   return (
     <View style={{ gap: theme.spacing.lg }}>
-      {/* Headline grid — 3 across */}
+      {/* Headline grid - 3 across */}
       <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
         <Metric label="USERS" value={h.users} delta={`+${h.newThisWeek} / 7d`} />
         <Metric label="ACTIVE 7D" value={h.active7d} accent={c.success} />
@@ -489,7 +489,7 @@ function UserRow({
 
       <View style={{ flex: 1, gap: 2 }}>
         <Text variant="body" weight="semibold" numberOfLines={1}>
-          {user.name || "—"}
+          {user.name || "-"}
         </Text>
         <Text variant="caption" color="textMuted" numberOfLines={1} style={{ fontSize: 11 }}>
           {user.email}

@@ -1,23 +1,23 @@
-import { useEffect, useState } from "react";
-import { View, Pressable, ScrollView, Modal, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Screen, Text } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import {
-  ALL_DIET_TAGS,
-  buildGroceryList,
-  generatePlan,
-  swapSlot,
-  type DietaryTag,
-  type GroceryItem,
-} from "./generator";
-import type { Goal, MealType, Plan, PlanDay, Recipe } from "./types";
-import { useGoals, useAddFood } from "../nutrition/hooks";
+import { Screen, Text } from "../../ui";
+import { useAddFood, useGoals } from "../nutrition/hooks";
 import { DEFAULT_GOALS, toISODay, type FoodEntry } from "../nutrition/storage";
+import {
+    ALL_DIET_TAGS,
+    buildGroceryList,
+    generatePlan,
+    swapSlot,
+    type DietaryTag,
+    type GroceryItem,
+} from "./generator";
 import { loadPlan, savePlan } from "./storage";
+import type { Goal, MealType, Plan, PlanDay, Recipe } from "./types";
 
 const GOALS: { key: Goal; label: string; icon: keyof typeof Ionicons.glyphMap; tint: string }[] = [
   { key: "fat loss", label: "Fat loss", icon: "flame-outline", tint: "#EF4444" },
@@ -262,7 +262,7 @@ export default function MealPlansScreen() {
         </Text>
       </Pressable>
 
-      {/* Generate button — dark-friendly (surface + green border) */}
+      {/* Generate button - dark-friendly (surface + green border) */}
       <Pressable
         onPress={build}
         style={({ pressed }) => ({
@@ -675,7 +675,7 @@ function RecipeDetail({ recipe, onClose }: { recipe: Recipe; onClose: () => void
           </View>
         </View>
 
-        {/* Log this meal — dark-friendly filled with green accent */}
+        {/* Log this meal - dark-friendly filled with green accent */}
         <Pressable
           onPress={logMeal}
           disabled={add.isPending}

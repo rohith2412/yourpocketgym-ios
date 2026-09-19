@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { View, Pressable } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import { Card, Text, Separator, Button } from "../../../ui";
+import { useState } from "react";
+import { Pressable, View } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Button, Card, Separator, Text } from "../../../ui";
 import { useDeleteWorkout, type WorkoutLog } from "../api";
 import { maxWeight, totalVolSets } from "../data";
 
@@ -67,7 +67,7 @@ export function buildMuscleStats(logs: WorkoutLog[]): Stat[] {
 /**
  * The change since the previous session.
  *
- * All three states render the same shape — previously "1st" and "= 0" used the
+ * All three states render the same shape - previously "1st" and "= 0" used the
  * shared Badge while up/down used a hand-rolled View, so they had different
  * heights and didn't line up down the column. A minWidth keeps the chips a
  * consistent size regardless of digit count, so the right edge stays straight.
@@ -81,7 +81,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 
   const tint = up ? c.success : down ? c.danger : c.textMuted;
   const label =
-    delta === null ? "1st" : delta === 0 ? "—" : fmtLb(Math.abs(delta));
+    delta === null ? "1st" : delta === 0 ? "-" : fmtLb(Math.abs(delta));
 
   return (
     <View
@@ -114,7 +114,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 /**
  * A compressed trend of recent session bests.
  *
- * Deliberately unlabelled and unscaled — it isn't there to be read off, it's
+ * Deliberately unlabelled and unscaled - it isn't there to be read off, it's
  * there so a glance down the list shows which groups are climbing and which
  * have flattened. The single number beside it carries the precision.
  */
@@ -157,7 +157,7 @@ export function MuscleAccordionRow({ stat, logs }: { stat: Stat; logs: WorkoutLo
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  // Every log that touched this muscle group — newest first.
+  // Every log that touched this muscle group - newest first.
   const relevantLogs = logs.filter((log) =>
     log.exercises.some((ex) => (ex.muscleGroup || "").trim() === stat.mg),
   );

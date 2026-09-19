@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { Alert, Pressable, View, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BottomSheet, Text } from "../../ui";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useAdminUser, useDeleteAdminUser } from "./api";
+import { BottomSheet, Text } from "../../ui";
 import { findRegion } from "../onboarding/regions";
 import { relative } from "./AdminScreen";
+import { useAdminUser, useDeleteAdminUser } from "./api";
 
 export function UserDetailSheet({
   userId,
@@ -26,7 +26,7 @@ export function UserDetailSheet({
 
   const handleDelete = () => {
     if (!u) return;
-    // Two-step gate — the first press flips the button into a red confirm
+    // Two-step gate - the first press flips the button into a red confirm
     // state, the second actually fires the delete. Cheaper than a native
     // Alert dialog and keeps the destructive action visible in the sheet.
     if (!confirming) {
@@ -59,7 +59,7 @@ export function UserDetailSheet({
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={{ fontSize: 22 }}>{region?.flag ?? "🌍"}</Text>
                 <Text variant="title" style={{ flex: 1 }} numberOfLines={1}>
-                  {u.name || "—"}
+                  {u.name || "-"}
                 </Text>
                 {u.isSubscribed ? (
                   <View
@@ -91,14 +91,14 @@ export function UserDetailSheet({
             {/* Facts */}
             <View style={{ gap: theme.spacing.xs }}>
               <Fact label="User ID" value={u.id} mono />
-              <Fact label="Region" value={region?.name ?? u.region ?? "—"} />
+              <Fact label="Region" value={region?.name ?? u.region ?? "-"} />
               <Fact label="Joined" value={fmtDate(u.joinedAt)} />
               <Fact label="App opens" value={String(u.opens)} />
               <Fact
                 label="Goal"
-                value={u.fitnessGoal ?? "—"}
+                value={u.fitnessGoal ?? "-"}
               />
-              <Fact label="Experience" value={u.experienceLevel ?? "—"} />
+              <Fact label="Experience" value={u.experienceLevel ?? "-"} />
             </View>
 
             {/* Screen breakdown */}
@@ -186,7 +186,7 @@ export function UserDetailSheet({
                   {del.isPending
                     ? "Deleting…"
                     : confirming
-                    ? "Tap again to confirm — permanent"
+                    ? "Tap again to confirm - permanent"
                     : "Delete user"}
                 </Text>
               </Pressable>
@@ -281,9 +281,9 @@ function Fact({
 }
 
 function fmtDate(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   return isNaN(d.getTime())
-    ? "—"
+    ? "-"
     : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }

@@ -1,19 +1,19 @@
 /**
- * MealPlanEditPrefs — classic iOS grouped-table settings style.
+ * MealPlanEditPrefs - classic iOS grouped-table settings style.
  * Rows with labels on the left, checkmarks on the right. Plain and familiar.
  */
+import { LIGHT, useTheme } from "@/src/theme/ThemeContext";
 import React, { useState } from "react";
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
-import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { MealPreferences } from "../src/utils/mealPlanGenerator";
 
 const BLUE  = "#007AFF"; // classic iOS blue

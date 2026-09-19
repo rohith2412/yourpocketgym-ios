@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  View,
-  Animated,
-  Easing,
-  Pressable,
-  ScrollView,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
-} from "react-native";
-import Svg, { Circle } from "react-native-svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
-import { Text } from "../../../ui";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+    Animated,
+    Easing,
+    Pressable,
+    ScrollView,
+    View,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
+} from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { Text } from "../../../ui";
 
 type MCIName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -134,7 +134,7 @@ function Bar({ pct, color }: { pct: number; color: string }) {
 
 /**
  * One macro tile. The icon sits with the label as a caption, and the fill runs
- * along the bottom edge — a bar compares across three tiles at a glance in a
+ * along the bottom edge - a bar compares across three tiles at a glance in a
  * way three separate rings can't.
  */
 function MacroTile({
@@ -271,7 +271,7 @@ export function CalorieSummary({
 
   return (
     <View style={{ gap: theme.spacing.md }}>
-      {/* Calories — the headline. */}
+      {/* Calories - the headline. */}
       <Pressable
         onPress={onEditGoal}
         style={{

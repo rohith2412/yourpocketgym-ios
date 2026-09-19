@@ -1,25 +1,25 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Pressable,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-import { useMutation } from "@tanstack/react-query";
 import Markdown from "react-native-markdown-display";
-import { Screen, Text } from "../../ui";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useRouter } from "expo-router";
-import { coachChat, type ChatMessage } from "./api";
-import { isFitnessRelated } from "./topicFilter";
-import { loadChatHistory, saveChatHistory, clearChatHistory } from "./storage";
-import { useCoachQuota } from "./useCoachQuota";
+import { Screen, Text } from "../../ui";
 import { useEntitlement } from "../subscription/useEntitlement";
+import { coachChat, type ChatMessage } from "./api";
+import { clearChatHistory, loadChatHistory, saveChatHistory } from "./storage";
+import { isFitnessRelated } from "./topicFilter";
+import { useCoachQuota } from "./useCoachQuota";
 
 const SUGGESTIONS = [
   "Build me a 4-day muscle gain plan",
@@ -73,7 +73,7 @@ export function CoachScreen() {
     Haptics.selectionAsync().catch(() => {});
     const userMsg: ChatMessage = { role: "user", content: clean };
 
-    // Client-side gate — only fitness/health goes to the API.
+    // Client-side gate - only fitness/health goes to the API.
     if (!isFitnessRelated(clean)) {
       const localReply: ChatMessage = {
         role: "assistant",
@@ -86,11 +86,11 @@ export function CoachScreen() {
       return;
     }
 
-    // Daily quota — block when hit
+    // Daily quota - block when hit
     if (!quota.hasQuota) {
       const localReply: ChatMessage = {
         role: "assistant",
-        content: `You've hit your daily limit of ${quota.limit} messages. Come back tomorrow — I'll be here.`,
+        content: `You've hit your daily limit of ${quota.limit} messages. Come back tomorrow - I'll be here.`,
       };
       setMessages((prev) => [...prev, userMsg, localReply]);
       setInput("");
@@ -125,7 +125,7 @@ export function CoachScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header — with back button since Coach is its own route now */}
+          {/* Header - with back button since Coach is its own route now */}
           <View
             style={{
               flexDirection: "row",
@@ -184,7 +184,7 @@ export function CoachScreen() {
                   Ask me anything
                 </Text>
                 <Text variant="body" color="textMuted" center>
-                  Workouts, form, nutrition, recovery — I adapt to your goals.
+                  Workouts, form, nutrition, recovery - I adapt to your goals.
                 </Text>
               </View>
 
