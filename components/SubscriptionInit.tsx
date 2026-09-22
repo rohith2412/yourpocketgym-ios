@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
 import { configureRevenueCat } from "@/src/services/iapService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 interface SubscriptionInitProps {
   children: React.ReactNode;
@@ -9,7 +9,7 @@ interface SubscriptionInitProps {
 
 /**
  * Configures RevenueCat BEFORE rendering any children.
- * Children call useSubscription() themselves — RC is guaranteed to be
+ * Children call useSubscription() themselves - RC is guaranteed to be
  * configured by the time they mount.
  */
 export default function SubscriptionInit({ children }: SubscriptionInitProps) {
@@ -54,7 +54,7 @@ export default function SubscriptionInit({ children }: SubscriptionInitProps) {
     );
   }
 
-  // Even if there's an init error, still render children — paywall will handle gracefully
+  // Even if there's an init error, still render children - paywall will handle gracefully
   if (initError) {
     console.warn("[SubscriptionInit] Rendering children despite init error:", initError);
   }

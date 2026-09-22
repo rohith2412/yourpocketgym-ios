@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getCustomerInfo, isPremium, addPremiumStatusListener } from "../services/iapService";
+import { addPremiumStatusListener, getCustomerInfo, isPremium } from "../services/iapService";
 
 export function useSubscription() {
   const [isPremiumUser, setIsPremiumUser] = useState<boolean | null>(null);
@@ -36,7 +36,7 @@ export function useSubscription() {
   useEffect(() => {
     const unsub = addPremiumStatusListener((info) => {
       const premium = isPremium(info);
-      console.log("[useSubscription] Real-time update — premium:", premium);
+      console.log("[useSubscription] Real-time update - premium:", premium);
       setIsPremiumUser(premium);
     });
     return unsub;

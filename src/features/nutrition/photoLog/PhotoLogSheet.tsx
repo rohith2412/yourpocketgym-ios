@@ -1,0 +1,487 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation } from "@tanstack/react-query";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
+import {
+    ActionSheetIOS,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../../theme/ThemeProvider";
+import { Button, Text } from "../../../ui";
+import { useAddFood } from "../hooks";
+import { toISODay, type FoodEntry } from "../storage";
+import { analyzeFoodPhoto, type PhotoAnalysis } from "./api";
+import { CameraCapture } from "./CameraCapture";
+import { usePhotoQuota } from "./usePhotoQuota";
+import { uploadImageToR2 } from "../../../lib/r2Upload";
+
+type Props = { visible: boolean; onClose: () => void };
+
+export function PhotoLogSheet({ visible, onClose }: Props) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const insets = useSafeAreaInsets();
+  const add = useAddFood();
+  const quota = usePhotoQuota();
+
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<PhotoAnalysis | null>(null);
+  // Tier-1 essentials (fiber/sugar/sodium/satFat) editable in the form.
+  // Tier-2 micros stay AI-only — they're carried straight from `analysis`
+  // into the FoodEntry to keep the form uncluttered.
+  const [edit, setEdit] = useState({
+    name: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    fiber: "",
+    sugar: "",
+    sodium: "",
+    satFat: "",
+  });
+
+  const analyzeM = useMutation({
+    mutationFn: (uri: string) => analyzeFoodPhoto(uri),
+    onSuccess: (res) => {
+      // Only count against the daily quota when the API call actually returned.
+      quota.consume();
+      setAnalysis(res);
+      setEdit({
+        name: res.name,
+        calories: String(Math.round(res.calories)),
+        protein: String(Math.round(res.protein)),
+        carbs: String(Math.round(res.carbs)),
+        fat: String(Math.round(res.fat)),
+        fiber: res.fiber != null ? String(round1(res.fiber)) : "",
+        sugar: res.sugar != null ? String(round1(res.sugar)) : "",
+        sodium: res.sodium != null ? String(Math.round(res.sodium)) : "",
+        satFat: res.satFat != null ? String(round1(res.satFat)) : "",
+      });
+    },
+    onError: (err: Error) => Alert.alert("Couldn't analyze", err.message),
+  });
+
+  useEffect(() => {
+    if (!visible) {
+      setPhotoUri(null);
+      setAnalysis(null);
+      setEdit({
+        name: "", calories: "", protein: "", carbs: "", fat: "",
+        fiber: "", sugar: "", sodium: "", satFat: "",
+      });
+    }
+  }, [visible]);
+
+  const pick = async (source: "camera" | "library") => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    try {
+      const perm =
+        source === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permission needed", "Enable it in Settings.");
+        return;
+      }
+      const result =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
+          : await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+      if (result.canceled || !result.assets?.[0]) return;
+      const uri = result.assets[0].uri;
+      setPhotoUri(uri);
+      setAnalysis(null);
+      // Wait for user to confirm with the Calculate button
+    } catch (err: any) {
+      Alert.alert("Couldn't pick photo", err?.message ?? String(err));
+    }
+  };
+
+  const openPicker = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancel", "Take photo", "Choose from library"],
+          cancelButtonIndex: 0,
+        },
+        (idx) => {
+          if (idx === 1) pick("camera");
+          if (idx === 2) pick("library");
+        },
+      );
+    } else {
+      pick("library");
+    }
+  };
+
+  const onSave = async () => {
+    // Upload the photo to R2 so it survives across devices and reinstalls,
+    // and fall back to a local file:// copy if the upload fails so the
+    // meal isn't lost. `persistedUri` is what we persist on the entry —
+    // it's an https:// R2 URL in the happy path and a device-local path
+    // otherwise.
+    let persistedUri: string | undefined;
+    if (photoUri) {
+      try {
+        console.log("[R2] uploading meal photo:", photoUri);
+        persistedUri = await uploadImageToR2(photoUri, "food");
+        console.log("[R2] upload success →", persistedUri);
+      } catch (err) {
+        console.log("[R2] upload FAILED, falling back to local:", err);
+        // R2 was down or offline — fall back to a local copy so the meal
+        // still gets a picture attached until the next sync.
+        try {
+          const dir = FileSystem.documentDirectory + "food-photos/";
+          const info = await FileSystem.getInfoAsync(dir);
+          if (!info.exists)
+            await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+          const ext = photoUri.split(".").pop()?.split("?")[0] ?? "jpg";
+          const dest = `${dir}${Date.now()}.${ext}`;
+          await FileSystem.copyAsync({ from: photoUri, to: dest });
+          persistedUri = dest;
+        } catch {
+          persistedUri = undefined;
+        }
+      }
+    }
+    const entry: FoodEntry = {
+      id: `${Date.now()}`,
+      date: toISODay(),
+      loggedAt: new Date().toISOString(),
+      name: edit.name.trim() || "Meal",
+      calories: parseInt(edit.calories || "0", 10) || 0,
+      protein: parseInt(edit.protein || "0", 10) || 0,
+      carbs: parseInt(edit.carbs || "0", 10) || 0,
+      fat: parseInt(edit.fat || "0", 10) || 0,
+      // Tier-1 essentials (fiber/sugar/sodium/satFat) come from the form,
+      // falling back to the untouched AI value. Tier-2 micros stay AI-only.
+      fiber: parseFloatOr(edit.fiber, analysis?.fiber),
+      sugar: parseFloatOr(edit.sugar, analysis?.sugar),
+      sodium: parseFloatOr(edit.sodium, analysis?.sodium),
+      satFat: parseFloatOr(edit.satFat, analysis?.satFat),
+      cholesterol: analysis?.cholesterol,
+      vitaminA: analysis?.vitaminA,
+      vitaminC: analysis?.vitaminC,
+      vitaminD: analysis?.vitaminD,
+      vitaminB12: analysis?.vitaminB12,
+      folate: analysis?.folate,
+      iron: analysis?.iron,
+      calcium: analysis?.calcium,
+      potassium: analysis?.potassium,
+      photoUri: persistedUri,
+    };
+    add.mutate(entry, { onSuccess: onClose });
+  };
+
+  const analyzing = analyzeM.isPending;
+  const hasResult = analysis !== null;
+
+  // Before a photo is captured, render a full-screen camera view directly
+  // — no "Snap it" intermediate page. Once the user takes/picks a photo,
+  // we fall through to the analysis + edit form below.
+  if (visible && !photoUri) {
+    return (
+      <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+        <CameraCapture
+          onCapture={(uri) => {
+            setPhotoUri(uri);
+            setAnalysis(null);
+          }}
+          onClose={onClose}
+        />
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        {/* Header */}
+        <View
+          style={{
+            paddingTop: insets.top + 8,
+            paddingHorizontal: theme.spacing.lg,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <View>
+            <Text variant="caption" color="textMuted">
+              Photo log
+            </Text>
+            <Text variant="title">Snap it</Text>
+          </View>
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            style={({ pressed }) => ({
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: pressed ? c.surfaceAlt : c.surface,
+              borderWidth: 1,
+              borderColor: c.border,
+            })}
+          >
+            <Ionicons name="close" size={18} color={c.text} />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.lg,
+            paddingBottom: insets.bottom + theme.spacing["3xl"],
+            gap: theme.spacing.lg,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Photo preview — always present once we're on this screen,
+              since the camera modal above guarantees we captured one. */}
+          {photoUri ? (
+            <Image
+              source={{ uri: photoUri }}
+              style={{
+                width: "100%",
+                aspectRatio: 4 / 3,
+                borderRadius: theme.radius["2xl"],
+                backgroundColor: c.surfaceAlt,
+              }}
+              resizeMode="cover"
+            />
+          ) : null}
+
+          {/* Retake + Calculate — text-only pill pair, no icons.
+              Retake is a soft secondary; Calculate is the dark primary. */}
+          {photoUri && !hasResult && !analyzing ? (
+            <View style={{ flexDirection: "row", gap: theme.spacing.md }}>
+              <Pressable
+                onPress={openPicker}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  height: 52,
+                  borderRadius: theme.radius.md,
+                  backgroundColor: c.surface,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text variant="body" weight="semibold">
+                  Retake
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  // Guard: if a scan is already in flight or already done,
+                  // silently swallow the tap. Prevents a double-tap during
+                  // the brief window before `analyzing` state propagates.
+                  if (analyzing || hasResult) return;
+                  if (!quota.hasQuota) {
+                    Alert.alert(
+                      "Daily limit reached",
+                      `Photo log is capped at ${quota.limit} AI scans a day. Come back tomorrow, or log this meal manually.`,
+                    );
+                    return;
+                  }
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                  analyzeM.mutate(photoUri);
+                }}
+                disabled={!quota.hasQuota || analyzing || hasResult}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  height: 52,
+                  borderRadius: theme.radius.md,
+                  backgroundColor: c.inverseBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  // While analyzing or already done, dim the button to
+                  // visually communicate the tap won't fire.
+                  opacity:
+                    !quota.hasQuota || analyzing || hasResult
+                      ? 0.4
+                      : pressed
+                      ? 0.85
+                      : 1,
+                })}
+              >
+                <Text variant="body" weight="bold" style={{ color: c.inverseText }}>
+                  {analyzing ? "Scanning…" : "Calculate"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* Analyzing spinner */}
+          {analyzing ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                padding: theme.spacing.md,
+                backgroundColor: c.surface,
+                borderRadius: theme.radius.lg,
+                borderWidth: 1,
+                borderColor: c.border,
+              }}
+            >
+              <ActivityIndicator size="small" color={c.textMuted} />
+              <Text variant="body" color="textMuted">
+                Analyzing your meal…
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Editable estimate */}
+          {hasResult ? (
+            <View
+              style={{
+                backgroundColor: c.surface,
+                borderRadius: theme.radius["2xl"],
+                borderWidth: 1,
+                borderColor: c.border,
+                padding: theme.spacing.md,
+                gap: theme.spacing.md,
+              }}
+            >
+              <Text variant="label" color="textMuted">
+                AI ESTIMATE · edit if needed
+              </Text>
+
+              <Field label="Name" value={edit.name} onChange={(v) => setEdit({ ...edit, name: v })} />
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Field
+                  flex
+                  label="Calories"
+                  unit="cal"
+                  numeric
+                  value={edit.calories}
+                  onChange={(v) => setEdit({ ...edit, calories: v })}
+                />
+              </View>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Field flex label="Protein" unit="g" numeric value={edit.protein} onChange={(v) => setEdit({ ...edit, protein: v })} />
+                <Field flex label="Carbs" unit="g" numeric value={edit.carbs} onChange={(v) => setEdit({ ...edit, carbs: v })} />
+                <Field flex label="Fat" unit="g" numeric value={edit.fat} onChange={(v) => setEdit({ ...edit, fat: v })} />
+              </View>
+
+              {/* Tier-1 essentials — edit if the AI's estimate looks off */}
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Field flex label="Fiber" unit="g" decimal value={edit.fiber} onChange={(v) => setEdit({ ...edit, fiber: v })} />
+                <Field flex label="Sugar" unit="g" decimal value={edit.sugar} onChange={(v) => setEdit({ ...edit, sugar: v })} />
+                <Field flex label="Sodium" unit="mg" numeric value={edit.sodium} onChange={(v) => setEdit({ ...edit, sodium: v })} />
+                <Field flex label="Sat fat" unit="g" decimal value={edit.satFat} onChange={(v) => setEdit({ ...edit, satFat: v })} />
+              </View>
+
+              {/* Disable + dim while save is in flight so a rapid double
+                  tap can't create two meals. The 1-second post-mount block
+                  also guards the case where the sheet mounts and the user
+                  double-taps before onSave.isPending flips. */}
+              <Button
+                title={add.isPending ? "Saving…" : "Save meal"}
+                onPress={onSave}
+                size="lg"
+                haptic="medium"
+                disabled={add.isPending}
+                loading={add.isPending}
+              />
+            </View>
+          ) : null}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  unit,
+  numeric,
+  decimal,
+  flex,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  unit?: string;
+  numeric?: boolean;
+  decimal?: boolean;
+  flex?: boolean;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const sanitize = (t: string) => {
+    if (decimal) {
+      // Allow digits + a single decimal point.
+      const clean = t.replace(/[^0-9.]/g, "");
+      const parts = clean.split(".");
+      return parts.length > 1 ? parts[0] + "." + parts.slice(1).join("") : clean;
+    }
+    if (numeric) return t.replace(/[^0-9]/g, "");
+    return t;
+  };
+  return (
+    <View style={{ gap: 4, flex: flex ? 1 : undefined }}>
+      <Text variant="caption" color="textMuted" weight="bold" style={{ letterSpacing: 0.5, fontSize: 9 }}>
+        {label.toUpperCase()}
+      </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: c.surfaceAlt,
+          borderRadius: theme.radius.md,
+          paddingHorizontal: 10,
+          height: 42,
+        }}
+      >
+        <TextInput
+          value={value}
+          onChangeText={(t) => onChange(sanitize(t))}
+          keyboardType={decimal ? "decimal-pad" : numeric ? "number-pad" : "default"}
+          selectTextOnFocus
+          style={{ flex: 1, color: c.text, fontSize: 15, fontWeight: "700", paddingVertical: 0 }}
+        />
+        {unit ? (
+          <Text variant="caption" color="textFaint" style={{ fontSize: 10 }}>
+            {unit}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
+/** Prefer a form-entered value; fall back to the AI's original number. */
+function parseFloatOr(
+  formValue: string,
+  fallback: number | undefined,
+): number | undefined {
+  if (formValue.trim() === "") return fallback;
+  const n = parseFloat(formValue);
+  return Number.isFinite(n) ? n : fallback;
+}

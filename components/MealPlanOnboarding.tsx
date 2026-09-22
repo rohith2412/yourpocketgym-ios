@@ -1,3 +1,4 @@
+import { LIGHT, useTheme } from "@/src/theme/ThemeContext";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
@@ -11,7 +12,6 @@ import {
     TextInput,
     View,
 } from "react-native";
-import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import { DEFAULT_PREFERENCES, MealPreferences } from "../src/utils/mealPlanGenerator";
 
 const { width: W } = Dimensions.get("window");
@@ -382,8 +382,8 @@ export default function MealPlanOnboarding({ onComplete }: Props) {
 
             <View style={s.cookTimeGrid}>
               {[
-                { key: "quick", label: "Quick meals",  sub: "Under 15 minutes", desc: "Salads, wraps, protein bowls — ready fast." },
-                { key: "any",   label: "Any length",   sub: "No time limit",    desc: "Full variety — curries, stews, baked dishes." },
+                { key: "quick", label: "Quick meals",  sub: "Under 15 minutes", desc: "Salads, wraps, protein bowls - ready fast." },
+                { key: "any",   label: "Any length",   sub: "No time limit",    desc: "Full variety - curries, stews, baked dishes." },
               ].map((ct) => {
                 const active = prefs.cookingTime === ct.key;
                 return (
@@ -509,7 +509,7 @@ const makeS = (c) => StyleSheet.create({
   allergyText:       { fontSize: 14, fontWeight: "600", color: c.textMuted },
   allergyTextActive: { color: c.text },
 
-  // ── Step 3: Cuisine — scrollable 2-column grid ──
+  // ── Step 3: Cuisine - scrollable 2-column grid ──
   cuisineGrid: { gap: 12, paddingTop: 4, paddingBottom: 16 },
   cuisineRow:  { flexDirection: "row", gap: 12 },
   cuisineCard: {

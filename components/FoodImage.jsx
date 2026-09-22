@@ -1,4 +1,3 @@
-import React from "react";
 import { Text, View } from "react-native";
 
 // keyword → emoji. Most-specific first, broad catch-alls last.
@@ -169,7 +168,7 @@ function pickEmoji(foodNames = []) {
 }
 
 /**
- * FoodImage — renders a system emoji based on food name(s).
+ * FoodImage - renders a system emoji based on food name(s).
  * @param {string[]} foodNames
  * @param {number}   size   font size (also controls container)
  */

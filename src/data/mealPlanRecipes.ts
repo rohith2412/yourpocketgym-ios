@@ -597,7 +597,7 @@ export const RECIPES: Recipe[] = [
   { id:"s_fr1", name:"Yogurt", mealType:"snack", image:IMG.snack,
     calories:130, protein:8, carbs:16, fat:4, prepTime:1,
     ingredients:["1 pot plain or fruit yogurt"],
-    instructions:["Eat straight from the pot — the classic French snack."],
+    instructions:["Eat straight from the pot - the classic French snack."],
     tags:["vegetarian","gluten-free","quick"], cuisine:"french" },
 
   // ═══════════════════════════════════════════════════
@@ -643,7 +643,7 @@ export const RECIPES: Recipe[] = [
   { id:"d_it2", name:"Pasta Carbonara", mealType:"dinner", image:IMG.pasta,
     calories:620, protein:28, carbs:72, fat:24, prepTime:20,
     ingredients:["300g spaghetti","150g pancetta or guanciale","3 egg yolks + 1 whole egg","pecorino romano","black pepper","salt"],
-    instructions:["Fry pancetta until crispy.","Whisk eggs with pecorino and black pepper.","Cook spaghetti, reserve pasta water.","Off heat, toss pasta with egg mix and pancetta — use pasta water to loosen."],
+    instructions:["Fry pancetta until crispy.","Whisk eggs with pecorino and black pepper.","Cook spaghetti, reserve pasta water.","Off heat, toss pasta with egg mix and pancetta - use pasta water to loosen."],
     tags:["quick","high-protein"], cuisine:"italian" },
 
   { id:"d_it3", name:"Lasagna", mealType:"dinner", image:IMG.comfort,
@@ -799,7 +799,7 @@ export const RECIPES: Recipe[] = [
   { id:"b_cn2", name:"Fried Egg & Soy Sauce Rice", mealType:"breakfast", image:IMG.chinese,
     calories:380, protein:14, carbs:58, fat:12, prepTime:10,
     ingredients:["1.5 cups leftover rice","2 eggs","soy sauce","sesame oil","green onion","oil"],
-    instructions:["Fry eggs in oil — crispy edges.","Serve over rice.","Drizzle soy sauce and sesame oil.","Top with green onion."],
+    instructions:["Fry eggs in oil - crispy edges.","Serve over rice.","Drizzle soy sauce and sesame oil.","Top with green onion."],
     tags:["gluten-free","quick"], cuisine:"chinese" },
 
   { id:"l_cn1", name:"Tomato & Egg Stir Fry with Rice", mealType:"lunch", image:IMG.chinese,
@@ -857,7 +857,7 @@ export const RECIPES: Recipe[] = [
   { id:"b_kr1", name:"Kimchi Fried Rice & Egg", mealType:"breakfast", image:IMG.korean,
     calories:420, protein:16, carbs:62, fat:14, prepTime:12,
     ingredients:["1.5 cups cooked rice","½ cup kimchi (chopped)","2 eggs","1 sheet nori","sesame oil","soy sauce","green onion","gochujang (optional)"],
-    instructions:["Stir fry kimchi in sesame oil 2 min.","Add rice, mix well.","Fry eggs separately — runny yolk.","Serve rice in bowl, top with egg and nori strips."],
+    instructions:["Stir fry kimchi in sesame oil 2 min.","Add rice, mix well.","Fry eggs separately - runny yolk.","Serve rice in bowl, top with egg and nori strips."],
     tags:["gluten-free","quick"], cuisine:"korean" },
 
   { id:"b_kr2", name:"Toast & Fried Egg", mealType:"breakfast", image:IMG.breakfast,
@@ -921,7 +921,7 @@ export const RECIPES: Recipe[] = [
   { id:"b_th2", name:"Khai Jiao (Thai Omelette) & Rice", mealType:"breakfast", image:IMG.omelette,
     calories:420, protein:18, carbs:54, fat:16, prepTime:10,
     ingredients:["3 eggs","fish sauce","1.5 cups rice","oil for frying","sweet chilli sauce","cucumber slices"],
-    instructions:["Beat eggs with fish sauce.","Fry in HOT oil — edges get crispy and puffy.","Serve immediately over rice with sweet chilli sauce and cucumber."],
+    instructions:["Beat eggs with fish sauce.","Fry in HOT oil - edges get crispy and puffy.","Serve immediately over rice with sweet chilli sauce and cucumber."],
     tags:["gluten-free","quick","high-protein"], cuisine:"thai" },
 
   { id:"l_th1", name:"Pad Thai", mealType:"lunch", image:IMG.noodles,

@@ -3,8 +3,8 @@
  * src/data/exerciseImageCache.json  (normalizedName → imageUrl).
  *
  * Resolution order:
- *   1. Pexels — "{exercise name} exercise workout"
- *   2. Pexels — "{muscle group} gym workout"
+ *   1. Pexels - "{exercise name} exercise workout"
+ *   2. Pexels - "{muscle group} gym workout"
  *
  * Keys are lowercased + trimmed so runtime lookup is just:
  *   exerciseImageCache[normalizeExKey(ex.name)]
@@ -102,7 +102,7 @@ const EXERCISES = [
   { name: "Machine Shoulder Press",    muscle: "shoulders" },
   { name: "Cable Front Raise",         muscle: "shoulders" },
 
-  // ── Arms — Biceps ──────────────────────────────────────────────────────────
+  // ── Arms - Biceps ──────────────────────────────────────────────────────────
   { name: "Barbell Curl",              muscle: "arms" },
   { name: "Dumbbell Curl",             muscle: "arms" },
   { name: "Alternating Dumbbell Curl", muscle: "arms" },
@@ -120,7 +120,7 @@ const EXERCISES = [
   { name: "21s Curl",                  muscle: "arms" },
   { name: "Machine Curl",              muscle: "arms" },
 
-  // ── Arms — Triceps ─────────────────────────────────────────────────────────
+  // ── Arms - Triceps ─────────────────────────────────────────────────────────
   { name: "Tricep Pushdown",           muscle: "arms" },
   { name: "Cable Tricep Pushdown",     muscle: "arms" },
   { name: "Rope Pushdown",             muscle: "arms" },

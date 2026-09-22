@@ -1,0 +1,496 @@
+import { useEffect, useState } from "react";
+import { View, Pressable, TextInput, Alert, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { BottomSheet, Text, Button, Card } from "../../../ui";
+import { useTheme } from "../../../theme/ThemeProvider";
+import { EXERCISE_LIBRARY, MUSCLE_GROUPS, type MuscleGroup } from "../data";
+import { useSaveWorkout, useWorkoutLogs, lastLiftFor, type TrackedExercise } from "../api";
+import type { RoutineExercise } from "../../routines/storage";
+
+type DraftSet = { reps: string; weight: string };
+type DraftExercise = { name: string; mg: MuscleGroup; sets: DraftSet[] };
+type Step = "muscles" | "exercises" | "log";
+
+export function LogSheet({
+  visible,
+  onClose,
+  initialExercises,
+  routineName,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  /** Pre-fill from a routine (skips picking exercises). */
+  initialExercises?: RoutineExercise[];
+  routineName?: string;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const save = useSaveWorkout();
+  const { data: logs = [] } = useWorkoutLogs();
+
+  const [step, setStep] = useState<Step>("muscles");
+  const [activeMg, setActiveMg] = useState<MuscleGroup | null>(null);
+  const [exercises, setExercises] = useState<DraftExercise[]>([]);
+  const [notes, setNotes] = useState("");
+
+  // Seed from a routine when opened. Blank sets ready to fill with real reps/weight.
+  useEffect(() => {
+    if (visible && initialExercises && initialExercises.length > 0) {
+      setExercises(
+        initialExercises.map((e) => ({
+          name: e.name,
+          mg: e.muscleGroup,
+          sets: [{ reps: "", weight: "" }],
+        })),
+      );
+      setStep("muscles");
+    }
+  }, [visible, initialExercises]);
+
+  const reset = () => {
+    setStep("muscles");
+    setActiveMg(null);
+    setExercises([]);
+    setNotes("");
+  };
+
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const stepIndex = step === "muscles" ? 0 : step === "exercises" ? 1 : 2;
+  const alreadyAdded = new Set(exercises.map((e) => e.name));
+
+  const pickMuscle = (mg: MuscleGroup) => {
+    setActiveMg(mg);
+    setStep("exercises");
+  };
+
+  const pickExercise = (name: string) => {
+    const alreadyThere = exercises.some((e) => e.name === name);
+    if (!alreadyThere) {
+      setExercises((prev) => [
+        ...prev,
+        { name, mg: activeMg!, sets: [{ reps: "", weight: "" }] },
+      ]);
+    }
+    setStep("muscles");
+  };
+
+  const updateSetAt = (ei: number, si: number, field: "reps" | "weight", val: string) =>
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== ei ? ex : { ...ex, sets: ex.sets.map((s, j) => (j === si ? { ...s, [field]: val } : s)) },
+      ),
+    );
+
+  const addSetAt = (ei: number) =>
+    setExercises((prev) =>
+      prev.map((ex, i) => (i !== ei ? ex : { ...ex, sets: [...ex.sets, { reps: "", weight: "" }] })),
+    );
+
+  const removeSetAt = (ei: number, si: number) =>
+    setExercises((prev) =>
+      prev.map((ex, i) => (i !== ei ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== si) })),
+    );
+
+  const removeExercise = (ei: number) => setExercises((prev) => prev.filter((_, i) => i !== ei));
+
+  const submit = async () => {
+    if (!exercises.length) {
+      Alert.alert("Add at least one exercise.");
+      return;
+    }
+    const cleaned: TrackedExercise[] = exercises.map((ex) => ({
+      name: ex.name,
+      muscleGroup: ex.mg,
+      sets: ex.sets.map((s, i) => ({
+        setNumber: i + 1,
+        reps: Number(s.reps) || 0,
+        weight: Number(s.weight) || 0,
+      })),
+    }));
+    if (cleaned.some((ex) => ex.sets.some((s) => s.reps === 0 || s.weight === 0))) {
+      Alert.alert("Fill in all reps and weights.");
+      return;
+    }
+    try {
+      await save.mutateAsync({ date: new Date().toISOString(), exercises: cleaned, notes });
+      close();
+    } catch (e: any) {
+      Alert.alert("Save failed", e?.message ?? "Try again.");
+    }
+  };
+
+  // ── Step indicator ───────────────────────────────────────────────────────────
+  const StepIndicator = () => (
+    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: theme.spacing.lg }}>
+      {["Muscle", "Exercise", "Log"].map((label, i) => (
+        <View key={label} style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              backgroundColor: i <= stepIndex ? c.text : c.surfaceAlt,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 6,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: "800", color: i <= stepIndex ? c.inverseText : c.textFaint }}>
+              {i + 1}
+            </Text>
+          </View>
+          <Text variant="caption" color={i <= stepIndex ? "text" : "textFaint"} weight="semibold">
+            {label}
+          </Text>
+          {i < 2 ? (
+            <View
+              style={{
+                flex: 1,
+                height: 2,
+                marginHorizontal: 6,
+                borderRadius: 99,
+                backgroundColor: i < stepIndex ? c.text : c.surfaceAlt,
+              }}
+            />
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+
+  return (
+    <BottomSheet visible={visible} onClose={close}>
+      <StepIndicator />
+
+      <ScrollView
+        style={{ maxHeight: 500 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── STEP 1: MUSCLES ───────────────────────────────────────────────── */}
+        {step === "muscles" ? (
+          <>
+            <Text variant="heading" style={{ marginBottom: theme.spacing.md }}>
+              {exercises.length === 0
+                ? "Pick a muscle group"
+                : `${exercises.length} exercise${exercises.length !== 1 ? "s" : ""} added`}
+            </Text>
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
+              {MUSCLE_GROUPS.map((mg) => {
+                const count = exercises.filter((e) => e.mg === mg).length;
+                return (
+                  <Pressable
+                    key={mg}
+                    onPress={() => pickMuscle(mg)}
+                    style={{
+                      width: "48%",
+                      paddingVertical: 18,
+                      paddingHorizontal: theme.spacing.lg,
+                      borderRadius: theme.radius.lg,
+                      borderWidth: 1,
+                      borderColor: count > 0 ? c.text : c.border,
+                      backgroundColor: count > 0 ? c.text : c.surface,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text variant="body" weight="bold" style={{ color: count > 0 ? c.inverseText : c.text }}>
+                      {mg}
+                    </Text>
+                    {count > 0 ? (
+                      <View
+                        style={{
+                          minWidth: 22,
+                          height: 22,
+                          borderRadius: 99,
+                          backgroundColor: c.inverseText,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          paddingHorizontal: 6,
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, fontWeight: "800", color: c.text }}>{count}</Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {exercises.length > 0 ? (
+              <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.lg }}>
+                <Text variant="label" color="textMuted">
+                  ADDED
+                </Text>
+                {exercises.map((ex, ei) => (
+                  <Card key={ei} padding="md">
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="caption" color="textMuted" weight="bold">
+                          {ex.mg.toUpperCase()}
+                        </Text>
+                        <Text variant="body" weight="bold">
+                          {ex.name}
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => removeExercise(ei)} hitSlop={8}>
+                        <Ionicons name="close" size={20} color={c.danger} />
+                      </Pressable>
+                    </View>
+                  </Card>
+                ))}
+              </View>
+            ) : null}
+
+            <View style={{ gap: theme.spacing.sm }}>
+              <Text variant="label" color="textMuted">
+                NOTES
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: c.surface,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                  borderRadius: theme.radius.md,
+                  padding: theme.spacing.md,
+                  fontSize: theme.fontSize.md,
+                  color: c.text,
+                  minHeight: 60,
+                  textAlignVertical: "top",
+                }}
+                placeholder="How did it feel? Any PRs?"
+                placeholderTextColor={c.textFaint}
+                multiline
+                value={notes}
+                onChangeText={setNotes}
+              />
+            </View>
+          </>
+        ) : null}
+
+        {/* ── STEP 2: EXERCISES ─────────────────────────────────────────────── */}
+        {step === "exercises" && activeMg ? (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, marginBottom: theme.spacing.md }}>
+              <Pressable onPress={() => setStep("muscles")} hitSlop={12}>
+                <Ionicons name="chevron-back" size={22} color={c.text} />
+              </Pressable>
+              <View style={{ flex: 1 }}>
+                <Text variant="caption" color="textMuted" weight="bold">
+                  {activeMg.toUpperCase()}
+                </Text>
+                <Text variant="heading">Select exercise</Text>
+              </View>
+            </View>
+
+            <View style={{ gap: theme.spacing.sm }}>
+              {EXERCISE_LIBRARY[activeMg].map((name) => {
+                const added = alreadyAdded.has(name);
+                return (
+                  <Pressable
+                    key={name}
+                    onPress={() => pickExercise(name)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: c.surface,
+                      borderRadius: theme.radius.md,
+                      borderWidth: 1,
+                      borderColor: added ? c.text : c.border,
+                      paddingVertical: theme.spacing.md,
+                      paddingHorizontal: theme.spacing.lg,
+                    }}
+                  >
+                    <Text variant="body" weight={added ? "bold" : "regular"} style={{ flex: 1 }}>
+                      {name}
+                    </Text>
+                    <Ionicons
+                      name={added ? "checkmark" : "add"}
+                      size={20}
+                      color={added ? c.text : c.textMuted}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
+        {/* ── STEP 3: LOG (all exercises with sets, save at bottom) ─────────── */}
+        {step === "log" ? (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md, marginBottom: theme.spacing.lg }}>
+              <Pressable onPress={() => setStep("muscles")} hitSlop={12}>
+                <Ionicons name="chevron-back" size={22} color={c.text} />
+              </Pressable>
+              <Text variant="heading" style={{ flex: 1 }}>
+                Log your workout
+              </Text>
+            </View>
+
+            {exercises.map((ex, ei) => {
+              const prev = lastLiftFor(logs, ex.name);
+              return (
+                <View key={ei} style={{ marginBottom: theme.spacing.xl }}>
+                  <Text variant="caption" color="textMuted" weight="bold">
+                    {ex.mg.toUpperCase()}
+                  </Text>
+                  <Text variant="heading" numberOfLines={1} style={{ marginBottom: theme.spacing.sm }}>
+                    {ex.name}
+                  </Text>
+
+                  {prev ? (
+                    <View
+                      style={{
+                        backgroundColor: c.surfaceAlt,
+                        borderRadius: theme.radius.md,
+                        padding: theme.spacing.sm,
+                        marginBottom: theme.spacing.sm,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                      }}
+                    >
+                      <Text variant="caption" color="textMuted" weight="bold">
+                        LAST
+                      </Text>
+                      <Text variant="caption" weight="semibold">
+                        {prev.sets.map((s) => `${s.weight}×${s.reps}`).join("  ·  ")}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: theme.spacing.xs,
+                      borderBottomWidth: 1,
+                      borderBottomColor: c.border,
+                      marginBottom: theme.spacing.sm,
+                    }}
+                  >
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ width: 30 }}>
+                      #
+                    </Text>
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
+                      REPS
+                    </Text>
+                    <Text variant="caption" color="textFaint" weight="bold" style={{ flex: 1, textAlign: "center" }}>
+                      LBS
+                    </Text>
+                    <View style={{ width: 30 }} />
+                  </View>
+
+                  {ex.sets.map((set, si) => (
+                    <View
+                      key={si}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: theme.spacing.sm,
+                        paddingVertical: 6,
+                      }}
+                    >
+                      <Text style={{ width: 30, textAlign: "center", fontWeight: "700", color: c.textFaint }}>
+                        {si + 1}
+                      </Text>
+                      <TextInput
+                        style={{
+                          flex: 1, height: 44,
+                          backgroundColor: c.surface,
+                          borderWidth: 1.5, borderColor: c.border, borderRadius: theme.radius.md,
+                          fontSize: 18, fontWeight: "700", textAlign: "center", color: c.text,
+                        }}
+                        value={set.reps}
+                        placeholder="0"
+                        placeholderTextColor={c.textFaint}
+                        keyboardType="number-pad"
+                        selectTextOnFocus
+                        onChangeText={(v) => updateSetAt(ei, si, "reps", v.replace(/[^0-9]/g, ""))}
+                      />
+                      <TextInput
+                        style={{
+                          flex: 1, height: 44,
+                          backgroundColor: c.surface,
+                          borderWidth: 1.5, borderColor: c.border, borderRadius: theme.radius.md,
+                          fontSize: 18, fontWeight: "700", textAlign: "center", color: c.text,
+                        }}
+                        value={set.weight}
+                        placeholder="0"
+                        placeholderTextColor={c.textFaint}
+                        keyboardType="decimal-pad"
+                        selectTextOnFocus
+                        onChangeText={(v) => updateSetAt(ei, si, "weight", v.replace(/[^0-9.]/g, ""))}
+                      />
+                      <Pressable
+                        onPress={() => removeSetAt(ei, si)}
+                        disabled={ex.sets.length <= 1}
+                        hitSlop={8}
+                        style={{ width: 30, alignItems: "center", opacity: ex.sets.length <= 1 ? 0.2 : 1 }}
+                      >
+                        <Ionicons name="remove-circle-outline" size={20} color={c.danger} />
+                      </Pressable>
+                    </View>
+                  ))}
+
+                  {ex.sets.length < 10 ? (
+                    <Pressable
+                      onPress={() => addSetAt(ei)}
+                      style={{
+                        marginTop: theme.spacing.sm,
+                        paddingVertical: theme.spacing.sm,
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1.5,
+                        borderStyle: "dashed",
+                        borderColor: c.border,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text variant="label" weight="bold">
+                        + Add set
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })}
+          </>
+        ) : null}
+      </ScrollView>
+
+      {/* Footer button */}
+      <View style={{ marginTop: theme.spacing.lg }}>
+        {step === "muscles" ? (
+          <Button
+            title="Next"
+            variant="primary"
+            radius="lg"
+            size="lg"
+            glow
+            haptic="medium"
+            disabled={!exercises.length}
+            onPress={() => setStep("log")}
+          />
+        ) : step === "log" ? (
+          <Button
+            title={save.isPending ? "Saving…" : "Save workout"}
+            variant="primary"
+            radius="lg"
+            size="lg"
+            glow
+            haptic="medium"
+            loading={save.isPending}
+            disabled={!exercises.length}
+            onPress={submit}
+          />
+        ) : null}
+      </View>
+    </BottomSheet>
+  );
+}

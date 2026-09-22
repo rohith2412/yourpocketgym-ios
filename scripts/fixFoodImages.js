@@ -379,7 +379,7 @@ async function main() {
   console.log("\n🍽️  Food Image Cache Rebuilder");
   console.log("══════════════════════════════════════\n");
 
-  // Load existing cache — we'll keep any old keys that are still valid
+  // Load existing cache - we'll keep any old keys that are still valid
   // and overwrite the recipe ID keys with fresh lookups.
   let cache = {};
   try { cache = JSON.parse(fs.readFileSync(CACHE_PATH, "utf-8")); } catch {}
@@ -403,7 +403,7 @@ async function main() {
       console.log(`✅ ${url.match(/photos\/(\d+)\//)?.[1] ?? "?"}`);
     } else {
       failed++;
-      console.log(`⚠️  no result — keeping old`);
+      console.log(`⚠️  no result - keeping old`);
     }
 
     // Save progress every 10 recipes

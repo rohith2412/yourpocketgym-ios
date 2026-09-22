@@ -1,32 +1,32 @@
 /**
- * MealPlanView — orange animated calendar, animated checkboxes, food images with
+ * MealPlanView - orange animated calendar, animated checkboxes, food images with
  * automatic cycling fallback (tries every pool ID until one loads, then caches it).
  */
+import { LIGHT, useTheme } from "@/src/theme/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import { useFocusEffect } from "expo-router";
 import React, {
-  useCallback, useEffect, useMemo, useRef, useState,
+    useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Animated,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
-import { useTheme, LIGHT } from "@/src/theme/ThemeContext";
 import Svg, { Circle, Path } from "react-native-svg";
 import foodImageCache from "../src/data/foodImageCache.json";
 import { Recipe } from "../src/data/mealPlanRecipes";
 import {
-  DEFAULT_PREFERENCES,
-  MealPlan,
-  MealPreferences,
-  generateMealPlan,
+    DEFAULT_PREFERENCES,
+    MealPlan,
+    MealPreferences,
+    generateMealPlan,
 } from "../src/utils/mealPlanGenerator";
 import MealPlanEditPrefs from "./MealPlanEditPrefs";
 import MealPlanOnboarding from "./MealPlanOnboarding";
@@ -90,7 +90,7 @@ function getSearchQueries(recipe: Recipe): string[] {
   ].filter((q, i, a) => q.length > 1 && a.indexOf(q) === i); // dedupe, skip empty
 }
 
-// TheMealDB search — tries queries in order, returns first thumbnail found.
+// TheMealDB search - tries queries in order, returns first thumbnail found.
 async function searchMealDB(queries: string[]): Promise<string | null> {
   for (const q of queries) {
     try {
@@ -110,7 +110,7 @@ async function searchMealDB(queries: string[]): Promise<string | null> {
   return null;
 }
 
-// Unsplash pool — IDs extracted directly from the recipe dataset (real photos)
+// Unsplash pool - IDs extracted directly from the recipe dataset (real photos)
 const FOOD_IDS: Record<string, string[]> = {
   breakfast: [
     "1484723045596-0b47c9af9d8f","1525351484163-7529414f2098",
@@ -156,17 +156,17 @@ const STATIC_CACHE = foodImageCache as Record<string, string>;
 const IMG_CACHE: Record<string, string> = {};
 
 async function resolveImage(recipe: Recipe): Promise<string> {
-  // 1. Memory cache — fastest
+  // 1. Memory cache - fastest
   if (IMG_CACHE[recipe.id]) return IMG_CACHE[recipe.id];
 
-  // 2. Static JSON cache baked into the bundle — instant, no network needed
+  // 2. Static JSON cache baked into the bundle - instant, no network needed
   const staticUrl = STATIC_CACHE[recipe.id];
   if (staticUrl) {
     IMG_CACHE[recipe.id] = staticUrl;
     return staticUrl;
   }
 
-  // 3. AsyncStorage — persisted from a previous session's network lookup
+  // 3. AsyncStorage - persisted from a previous session's network lookup
   const storageKey = `foodImg4_${recipe.id}`;
   try {
     const stored = await AsyncStorage.getItem(storageKey);
@@ -475,7 +475,7 @@ function RecipeModal({ recipe, onClose }: { recipe: Recipe | null; onClose: () =
           <Text style={mo.tag}>{recipe.prepTime} min · {recipe.cuisine}</Text>
           <Text style={mo.title}>{recipe.name}</Text>
 
-          {/* Macro pills — single neutral style, accent only on calories */}
+          {/* Macro pills - single neutral style, accent only on calories */}
           <View style={mo.macroRow}>
             {[
               { label: "Calories", val: `${recipe.calories}`, accent: true },
@@ -542,7 +542,7 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
   useEffect(() => { setSelectedIndex(defaultIndex); }, [defaultIndex]);
   useFocusEffect(useCallback(() => { setSelectedIndex(defaultIndex); }, [defaultIndex]));
 
-  // Step 1 — resolve user-scoped keys
+  // Step 1 - resolve user-scoped keys
   useEffect(() => {
     (async () => {
       try {
@@ -553,7 +553,7 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
     })();
   }, []);
 
-  // Step 2 — load data once keys ready
+  // Step 2 - load data once keys ready
   useEffect(() => {
     if (!keys) return;
     (async () => {
@@ -765,7 +765,7 @@ export default function MealPlanView({ enabled = true }: { enabled?: boolean }) 
         />
       )}
 
-      {/* Edit preferences — simple form, not the multi-step intro */}
+      {/* Edit preferences - simple form, not the multi-step intro */}
       <MealPlanEditPrefs
         visible={showEditPrefs}
         initial={preferences ?? DEFAULT_PREFERENCES}
@@ -828,7 +828,7 @@ const makeW = (p) => StyleSheet.create({
     width: 30, height: 30, borderRadius: 15,
     alignItems: "center", justifyContent: "center",
   },
-  circleSel:  { /* no extra bg — pill behind it */ },
+  circleSel:  { /* no extra bg - pill behind it */ },
   circleDone: { /* progress ring handles it */ },
   dateNum: {
     fontSize: 13, fontWeight: "700", color: p.text,

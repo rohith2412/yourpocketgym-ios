@@ -1,5 +1,5 @@
 /**
- * LoginCreature — chibi gym character doing a double-bicep flex.
+ * LoginCreature - chibi gym character doing a double-bicep flex.
  * Animations: body float · double blink · bicep pump (rx/ry swell) ·
  *             action lines at peak · eye sparkle sync'd to pump.
  */
@@ -7,16 +7,16 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, View } from "react-native";
 import Svg, {
-  Circle,
-  ClipPath,
-  Defs,
-  Ellipse,
-  G,
-  LinearGradient,
-  Path,
-  RadialGradient,
-  Rect,
-  Stop,
+    Circle,
+    ClipPath,
+    Defs,
+    Ellipse,
+    G,
+    LinearGradient,
+    Path,
+    RadialGradient,
+    Rect,
+    Stop,
 } from "react-native-svg";
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
@@ -48,7 +48,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
       ]),
     ).start();
 
-    // Eye sparkle — independent, slightly offset so it feels alive
+    // Eye sparkle - independent, slightly offset so it feels alive
     Animated.loop(
       Animated.sequence([
         Animated.delay(600),
@@ -90,7 +90,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             <Circle cx="144" cy="144" r="144" />
           </ClipPath>
 
-          {/* Skin — warm peach, lit top-left */}
+          {/* Skin - warm peach, lit top-left */}
           <RadialGradient id="lc_skin" cx="32%" cy="18%" r="76%">
             <Stop offset="0%"   stopColor="#fde5c8" />
             <Stop offset="100%" stopColor="#e8956a" />
@@ -102,7 +102,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             <Stop offset="100%" stopColor="#d98050" />
           </LinearGradient>
 
-          {/* Bicep peak — warm highlight to shadow */}
+          {/* Bicep peak - warm highlight to shadow */}
           <RadialGradient id="lc_bicep" cx="28%" cy="20%" r="68%">
             <Stop offset="0%"   stopColor="#fff0d8" />
             <Stop offset="50%"  stopColor="#f0a060" />
@@ -115,32 +115,32 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             <Stop offset="100%" stopColor="#c87040" />
           </RadialGradient>
 
-          {/* Hair — dark brown */}
+          {/* Hair - dark brown */}
           <LinearGradient id="lc_hair" x1="22%" y1="0%" x2="78%" y2="100%">
             <Stop offset="0%"   stopColor="#3d2814" />
             <Stop offset="100%" stopColor="#160e04" />
           </LinearGradient>
 
-          {/* Tank top — brand purple */}
+          {/* Tank top - brand purple */}
           <LinearGradient id="lc_tank" x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0%"   stopColor="#9333ea" />
             <Stop offset="100%" stopColor="#5b21b6" />
           </LinearGradient>
 
-          {/* Eye iris — violet depth */}
+          {/* Eye iris - violet depth */}
           <RadialGradient id="lc_iris" cx="30%" cy="20%" r="70%">
             <Stop offset="0%"   stopColor="#ddd6fe" />
             <Stop offset="45%"  stopColor="#8b5cf6" />
             <Stop offset="100%" stopColor="#3b0764" />
           </RadialGradient>
 
-          {/* Eyelid — skin tone for blink cover */}
+          {/* Eyelid - skin tone for blink cover */}
           <LinearGradient id="lc_lid" x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0%"   stopColor="#fcd5ae" />
             <Stop offset="100%" stopColor="#e8956a" />
           </LinearGradient>
 
-          {/* Bear ear — purple-toned to match palette */}
+          {/* Bear ear - purple-toned to match palette */}
           <RadialGradient id="lc_ear" cx="35%" cy="28%" r="70%">
             <Stop offset="0%"   stopColor="#c4b5fd" />
             <Stop offset="100%" stopColor="#7c3aed" />
@@ -173,7 +173,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             {/* Knuckle lines */}
             <Path d="M 46,91 Q 56,86 66,91" fill="none" stroke="#b86030" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.6" />
 
-            {/* Left bicep peak — star of the show */}
+            {/* Left bicep peak - star of the show */}
             <AnimatedEllipse cx="65" cy="154" rx={bicepRx} ry={bicepRy} fill="url(#lc_bicep)" />
             {/* Bicep shine */}
             <Ellipse cx="58" cy="147" rx="9" ry="7" fill="#fff8f0" fillOpacity="0.52" />
@@ -226,7 +226,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             {/* ── HAIR ── */}
             {/* Main mass */}
             <Ellipse cx="144" cy="55" rx="82" ry="44" fill="url(#lc_hair)" />
-            {/* Spiky top — centre tufts */}
+            {/* Spiky top - centre tufts */}
             <Path d="M 130,28 Q 136,6  144,4  Q 150,13 148,30 Z" fill="#2a1a0a" />
             <Path d="M 149,26 Q 159,3  170,7  Q 163,25 154,32 Z" fill="#321e0c" />
             <Path d="M 112,36 Q 112,14 124,12 Q 128,28 122,38 Z" fill="#2a1a0a" />
@@ -250,7 +250,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             {/* Secondary sparkle dots */}
             <Circle  cx="112" cy="123" r="4.5" fill="#ffffff" fillOpacity="0.72" />
             <Circle  cx="123" cy="127" r="2.8" fill="#ffffff" fillOpacity="0.5" />
-            {/* Animated sparkle — appears with pump */}
+            {/* Animated sparkle - appears with pump */}
             <AnimatedEllipse cx="133" cy="104" rx="3.5" ry="3.5" fill="#ffffff" opacity={sparkleOp} />
             {/* Blink lid */}
             <AnimatedEllipse cx="114" cy="108" rx="30" ry={lidRy} fill="url(#lc_lid)" />
@@ -272,11 +272,11 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             <Path d="M 145,100 Q 172,89 204,102" fill="none" stroke="#1a0e06" strokeWidth="5" strokeLinecap="round" />
             <Path d="M 149,118 Q 174,128 201,118" fill="none" stroke="#1a0e06" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.35" />
 
-            {/* ── EYEBROWS — arched high, confident ── */}
+            {/* ── EYEBROWS - arched high, confident ── */}
             <Path d="M 82,88  Q 106,75 138,84" fill="none" stroke="#1a0e06" strokeWidth="5.5" strokeLinecap="round" />
             <Path d="M 150,82 Q 182,70 210,83" fill="none" stroke="#1a0e06" strokeWidth="5.5" strokeLinecap="round" />
 
-            {/* ── NOSE — tiny, cute ── */}
+            {/* ── NOSE - tiny, cute ── */}
             <Ellipse cx="144" cy="134" rx="8"  ry="5"  fill="#c07848" fillOpacity="0.38" />
             <Circle  cx="140" cy="135" r="3.5" fill="#b06838" fillOpacity="0.32" />
             <Circle  cx="148" cy="135" r="3.5" fill="#b06838" fillOpacity="0.32" />
@@ -285,7 +285,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
             <Ellipse cx="80"  cy="138" rx="24" ry="15" fill="#f07060" fillOpacity="0.21" />
             <Ellipse cx="208" cy="136" rx="24" ry="15" fill="#f07060" fillOpacity="0.21" />
 
-            {/* ── MOUTH — big proud smile + teeth ── */}
+            {/* ── MOUTH - big proud smile + teeth ── */}
             <Path
               d="M 113,151 Q 144,176 175,151"
               fill="none" stroke="#c06040" strokeWidth="5.5" strokeLinecap="round"
@@ -301,7 +301,7 @@ export default function LoginCreature({ size = 160 }: { size?: number }) {
               fill="none" stroke="#e88060" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.5"
             />
 
-            {/* ── SWEAT DROP — effort detail ── */}
+            {/* ── SWEAT DROP - effort detail ── */}
             <Path
               d="M 196,70 Q 200,60 204,70 Q 204,79 200,80 Q 196,79 196,70 Z"
               fill="#bfdbfe" fillOpacity="0.92"

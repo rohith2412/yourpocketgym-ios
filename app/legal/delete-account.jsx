@@ -58,10 +58,10 @@ export default function DeleteAccountScreen() {
                   [{ text: "OK", onPress: () => router.replace("/login") }]
                 );
               } else {
-                Alert.alert("Error", json.error || "Failed to delete account. Please try again or contact support@yourpocketgym.com");
+                Alert.alert("Error", json.error || "Failed to delete account. Please try again or contact rayandteamsupport@gmail.com");
               }
             } catch {
-              Alert.alert("Error", "Something went wrong. Please try again or contact support@yourpocketgym.com");
+              Alert.alert("Error", "Something went wrong. Please try again or contact rayandteamsupport@gmail.com");
             } finally {
               setLoading(false);
             }

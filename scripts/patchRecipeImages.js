@@ -27,7 +27,7 @@ src = src.replace(
     const url = cache[id];
     if (!url) { skipped++; return match; }
 
-    // Build the replacement image value — always a plain string literal
+    // Build the replacement image value - always a plain string literal
     const newImg = `"${url}"`;
     patched++;
     return `id: "${id}"${between}image: ${newImg}`;

@@ -4,7 +4,7 @@
  * Fast fix for exerciseImageCache.json:
  * 1. Finds exercises sharing the same image URL (obvious wrong matches)
  * 2. Re-fetches a fresh Pexels image with a precise search query
- * No AI calls — free and runs in ~1 minute.
+ * No AI calls - free and runs in ~1 minute.
  *
  * Run:  node scripts/verifyExerciseImages.js
  */
@@ -17,7 +17,7 @@ const PEXELS_KEY = "9wKlnJZqB3zs3UCuJ3Ky8Xl8asoyQZSwC4Waab2M52VqYI7uEFkTGo96";
 const CACHE_PATH = path.join(__dirname, "../src/data/exerciseImageCache.json");
 const DELAY_MS   = 300;
 
-// Exercises we KNOW have wrong/generic images — always re-fetch these
+// Exercises we KNOW have wrong/generic images - always re-fetch these
 const FORCE_REFETCH = [
   "military press",
   "overhead press",
@@ -149,7 +149,7 @@ async function main() {
       console.log(`   ✨ Fixed\n`);
     } else {
       failed++;
-      console.log(`   ⚠️  No replacement found — keeping original\n`);
+      console.log(`   ⚠️  No replacement found - keeping original\n`);
     }
 
     // Save progress after each fix
