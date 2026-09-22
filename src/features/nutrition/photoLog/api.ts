@@ -18,6 +18,21 @@ export type PhotoAnalysis = {
   protein: number;
   carbs: number;
   fat: number;
+  // Extended nutrients — populated by /nutrition-goals/photo since v2.2.8.
+  // Optional so mock mode and older cached responses still typecheck.
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  satFat?: number;
+  cholesterol?: number;
+  vitaminA?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminB12?: number;
+  folate?: number;
+  iron?: number;
+  calcium?: number;
+  potassium?: number;
 };
 
 /**

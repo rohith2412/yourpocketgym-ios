@@ -6,6 +6,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getJSON, setJSON } from "../../lib/storage";
 
+/**
+ * A single logged food. The four macros (calories/protein/carbs/fat) are
+ * required — everything else is optional so entries created by older app
+ * versions or by lightweight paths (voice log, restaurant tap) don't break.
+ * Units: grams for anything ending in a gram noun (protein, sugar, satFat),
+ * milligrams for sodium/cholesterol/calcium/potassium/iron/vitaminC, and
+ * micrograms for vitaminA (RAE) / vitaminD / vitaminB12 / folate (DFE).
+ */
 export type FoodEntry = {
   id: string;
   /** ISO date (YYYY-MM-DD) - the day this food belongs to. */
@@ -17,23 +25,84 @@ export type FoodEntry = {
   protein: number;
   carbs: number;
   fat: number;
+  // Tier-1 essential nutrients
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  satFat?: number;
+  cholesterol?: number;
+  // Tier-2 micronutrients
+  vitaminA?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminB12?: number;
+  folate?: number;
+  iron?: number;
+  calcium?: number;
+  potassium?: number;
   /** Local file:// uri of a photo of the food (only when logged via photo). */
   photoUri?: string;
 };
 
+/**
+ * Daily targets (protein/fiber) or limits (sodium/sugar/satFat).
+ * Optional fields default to the RDA constants below so goal sheets don't
+ * need every field filled in.
+ */
 export type MacroGoals = {
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  satFat?: number;
+  cholesterol?: number;
+  vitaminA?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminB12?: number;
+  folate?: number;
+  iron?: number;
+  calcium?: number;
+  potassium?: number;
 };
 
-export const DEFAULT_GOALS: MacroGoals = {
+/**
+ * Sensible defaults — the four macros are the app's originals; the rest are
+ * FDA / USDA recommended daily values for a 2000-kcal adult diet, so the
+ * "goal vs actual" bars have something meaningful to show on day one.
+ */
+export const DEFAULT_GOALS: Required<MacroGoals> = {
   calories: 2200,
   protein: 150,
   carbs: 250,
   fat: 70,
+  fiber: 28,        // g — FDA daily value
+  sugar: 50,        // g — added sugar limit
+  sodium: 2300,     // mg — FDA limit
+  satFat: 20,       // g — <10% of a 2000-kcal diet
+  cholesterol: 300, // mg — FDA limit
+  vitaminA: 900,    // µg RAE
+  vitaminC: 90,     // mg
+  vitaminD: 20,     // µg
+  vitaminB12: 2.4,  // µg
+  folate: 400,      // µg DFE
+  iron: 18,         // mg
+  calcium: 1300,    // mg
+  potassium: 4700,  // mg
 };
+
+/** Every nutrient key in one place — used by totals + display loops. */
+export const NUTRIENT_KEYS = [
+  "calories", "protein", "carbs", "fat", "fiber",
+  "sugar", "sodium", "satFat", "cholesterol",
+  "vitaminA", "vitaminC", "vitaminD", "vitaminB12", "folate",
+  "iron", "calcium", "potassium",
+] as const;
+
+export type NutrientKey = typeof NUTRIENT_KEYS[number];
 
 const KEYS = {
   food: "@food_entries",
@@ -114,19 +183,25 @@ export async function deleteFoodEntry(id: string) {
   await saveFoodEntries(list.filter((e) => e.id !== id));
 }
 
-/** Sum macros for a specific day. */
-export function totalsForDay(entries: FoodEntry[], day: string): MacroGoals {
-  return entries
-    .filter((e) => e.date === day)
-    .reduce(
-      (acc, e) => ({
-        calories: acc.calories + e.calories,
-        protein: acc.protein + e.protein,
-        carbs: acc.carbs + e.carbs,
-        fat: acc.fat + e.fat,
-      }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0 },
-    );
+/**
+ * Sum every nutrient across the day's entries. Returns a fully-populated
+ * object (missing fields default to 0) so callers can render both the four
+ * headline macros AND the nutrient-breakdown card without extra null checks.
+ */
+export function totalsForDay(
+  entries: FoodEntry[],
+  day: string,
+): Required<Pick<MacroGoals, NutrientKey>> {
+  const acc: Record<NutrientKey, number> = Object.fromEntries(
+    NUTRIENT_KEYS.map((k) => [k, 0]),
+  ) as Record<NutrientKey, number>;
+  for (const e of entries) {
+    if (e.date !== day) continue;
+    for (const k of NUTRIENT_KEYS) {
+      acc[k] += Number(e[k]) || 0;
+    }
+  }
+  return acc;
 }
 
 // ── Goals ────────────────────────────────────────────────────────────────────

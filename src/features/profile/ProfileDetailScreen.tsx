@@ -21,6 +21,7 @@ import { useCurrentUser } from "../auth/useCurrentUser";
 import { useDemoMode, useSetDemoMode } from "../demo/useDemoMode";
 import { useMockPhoto, useSetMockPhoto } from "../nutrition/photoLog/mockMode";
 import { useDevPremium, useSetDevPremium } from "../subscription/devOverride";
+import { useAdsDisabled, useSetAdsDisabled } from "../ads/devToggle";
 import { isReviewAccount } from "../subscription/reviewAccounts";
 import { PAYWALL_ENABLED, useEntitlement } from "../subscription/useEntitlement";
 import { resolveProfilePhoto } from "./photoStorage";
@@ -34,6 +35,8 @@ export default function ProfileDetailScreen() {
   const { data: demoOn = false } = useDemoMode();
   const setDemo = useSetDemoMode();
   const { data: mockPhoto = false } = useMockPhoto();
+  const { data: adsDisabled = false } = useAdsDisabled();
+  const setAdsDisabled = useSetAdsDisabled();
   const setMockPhoto = useSetMockPhoto();
   const { data: user } = useCurrentUser();
   const [restoring, setRestoring] = useState(false);
@@ -246,6 +249,24 @@ export default function ProfileDetailScreen() {
               segments={[
                 { value: "off", label: "Real AI" },
                 { value: "on", label: "Mock" },
+              ]}
+            />
+
+            <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 4 }} />
+
+            {/* Ads kill switch — hide every banner/interstitial on this device */}
+            <View>
+              <Text variant="body" weight="semibold">Ads</Text>
+              <Text variant="caption" color="textMuted">
+                Hide banner and interstitial ads on this device. Doesn't affect other users.
+              </Text>
+            </View>
+            <SegmentedControl<"on" | "off">
+              value={adsDisabled ? "off" : "on"}
+              onChange={(v) => setAdsDisabled.mutate(v === "off")}
+              segments={[
+                { value: "on", label: "Show" },
+                { value: "off", label: "Hide" },
               ]}
             />
           </Card>

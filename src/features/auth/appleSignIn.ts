@@ -13,6 +13,7 @@
  * Apple, which is also how you re-test the first-run path.)
  */
 
+import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
 
 export type AppleResult = {
@@ -27,6 +28,9 @@ export class AppleCancelled extends Error {}
 
 /** False on simulators without an Apple ID, and on any non-iOS platform. */
 export async function isAppleSignInAvailable(): Promise<boolean> {
+  // Short-circuit off iOS so we never invoke the native module on Android,
+  // where the runtime throws before try/catch can help.
+  if (Platform.OS !== "ios") return false;
   try {
     return await AppleAuthentication.isAvailableAsync();
   } catch {
@@ -35,6 +39,9 @@ export async function isAppleSignInAvailable(): Promise<boolean> {
 }
 
 export async function signInWithApple(): Promise<AppleResult> {
+  if (Platform.OS !== "ios") {
+    throw new Error("Sign in with Apple is only available on iOS.");
+  }
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
     credential = await AppleAuthentication.signInAsync({

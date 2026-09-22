@@ -6,6 +6,7 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 import mobileAds from "react-native-google-mobile-ads";
 import { hydrateWorkoutLogsFromCache } from "../features/train/api";
 import { startAnalytics } from "../features/analytics/track";
+import { requestATTPermission } from "../features/ads/att";
 
 export const appQueryClient = new QueryClient({
   defaultOptions: {
@@ -32,9 +33,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     // events, flushes every 30s and on background. Returns a teardown
     // fn we call on unmount so hot-reloads don't stack listeners.
     const stopAnalytics = startAnalytics();
-    // Fire and forget — the SDK caches its own state; if init fails on this
-    // launch the next BannerAd/InterstitialAd call retries on its own.
-    mobileAds().initialize().catch(() => {});
+    // Ask for App Tracking Transparency BEFORE initializing AdMob — Apple's
+    // review team explicitly checks that the ATT prompt appears at first
+    // launch, and AdMob personalizes ads based on the answer.
+    (async () => {
+      await requestATTPermission();
+      mobileAds().initialize().catch(() => {});
+    })();
     return () => {
       stopAnalytics();
     };

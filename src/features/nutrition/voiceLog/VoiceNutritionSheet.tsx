@@ -122,6 +122,20 @@ export function VoiceNutritionSheet({ visible, onClose }: Props) {
           protein: f.protein,
           carbs: f.carbs,
           fat: f.fat,
+          // Extended nutrient panel — carried straight from the AI parser.
+          fiber: f.fiber,
+          sugar: f.sugar,
+          sodium: f.sodium,
+          satFat: f.satFat,
+          cholesterol: f.cholesterol,
+          vitaminA: f.vitaminA,
+          vitaminC: f.vitaminC,
+          vitaminD: f.vitaminD,
+          vitaminB12: f.vitaminB12,
+          folate: f.folate,
+          iron: f.iron,
+          calcium: f.calcium,
+          potassium: f.potassium,
         });
       }
 

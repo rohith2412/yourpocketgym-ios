@@ -1,5 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Alert, TextInput, View } from "react-native";
+import { Alert, Pressable, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
 import { BottomSheet, Button, Text } from "../../ui";
 import { useAddFood } from "./hooks";
@@ -75,6 +76,12 @@ export function FoodLogSheet({
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  // Tier-1 essentials — collapsed by default so the sheet stays quick to fill.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [fiber, setFiber] = useState("");
+  const [sugar, setSugar] = useState("");
+  const [sodium, setSodium] = useState("");
+  const [satFat, setSatFat] = useState("");
 
   useEffect(() => {
     if (visible) {
@@ -83,6 +90,11 @@ export function FoodLogSheet({
       setProtein("");
       setCarbs("");
       setFat("");
+      setAdvancedOpen(false);
+      setFiber("");
+      setSugar("");
+      setSodium("");
+      setSatFat("");
     }
   }, [visible]);
 
@@ -97,6 +109,10 @@ export function FoodLogSheet({
       return;
     }
     const now = new Date();
+    // Only include the Tier-1 fields when the user actually typed a value —
+    // an empty input stays `undefined` (rather than 0) so the totals card
+    // shows nothing on the row instead of falsely claiming "0g fiber".
+    const opt = (v: string): number | undefined => (v.trim() === "" ? undefined : asNum(v));
     const entry: FoodEntry = {
       id: newFoodId(),
       date: toISODay(now),
@@ -106,6 +122,10 @@ export function FoodLogSheet({
       protein: asNum(protein),
       carbs: asNum(carbs),
       fat: asNum(fat),
+      fiber: opt(fiber),
+      sugar: opt(sugar),
+      sodium: opt(sodium),
+      satFat: opt(satFat),
     };
     await add.mutateAsync(entry);
     onClose();
@@ -152,11 +172,45 @@ export function FoodLogSheet({
       </View>
 
       {/* Macros row */}
-      <View style={{ flexDirection: "row", gap: theme.spacing.sm, marginBottom: theme.spacing.xl }}>
+      <View style={{ flexDirection: "row", gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
         <MacroInput label="Protein" value={protein} onChange={setProtein} />
         <MacroInput label="Carbs" value={carbs} onChange={setCarbs} />
         <MacroInput label="Fat" value={fat} onChange={setFat} />
       </View>
+
+      {/* Advanced essentials — collapsed by default */}
+      <Pressable
+        onPress={() => setAdvancedOpen((v) => !v)}
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.55 : 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          height: 36,
+          marginBottom: theme.spacing.sm,
+        })}
+      >
+        <Text variant="caption" weight="semibold" color="textMuted">
+          {advancedOpen ? "Hide extras" : "Add fiber, sugar, sodium…"}
+        </Text>
+        <Ionicons
+          name={advancedOpen ? "chevron-up" : "chevron-down"}
+          size={14}
+          color={c.textMuted}
+        />
+      </Pressable>
+
+      {advancedOpen ? (
+        <View style={{ flexDirection: "row", gap: theme.spacing.sm, marginBottom: theme.spacing.xl }}>
+          <MacroInput label="Fiber" value={fiber} onChange={setFiber} />
+          <MacroInput label="Sugar" value={sugar} onChange={setSugar} />
+          <MacroInput label="Sodium" value={sodium} onChange={setSodium} unit="mg" />
+          <MacroInput label="Sat fat" value={satFat} onChange={setSatFat} />
+        </View>
+      ) : (
+        <View style={{ marginBottom: theme.spacing.md }} />
+      )}
 
       <Button
         title={add.isPending ? "Saving…" : "Add food"}

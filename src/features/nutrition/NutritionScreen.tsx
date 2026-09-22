@@ -24,6 +24,7 @@ import { AdBanner } from "../ads/AdBanner";
 import { useInterstitial } from "../ads/useInterstitial";
 import { BarcodeLogSheet } from "./barcodeLog/BarcodeLogSheet";
 import { CalorieSummary } from "./components/CalorieSummary";
+import { NutrientBreakdown } from "./components/NutrientBreakdown";
 import { WaterCard } from "./components/WaterCard";
 import { WeekStrip } from "./components/WeekStrip";
 import { FoodLogSheet } from "./FoodLogSheet";
@@ -399,6 +400,9 @@ export function NutritionScreen() {
             // all rather than a second page that isn't theirs.
             waterPage={isPremium ? <WaterCard day={selectedDay} /> : undefined}
           />
+
+          {/* Advanced nutrient breakdown — collapsed by default */}
+          <NutrientBreakdown totals={totals} goals={goals} />
 
           {/* Flat food list */}
           <View style={{ gap: theme.spacing.sm }}>

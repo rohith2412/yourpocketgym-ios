@@ -10,7 +10,7 @@ import {
     useWindowDimensions,
     View,
 } from "react-native";
-import { useBottomTabBarHeight } from "react-native-bottom-tabs";
+import { useTabBarChrome } from "../nav/AppTabs";
 import { useTheme } from "../theme/ThemeProvider";
 import { Text } from "./Text";
 
@@ -52,10 +52,9 @@ export function FabMenu({
   const { theme } = useTheme();
   const c = theme.colors;
   const { width: winW, height: winH } = useWindowDimensions();
-  // Scenes run full-height under the translucent tab bar now, so a fixed offset
-  // from the screen bottom puts the button *behind* the glass - where it both
-  // gets clipped and blows the blur out to white.
-  const tabBarH = useBottomTabBarHeight();
+  // Reserved space of the floating pill tab bar (pill height + bottom
+  // margin + safe-area). Single source of truth lives in nav/AppTabs.
+  const { reserved: tabBarH } = useTabBarChrome();
   const [open, setOpen] = useState(false);
   // Kept mounted through the closing animation, then torn down.
   const [mounted, setMounted] = useState(false);

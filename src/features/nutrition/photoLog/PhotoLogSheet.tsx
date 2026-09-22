@@ -37,7 +37,20 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<PhotoAnalysis | null>(null);
-  const [edit, setEdit] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
+  // Tier-1 essentials (fiber/sugar/sodium/satFat) editable in the form.
+  // Tier-2 micros stay AI-only — they're carried straight from `analysis`
+  // into the FoodEntry to keep the form uncluttered.
+  const [edit, setEdit] = useState({
+    name: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    fiber: "",
+    sugar: "",
+    sodium: "",
+    satFat: "",
+  });
 
   const analyzeM = useMutation({
     mutationFn: (uri: string) => analyzeFoodPhoto(uri),
@@ -51,6 +64,10 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
         protein: String(Math.round(res.protein)),
         carbs: String(Math.round(res.carbs)),
         fat: String(Math.round(res.fat)),
+        fiber: res.fiber != null ? String(round1(res.fiber)) : "",
+        sugar: res.sugar != null ? String(round1(res.sugar)) : "",
+        sodium: res.sodium != null ? String(Math.round(res.sodium)) : "",
+        satFat: res.satFat != null ? String(round1(res.satFat)) : "",
       });
     },
     onError: (err: Error) => Alert.alert("Couldn't analyze", err.message),
@@ -60,7 +77,10 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
     if (!visible) {
       setPhotoUri(null);
       setAnalysis(null);
-      setEdit({ name: "", calories: "", protein: "", carbs: "", fat: "" });
+      setEdit({
+        name: "", calories: "", protein: "", carbs: "", fat: "",
+        fiber: "", sugar: "", sodium: "", satFat: "",
+      });
     }
   }, [visible]);
 
@@ -145,6 +165,21 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
       protein: parseInt(edit.protein || "0", 10) || 0,
       carbs: parseInt(edit.carbs || "0", 10) || 0,
       fat: parseInt(edit.fat || "0", 10) || 0,
+      // Tier-1 essentials (fiber/sugar/sodium/satFat) come from the form,
+      // falling back to the untouched AI value. Tier-2 micros stay AI-only.
+      fiber: parseFloatOr(edit.fiber, analysis?.fiber),
+      sugar: parseFloatOr(edit.sugar, analysis?.sugar),
+      sodium: parseFloatOr(edit.sodium, analysis?.sodium),
+      satFat: parseFloatOr(edit.satFat, analysis?.satFat),
+      cholesterol: analysis?.cholesterol,
+      vitaminA: analysis?.vitaminA,
+      vitaminC: analysis?.vitaminC,
+      vitaminD: analysis?.vitaminD,
+      vitaminB12: analysis?.vitaminB12,
+      folate: analysis?.folate,
+      iron: analysis?.iron,
+      calcium: analysis?.calcium,
+      potassium: analysis?.potassium,
       photoUri: persistedUri,
     };
     add.mutate(entry, { onSuccess: onClose });
@@ -348,6 +383,14 @@ export function PhotoLogSheet({ visible, onClose }: Props) {
                 <Field flex label="Fat" unit="g" numeric value={edit.fat} onChange={(v) => setEdit({ ...edit, fat: v })} />
               </View>
 
+              {/* Tier-1 essentials — edit if the AI's estimate looks off */}
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Field flex label="Fiber" unit="g" decimal value={edit.fiber} onChange={(v) => setEdit({ ...edit, fiber: v })} />
+                <Field flex label="Sugar" unit="g" decimal value={edit.sugar} onChange={(v) => setEdit({ ...edit, sugar: v })} />
+                <Field flex label="Sodium" unit="mg" numeric value={edit.sodium} onChange={(v) => setEdit({ ...edit, sodium: v })} />
+                <Field flex label="Sat fat" unit="g" decimal value={edit.satFat} onChange={(v) => setEdit({ ...edit, satFat: v })} />
+              </View>
+
               {/* Disable + dim while save is in flight so a rapid double
                   tap can't create two meals. The 1-second post-mount block
                   also guards the case where the sheet mounts and the user
@@ -374,6 +417,7 @@ function Field({
   onChange,
   unit,
   numeric,
+  decimal,
   flex,
 }: {
   label: string;
@@ -381,10 +425,21 @@ function Field({
   onChange: (v: string) => void;
   unit?: string;
   numeric?: boolean;
+  decimal?: boolean;
   flex?: boolean;
 }) {
   const { theme } = useTheme();
   const c = theme.colors;
+  const sanitize = (t: string) => {
+    if (decimal) {
+      // Allow digits + a single decimal point.
+      const clean = t.replace(/[^0-9.]/g, "");
+      const parts = clean.split(".");
+      return parts.length > 1 ? parts[0] + "." + parts.slice(1).join("") : clean;
+    }
+    if (numeric) return t.replace(/[^0-9]/g, "");
+    return t;
+  };
   return (
     <View style={{ gap: 4, flex: flex ? 1 : undefined }}>
       <Text variant="caption" color="textMuted" weight="bold" style={{ letterSpacing: 0.5, fontSize: 9 }}>
@@ -402,8 +457,8 @@ function Field({
       >
         <TextInput
           value={value}
-          onChangeText={(t) => onChange(numeric ? t.replace(/[^0-9]/g, "") : t)}
-          keyboardType={numeric ? "number-pad" : "default"}
+          onChangeText={(t) => onChange(sanitize(t))}
+          keyboardType={decimal ? "decimal-pad" : numeric ? "number-pad" : "default"}
           selectTextOnFocus
           style={{ flex: 1, color: c.text, fontSize: 15, fontWeight: "700", paddingVertical: 0 }}
         />
@@ -415,4 +470,18 @@ function Field({
       </View>
     </View>
   );
+}
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
+/** Prefer a form-entered value; fall back to the AI's original number. */
+function parseFloatOr(
+  formValue: string,
+  fallback: number | undefined,
+): number | undefined {
+  if (formValue.trim() === "") return fallback;
+  const n = parseFloat(formValue);
+  return Number.isFinite(n) ? n : fallback;
 }

@@ -132,19 +132,31 @@ type ServerMealLog = {
   imageUrl?: string | null;
   foods: Array<{
     name: string;
-    macros?: {
-      calories?: number;
-      protein?: number;
-      carbs?: number;
-      fat?: number;
-    };
+    macros?: ServerMacros;
   }>;
-  totals?: {
-    calories?: number;
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-  };
+  totals?: ServerMacros;
+};
+
+// Superset of every nutrient the server may return. Older docs only had
+// four macros — every field stays optional so the parser stays permissive.
+type ServerMacros = {
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  satFat?: number;
+  cholesterol?: number;
+  vitaminA?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminB12?: number;
+  folate?: number;
+  iron?: number;
+  calcium?: number;
+  potassium?: number;
 };
 
 /**
@@ -178,8 +190,27 @@ function mealToEntry(m: ServerMealLog, localPhoto: string | undefined): FoodEntr
     protein: Math.round(totals.protein ?? 0),
     carbs: Math.round(totals.carbs ?? 0),
     fat: Math.round(totals.fat ?? 0),
+    // Round grams to 1 decimal, whole numbers for micrograms/milligrams —
+    // matches how the AI extractor formats them.
+    fiber: round1(totals.fiber),
+    sugar: round1(totals.sugar),
+    sodium: Math.round(totals.sodium ?? 0),
+    satFat: round1(totals.satFat),
+    cholesterol: Math.round(totals.cholesterol ?? 0),
+    vitaminA: Math.round(totals.vitaminA ?? 0),
+    vitaminC: Math.round(totals.vitaminC ?? 0),
+    vitaminD: round1(totals.vitaminD),
+    vitaminB12: round1(totals.vitaminB12),
+    folate: Math.round(totals.folate ?? 0),
+    iron: round1(totals.iron),
+    calcium: Math.round(totals.calcium ?? 0),
+    potassium: Math.round(totals.potassium ?? 0),
     photoUri,
   };
+}
+
+function round1(v: number | undefined): number {
+  return Math.round((Number(v) || 0) * 10) / 10;
 }
 
 /**
@@ -259,6 +290,19 @@ export function useAddFood() {
           protein: entry.protein,
           carbs: entry.carbs,
           fat: entry.fat,
+          fiber: entry.fiber,
+          sugar: entry.sugar,
+          sodium: entry.sodium,
+          satFat: entry.satFat,
+          cholesterol: entry.cholesterol,
+          vitaminA: entry.vitaminA,
+          vitaminC: entry.vitaminC,
+          vitaminD: entry.vitaminD,
+          vitaminB12: entry.vitaminB12,
+          folate: entry.folate,
+          iron: entry.iron,
+          calcium: entry.calcium,
+          potassium: entry.potassium,
         },
         ...(isRemote ? { imageUrl: entry.photoUri } : {}),
       };

@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketGym",
     "slug": "yourpocketgym",
-    "version": "2.2.7",
+    "version": "2.3.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "gymios",
@@ -13,10 +13,10 @@
       "bundleIdentifier": "com.rohith.com.yourpocketgym",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSPhotoLibraryUsageDescription": "PocketGym accesses photos so you can pick an existing image of a meal for the AI food scanner to estimate calories and macros, choose a photo for your progress photo timeline, or set a profile picture. For example, tap 'Photo' in the food log and pick a lunch photo \u2014 PocketGym reads it and adds an estimated meal entry to today.",
-        "NSPhotoLibraryAddUsageDescription": "PocketGym saves images to your Photos library only when you tap 'Save to Photos' on a progress photo \u2014 for example, to share a before-and-after outside the app.",
+        "NSPhotoLibraryUsageDescription": "PocketGym accesses photos so you can pick an existing image of a meal for the AI food scanner to estimate calories and macros, choose a photo for your progress photo timeline, or set a profile picture. For example, tap 'Photo' in the food log and pick a lunch photo — PocketGym reads it and adds an estimated meal entry to today.",
+        "NSPhotoLibraryAddUsageDescription": "PocketGym saves images to your Photos library only when you tap 'Save to Photos' on a progress photo — for example, to share a before-and-after outside the app.",
         "NSCameraUsageDescription": "PocketGym uses the camera to snap a meal for the AI food scanner to estimate calories and macros, and to take weekly progress photos. For example, point the camera at your plate at lunch to log the meal without typing.",
-        "NSMicrophoneUsageDescription": "PocketGym uses the microphone for voice logging \u2014 for example, between sets you can say 'bench press, 3 sets of 8 at 185' and PocketGym transcribes and adds it to today's workout.",
+        "NSMicrophoneUsageDescription": "PocketGym uses the microphone for voice logging — for example, between sets you can say 'bench press, 3 sets of 8 at 185' and PocketGym transcribes and adds it to today's workout.",
         "NSFaceIDUsageDescription": "PocketGym uses Face ID only to quickly unlock your saved credentials so you don't have to type your password each time you open the app."
       }
     },
@@ -36,13 +36,26 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/splash-icon.png",
           "backgroundColor": "#000000",
           "resizeMode": "contain",
           "dark": {
+            "image": "./assets/images/splash-icon.png",
             "backgroundColor": "#000000"
           }
         }
@@ -68,7 +81,8 @@
           "androidAppId": "ca-app-pub-3940256099942544~1458002511",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ],
     "experiments": {
       "typedRoutes": true,

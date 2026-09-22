@@ -270,6 +270,11 @@ function Field({
           borderRadius: theme.radius.lg,
           paddingHorizontal: theme.spacing.md,
           height: 54,
+          // Breathing room between the TextInput and the right slot (the
+          // eye toggle on the password field). Without it, longer
+          // placeholders like "At least 6 characters" run straight into
+          // the icon and read as squished / clipped.
+          gap: theme.spacing.sm,
         }}
       >
         <TextInput

@@ -4,6 +4,7 @@ import {
   InterstitialAd,
 } from "react-native-google-mobile-ads";
 import { AD_UNITS } from "./config";
+import { useAdsDisabled } from "./devToggle";
 
 // Don't show an interstitial more than once every 3 minutes per user session —
 // this keeps the app from feeling like an ad wall and avoids AdMob throttling.
@@ -11,14 +12,15 @@ const MIN_GAP_MS = 3 * 60 * 1000;
 let lastShownAt = 0;
 
 /**
- * Preloads an interstitial and gives the caller a `show()` fn. Currently fires
- * for ALL users — the Pro-gate lands in a later version once we have real
- * subscribers. Re-wire `useShowAds()` here once PAYWALL_ENABLED flips on.
+ * Preloads an interstitial and gives the caller a `show()` fn. Fires for
+ * all users unless the admin toggle in Admin → Ads is flipped OFF.
  */
 export function useInterstitial() {
+  const { data: disabled } = useAdsDisabled();
   const adRef = useRef<InterstitialAd | null>(null);
 
   useEffect(() => {
+    if (disabled) return;
     const ad = InterstitialAd.createForAdRequest(AD_UNITS.interstitial, {
       requestNonPersonalizedAdsOnly: true,
     });
@@ -39,10 +41,11 @@ export function useInterstitial() {
       unsubError();
       adRef.current = null;
     };
-  }, []);
+  }, [disabled]);
 
   return {
     show: () => {
+      if (disabled) return;
       const ad = adRef.current;
       if (!ad || !ad.loaded) return;
       const now = Date.now();

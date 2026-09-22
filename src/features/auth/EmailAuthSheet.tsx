@@ -257,6 +257,10 @@ function Field({
           borderRadius: theme.radius.lg,
           paddingHorizontal: theme.spacing.md,
           height: 52,
+          // Space between the text input and the right-slot eye toggle so
+          // long placeholders (e.g. "At least 6 characters") don't crash
+          // into the icon.
+          gap: theme.spacing.sm,
         }}
       >
         <TextInput

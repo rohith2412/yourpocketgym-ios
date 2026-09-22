@@ -123,6 +123,16 @@ export function ProfileScreen() {
             onPress={() => router.push("/profile-detail")}
           />
           <Separator inset={theme.spacing.lg} />
+          {/* Go Pro for free — hidden until the referral flow is wired end-to-end.
+              Re-enable by uncommenting this ListRow.
+          <ListRow
+            title="Go Pro for free"
+            subtitle="Invite 2 friends → 1 month ad-free"
+            icon="diamond"
+            onPress={() => router.push("/invite")}
+          />
+          <Separator inset={theme.spacing.lg} />
+          */}
           <ListRow
             title="Body weight"
             subtitle="Log & track your weight over time"
@@ -135,6 +145,13 @@ export function ProfileScreen() {
             subtitle="Chat with your AI trainer"
             icon="sparkles"
             onPress={() => router.push("/coach")}
+          />
+          <Separator inset={theme.spacing.lg} />
+          <ListRow
+            title="Restaurants"
+            subtitle="Search chains & find low-cal picks"
+            icon="restaurant-outline"
+            onPress={() => router.push("/restaurants")}
           />
           <Separator inset={theme.spacing.lg} />
           <ListRow

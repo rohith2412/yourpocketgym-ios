@@ -2,13 +2,17 @@ import React from "react";
 import { View } from "react-native";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { AD_UNITS } from "./config";
+import { useAdsDisabled } from "./devToggle";
 
 /**
- * Anchored banner. Currently shows for ALL users — the Pro-gate lands in a
- * later version once we have real subscribers to gate against. Re-wire
- * `useShowAds()` in front of this return once PAYWALL_ENABLED flips on.
+ * Anchored banner. Shows for all users unless the admin toggle in Admin →
+ * Ads is flipped OFF. The Pro-gate lands in a later version once we have
+ * real subscribers.
  */
 export function AdBanner() {
+  const { data: disabled } = useAdsDisabled();
+  if (disabled) return null;
+
   return (
     <View style={{ alignItems: "center" }}>
       <BannerAd

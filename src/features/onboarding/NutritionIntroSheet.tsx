@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -97,6 +99,15 @@ export function NutritionIntroSheet({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+      <KeyboardAvoidingView
+        // The number inputs (weight / height / age) auto-focus, so the
+        // keyboard is up the moment each step mounts. Without KAV the
+        // Continue button sits under the keyboard and looks broken.
+        // `padding` on iOS is what actually lifts the button; Android
+        // resizes the window itself via `android:windowSoftInputMode`.
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.root}
+      >
       <View style={[styles.root, { backgroundColor: c.bg, paddingTop: insets.top + 16 }]}>
         {/* Progress dots */}
         <View style={styles.progressRow}>
@@ -218,15 +229,15 @@ export function NutritionIntroSheet({
                 letterSpacing: -0.2,
               }}
             >
-              {step === STEPS.length - 1
-                ? saveIntro.isPending || addWeight.isPending
-                  ? "Saving…"
-                  : "Get started"
-                : "Continue"}
+              {step === STEPS.length - 1 &&
+              (saveIntro.isPending || addWeight.isPending)
+                ? "Saving…"
+                : "Next"}
             </RNText>
           </Pressable>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -349,7 +360,12 @@ function GoalPill({
       <RNText
         style={{
           fontSize: 13,
-          color: active ? "rgba(255,255,255,0.7)" : c.textMuted,
+          // Use inverseText with reduced opacity when active so the subtitle
+          // stays legible in BOTH themes. The old `rgba(255,255,255,0.7)`
+          // vanished in dark mode where the active pill's background is
+          // white — white-on-white.
+          color: active ? c.inverseText : c.textMuted,
+          opacity: active ? 0.7 : 1,
         }}
       >
         {sub}

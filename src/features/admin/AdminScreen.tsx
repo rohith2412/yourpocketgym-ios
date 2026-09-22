@@ -1,13 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, Switch, TextInput, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
 import { Card, Screen, Text } from "../../ui";
 import { findRegion } from "../onboarding/regions";
 import { UserDetailSheet } from "./UserDetailSheet";
 import { useAdminUsers, type AdminUserRow } from "./api";
 import { computeInsights, type Insights } from "./insights";
+import { useAdsDisabled, useSetAdsDisabled } from "../ads/devToggle";
 
 type Tab = "overview" | "users";
 
@@ -153,6 +154,9 @@ function OverviewTab({ insights }: { insights: Insights }) {
 
   return (
     <View style={{ gap: theme.spacing.lg }}>
+      {/* Dev toggles — admin-only kill switches */}
+      <AdsToggleCard />
+
       {/* Headline grid - 3 across */}
       <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
         <Metric label="USERS" value={h.users} delta={`+${h.newThisWeek} / 7d`} />
@@ -527,4 +531,52 @@ export function relative(iso: string | null): string {
   const d = Math.floor(h / 24);
   if (d < 30) return `${d}d ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+/* ─────────────────────────── Ads kill switch ─────────────────────────── */
+
+/**
+ * Admin-only toggle to hide every ad surface in the app without a rebuild.
+ * The flag is persisted in AsyncStorage under `@dev_ads_disabled` and read by
+ * `AdBanner` + `useInterstitial`. Flip ON to disable ads for THIS device only
+ * — it never affects other users.
+ */
+function AdsToggleCard() {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const { data: disabled = false } = useAdsDisabled();
+  const setDisabled = useSetAdsDisabled();
+  return (
+    <Card padding="md">
+      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.md }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: c.surfaceAlt,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="megaphone-outline" size={20} color={c.text} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="body" weight="semibold">
+            Ads
+          </Text>
+          <Text variant="caption" color="textMuted">
+            {disabled ? "Hidden on this device" : "Showing on this device"}
+          </Text>
+        </View>
+        <Switch
+          value={!disabled}
+          onValueChange={(on) => setDisabled.mutate(!on)}
+          trackColor={{ false: c.surfaceAlt, true: c.text }}
+          thumbColor={c.bg}
+          ios_backgroundColor={c.surfaceAlt}
+        />
+      </View>
+    </Card>
+  );
 }

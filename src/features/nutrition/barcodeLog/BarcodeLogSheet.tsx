@@ -75,15 +75,40 @@ export function BarcodeLogSheet({ visible, onClose }: Props) {
   };
 
   // Scale per-100g nutrition by grams input to compute what user actually ate.
+  // Every nutrient scales by the same factor — mg and µg fields included.
   const scaled = (() => {
-    if (!product) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const zero = {
+      calories: 0, protein: 0, carbs: 0, fat: 0,
+      fiber: 0, sugar: 0, sodium: 0, satFat: 0, cholesterol: 0,
+      vitaminA: 0, vitaminC: 0, vitaminD: 0, vitaminB12: 0, folate: 0,
+      iron: 0, calcium: 0, potassium: 0,
+    };
+    if (!product) return zero;
     const g = Math.max(0, parseInt(grams || "0", 10) || 0);
     const factor = g / 100;
+    // Grams get 1 decimal, everything else rounds to whole numbers to match
+    // how the AI and Nutrient Breakdown card format the values elsewhere.
+    const round1 = (v: number) => Math.round(v * factor * 10) / 10;
+    const roundI = (v: number) => Math.round(v * factor);
+    const p = product.per100g;
     return {
-      calories: Math.round(product.per100g.calories * factor),
-      protein: Math.round(product.per100g.protein * factor),
-      carbs: Math.round(product.per100g.carbs * factor),
-      fat: Math.round(product.per100g.fat * factor),
+      calories: roundI(p.calories),
+      protein: roundI(p.protein),
+      carbs: roundI(p.carbs),
+      fat: roundI(p.fat),
+      fiber: round1(p.fiber),
+      sugar: round1(p.sugar),
+      sodium: roundI(p.sodium),
+      satFat: round1(p.satFat),
+      cholesterol: roundI(p.cholesterol),
+      vitaminA: roundI(p.vitaminA),
+      vitaminC: roundI(p.vitaminC),
+      vitaminD: round1(p.vitaminD),
+      vitaminB12: round1(p.vitaminB12),
+      folate: roundI(p.folate),
+      iron: round1(p.iron),
+      calcium: roundI(p.calcium),
+      potassium: roundI(p.potassium),
     };
   })();
 
